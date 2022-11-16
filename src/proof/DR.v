@@ -44,40 +44,64 @@ Proof.
   induction ENVTJ.
   - eexists []. eexists s. eexists []. eexists ts.
     inv EX1; ss; cycle 1.
-    { inv STEP. inv STEP0. inv STEP. ss. }
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
     inv EX2; ss; cycle 1.
-    { inv STEP. inv STEP0. inv STEP. ss. }
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
     splits; eauto.
     + apply Thread.rtc_refl; eauto.
     + apply refine_empty; eauto.
     + i. splits; eauto. apply refine_empty; eauto.
   - eexists []. eexists s. eexists []. eexists ts.
     inv EX1; ss; cycle 1.
-    { inv STEP. inv STEP0. inv STEP. ss. }
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
     inv EX2; ss; cycle 1.
-    { inv STEP. inv STEP0. inv STEP. ss. }
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
     splits; eauto.
     + apply Thread.rtc_refl; eauto.
     + apply refine_empty; eauto.
     + i. splits; eauto. apply refine_empty; eauto.
   - eexists []. eexists s. eexists []. eexists ts.
     inv EX1; ss; cycle 1.
-    { inv STEP. inv STEP0. inv STEP. ss. }
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
     inv EX2; ss; cycle 1.
-    { inv STEP. inv STEP0. inv STEP. ss. }
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
     splits; eauto.
     + apply Thread.rtc_refl; eauto.
     + apply refine_empty; eauto.
     + i. splits; eauto. apply refine_empty; eauto.
   - eexists []. eexists s. eexists []. eexists ts.
     inv EX1; ss; cycle 1.
-    { inv STEP. inv STEP0. inv STEP. ss. }
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
     inv EX2; ss; cycle 1.
-    { inv STEP. inv STEP0. inv STEP. ss. }
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
     splits; eauto.
     + apply Thread.rtc_refl; eauto.
     + apply refine_empty; eauto.
     + i. splits; eauto. apply refine_empty; eauto.
-  - admit.
+  - inversion EX1; [subst|].
+    { eexists tr'. eexists thr_term'.(Thread.stmt). eexists thr_term'.(Thread.cont). eexists thr_term'.(Thread.ts).
+      splits; ss.
+      - destruct thr_term'; ss.
+      - apply trace_refine_eq.
+      - i. inv H; des; ss.
+    }
+    inversion EX2; [|subst].
+    { eexists tr. eexists thr_term.(Thread.stmt). eexists thr_term.(Thread.cont). eexists thr_term.(Thread.ts).
+      subst. splits; ss.
+      - destruct thr_term; ss.
+      - rewrite app_nil_r. apply trace_refine_eq.
+      - i. splits; ss. apply refine_empty; eauto.
+      - i. inv H; des; ss.
+    }
+    eexists []. eexists []. eexists []. eexists thr_term.(Thread.ts).
+    inv ONE. inv NORMAL_STEP. inv STEP; ss. inv STMT.
+    inv ONE0. inv NORMAL_STEP. inv STEP; ss. inv STMT.
+    inv RTC; ss; cycle 1.
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+    inv RTC0; ss; cycle 1.
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+    rewrite app_nil_r in *. subst. splits; ss.
+    { apply refine_empty; eauto. }
+    i. splits; ss. apply refine_empty; eauto.
   - admit.
 Qed.

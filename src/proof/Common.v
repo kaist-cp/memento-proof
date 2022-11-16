@@ -1,6 +1,9 @@
 Require Import List.
 Import ListNotations.
 
+Require Import sflib.
+
+From Memento Require Import Utils.
 From Memento Require Import Syntax.
 From Memento Require Import Semantics.
 From Memento Require Import Env.
@@ -31,3 +34,24 @@ Inductive trace_refine (tr1 tr2: list Event.t) : Prop :=
 #[export] Hint Constructors trace_refine : proof.
 
 Notation "tr1 ~ tr2" := (trace_refine tr1 tr2) (at level 62).
+
+Lemma trace_refine_app :
+  forall tr1 tr1' tr2 tr2',
+    tr1 ~ tr2 ->
+    tr1' ~ tr2' ->
+  tr1 ++ tr1' ~ tr2 ++ tr2'.
+Proof.
+  admit.
+Qed.
+
+Lemma trace_refine_eq :
+  forall tr, tr ~ tr.
+Proof.
+  induction tr; [apply refine_empty; eauto |].
+  replace (a :: tr) with ([a] ++ tr); eauto.
+  eapply trace_refine_app; eauto.
+  eapply refine_both. instantiate (1 := []). instantiate (1 := []).
+  { apply refine_empty; eauto. }
+  instantiate (1 := a).
+  all: eauto.
+Qed.

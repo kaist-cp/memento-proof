@@ -100,9 +100,9 @@ Module Thread.
       (THR2: thr2 =
               mk
                 s2
-                thr2.(cont)
+                thr1.(cont)
                 (TState.mk rmap2 thr1.(ts).(TState.time))
-                thr2.(mmts)
+                thr1.(mmts)
       )
   .
   #[export] Hint Constructors assign : semantics.
@@ -119,7 +119,7 @@ Module Thread.
   Inductive step_base_cont (env: Env.t) (tr: list Event.t) (thr1 thr2: t) (c: list Cont.t): Prop :=
   | step_base_cont_intro
       c'
-      (STEP: step env tr thr1 thr2)
+      (NORMAL_STEP: step env tr thr1 thr2)
       (BASE: thr2.(cont) = c' ++ c)
   .
 
@@ -129,8 +129,8 @@ Module Thread.
       (TRACE: tr = [])
   | rtc_trans
       tr' thr' tr''
-      (STEP: step_base_cont env tr thr1 thr' c)
-      (THR: rtc env tr'' thr' thr2 c)
+      (ONE: step_base_cont env tr thr1 thr' c)
+      (RTC: rtc env tr'' thr' thr2 c)
       (TRACE: tr = tr' ++ tr'')
   .
 
