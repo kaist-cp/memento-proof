@@ -18,7 +18,7 @@ Definition VReg := Id.t.
 (* TODO: paper *)
 Inductive Expr :=
 | expr_const (const:Val.t)
-| expr_reg (reg:VReg)
+| expr_reg (r:VReg)
 .
 #[export] Hint Constructors Expr : syntax.
 Coercion expr_const: Val.t >-> Expr.
@@ -27,13 +27,13 @@ Coercion expr_reg: VReg >-> Expr.
 Definition Label := nat.
 
 Inductive Stmt :=
-| assign (reg:VReg) (e: Expr)
+| assign (r: VReg) (e: Expr)
 .
 #[export] Hint Constructors Stmt : syntax.
 
 Definition FnId := Id.t.
 
-Definition Env := FnId -> (list VReg * list Stmt).
+Definition Env := FnId -> (list VReg * list Stmt)%type.
 
 Inductive Prog :=
 | prog_intro (env: Env) (s: list (list Stmt))

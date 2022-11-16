@@ -15,6 +15,15 @@ Definition Tid := nat.
 
 Definition VRegMap := VReg -> Val.t.
 
+Module Cont.
+  Inductive t :=
+  | loopcont (rmap: VRegMap) (r: VReg) (s_body: list Stmt) (s_cont: list Stmt)
+  | fncont (rmap: VRegMap) (r: VReg) (s_cont: list Stmt)
+  | chkptcont (rmap: VRegMap) (r: VReg) (s_cont: list Stmt) (mid: list Label)
+  .
+  #[export] Hint Constructors t : semantics.
+End Cont.
+
 Module TState.
   Inductive t := mk {
     regs: VRegMap;
@@ -22,7 +31,7 @@ Module TState.
   }.
   #[export] Hint Constructors t : semantics.
 
-  (* TOOD: init *)
+  (* TODO: init *)
 End TState.
 
 Module Mmt.
@@ -35,12 +44,18 @@ End Mmt.
 Module Mmts.
   Definition t := list Label -> Mmt.t.
 
-  (* TOOD: init *)
+  (* TODO: init *)
 End Mmts.
 
-(* TODO: Thread, Mem, Machine *)
+Module Thread.
+  Definition t := (list Stmt * list Cont.t * TState.t * Mmts.t)%type.
+End Thread.
 
 Definition Mem := PLoc.t -> Val.t.
+
+Module Machine.
+  Definition t := (list Thread.t * Mem)%type.
+End Machine.
 
 Module Event.
   Inductive t :=
