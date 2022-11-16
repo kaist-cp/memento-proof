@@ -1,5 +1,5 @@
 COQMODULE    := Memento
-COQDIRS      := lib lang
+COQDIRS      := lib lang type
 COQTHEORIES  := lib/sflib/*.v lib/hahn/*.v $(foreach dir, $(COQDIRS), src/$(dir)/*.v)
 
 .PHONY: all theories clean

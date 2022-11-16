@@ -31,10 +31,12 @@ Inductive Stmt :=
 
 Definition FnId := Id.t.
 
-Definition Env := FnId -> (list VReg * list Stmt)%type.
+Module Env.
+  Definition t := IdMap.t (list VReg * list Stmt)%type.
+End Env.
 
 Inductive Prog :=
-| prog_intro (env: Env) (s: list (list Stmt))
+| prog_intro (env: Env.t) (s: list (list Stmt))
 .
 #[export] Hint Constructors Prog : syntax.
 

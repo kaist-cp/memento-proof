@@ -1,5 +1,6 @@
 Require Import ZArith.
 Require Import List.
+Import ListNotations.
 
 From Memento Require Import Utils.
 From Memento Require Import Syntax.
@@ -63,6 +64,7 @@ Module Mmt.
     val: Val.t;
     time: Time.t;
   }.
+  #[export] Hint Constructors t : semantics.
 End Mmt.
 
 Module Mmts.
@@ -76,6 +78,7 @@ Module Event.
   | R (l: PLoc.t) (v: Val.t)
   | U (l: PLoc.t) (old new:Val.t)
   .
+  #[export] Hint Constructors t : semantics.
 End Event.
 
 Module Thread.
@@ -85,6 +88,7 @@ Module Thread.
     ts: TState.t;
     mmts: Mmts.t;
   }.
+  #[export] Hint Constructors t : semantics.
 
   Inductive assign (thr1 thr2: t): Prop :=
   | assign_intro
@@ -105,7 +109,7 @@ Module Thread.
 
   Inductive step (tr: list Event.t) (thr1 thr2: t): Prop :=
   | step_assign
-      (TRACE: tr = List.nil)
+      (TRACE: tr = [])
       (STEP: assign thr1 thr2)
 
   (* TODO: Define other steps *)
