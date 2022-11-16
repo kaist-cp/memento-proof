@@ -1,9 +1,9 @@
 Require Import List.
 Import ListNotations.
-Require Import Relations.
 
 From Memento Require Import Syntax.
 From Memento Require Import Semantics.
+From Memento Require Import Env.
 
 Set Implicit Arguments.
 
@@ -16,36 +16,18 @@ Definition STOP (s: list Stmt) (c: list Cont.t) :=
 
 Inductive trace_refine (tr1 tr2: list Event.t) : Prop :=
 | refine_empty
-  (EMPTY: trace_refine [] [])
+  (EMPTY1: tr1 = [])
+  (EMPTY2: tr2 = [])
 | refine_both
-  ev
-  (REFINE: trace_refine tr1 tr2)
-  (BOTH: trace_refine (tr1 ++ [ev]) (tr2 ++ [ev]))
+  ev tr1' tr2'
+  (REFINE: trace_refine tr1' tr2')
+  (TRACE1: tr1 = tr1' ++ [ev])
+  (TRACE2: tr2 = tr2' ++ [ev])
 | refine_read
-  l v
-  (REFINE: trace_refine tr1 tr2)
-  (BOTH: trace_refine tr1 (tr2 ++ [Event.R l v]))
+  l v tr2'
+  (REFINE: trace_refine tr1 tr2')
+  (TRACE2: tr2 = tr2' ++ [Event.R l v])
 .
+#[export] Hint Constructors trace_refine : proof.
 
 Notation "tr1 ~ tr2" := (trace_refine tr1 tr2) (at level 62).
-
-Definition DR (env: Env.t) (s: list Stmt) :=
-  forall tr tr' thr thr' thr_term thr_term' ts mmts,
-    thr = Thread.mk s [] ts mmts ->
-    thr' = Thread.mk s [] ts thr_term.(Thread.mmts) ->
-    Thread.rtc env tr thr thr_term [] ->
-    Thread.rtc env tr' thr' thr_term' [] ->
-  exists tr_x s_x c_x ts_x,
-    Thread.rtc env tr_x thr (Thread.mk s_x c_x ts_x thr_term'.(Thread.mmts)) []
-    /\ tr_x ~ tr ++ tr'
-    /\ (STOP thr_term.(Thread.stmt) thr_term.(Thread.cont) ->
-          thr_term.(Thread.stmt) = s_x
-          /\ thr_term.(Thread.cont) = c_x
-          /\ thr_term.(Thread.ts) = ts_x
-          /\ thr_term.(Thread.mmts) = thr_term'.(Thread.mmts)
-          /\ [] ~ tr')
-    /\ (STOP thr_term'.(Thread.stmt) thr_term'.(Thread.cont) ->
-          thr_term'.(Thread.stmt) = s_x
-          /\ thr_term'.(Thread.cont) = c_x
-          /\ thr_term'.(Thread.ts) = ts_x)
-  .

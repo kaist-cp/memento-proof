@@ -24,6 +24,17 @@ Module EnvType.
   | rw_empty
     (LABS: labs = Empty_set _)
     (STMT: s = [])
+  | rw_break
+    (LABS: labs = Empty_set _)
+    (STMT: s = [stmt_break])
+  | rw_continue
+    e
+    (LABS: labs = Empty_set _)
+    (STMT: s = [stmt_continue e])
+  | rw_return
+    e
+    (LABS: labs = Empty_set _)
+    (STMT: s = [stmt_return e])
   | rw_assign
     r e
     (LABS: labs = Empty_set _)
