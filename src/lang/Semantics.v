@@ -107,7 +107,7 @@ Module Thread.
   .
   #[export] Hint Constructors assign : semantics.
 
-  Inductive step (tr: list Event.t) (thr1 thr2: t): Prop :=
+  Inductive step (env: Env.t) (tr: list Event.t) (thr1 thr2: t): Prop :=
   | step_assign
       (TRACE: tr = [])
       (STEP: assign thr1 thr2)
@@ -115,6 +115,32 @@ Module Thread.
   (* TODO: Define other steps *)
   .
   #[export] Hint Constructors step : semantics.
+
+  Inductive step_base_cont (env: Env.t) (tr: list Event.t) (thr1 thr2: t) (c: list Cont.t): Prop :=
+  | step_base_cont_intro
+      c'
+      (STEP: step env tr thr1 thr2)
+      (BASE: thr2.(cont) = c' ++ c)
+  .
+
+  Inductive rtc (env: Env.t) (tr: list Event.t) (thr1 thr2: t) (c: list Cont.t): Prop :=
+  | rtc_refl
+      (THR: thr1 = thr2)
+      (TRACE: tr = [])
+  | rtc_trans
+      tr' thr' tr''
+      (STEP: step_base_cont env tr thr1 thr' c)
+      (THR: rtc env tr'' thr' thr2 c)
+      (TRACE: tr = tr' ++ tr'')
+  .
+
+  Inductive tc (env: Env.t) (tr: list Event.t) (thr1 thr2: t) (c: list Cont.t): Prop :=
+  | tc_intro
+      tr' thr' tr''
+      (ONE: step_base_cont env tr' thr1 thr' c)
+      (RTC: rtc env tr'' thr' thr2 c)
+      (TRACE: tr = tr' ++ tr'')
+  .
 End Thread.
 
 Definition Mem := PLoc.t -> Val.t.

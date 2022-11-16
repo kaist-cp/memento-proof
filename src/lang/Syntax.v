@@ -26,6 +26,9 @@ Definition Label := nat.
 
 Inductive Stmt :=
   | stmt_assign (r: VReg) (e: Expr)
+  | stmt_break
+  | stmt_continue (e: Expr)
+  | stmt_return (e: Expr)
   .
   #[export] Hint Constructors Stmt : syntax.
 

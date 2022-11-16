@@ -20,7 +20,7 @@ End FnType.
 Module EnvType.
   Definition t := IdMap.t FnType.t.
 
-  Inductive judge (envt: EnvType.t) (labs: Ensemble Label) (s: list Stmt) :=
+  Inductive judge (envt: EnvType.t) (labs: Ensemble Label) (s: list Stmt) : Prop :=
   | rw_empty
     (LABS: labs = Empty_set _)
     (STMT: s = [])
@@ -40,7 +40,7 @@ Module EnvType.
 End EnvType.
 
 Module TypeSystem.
-  Inductive judge (env: Env.t) (envt: EnvType.t) :=
+  Inductive judge (env: Env.t) (envt: EnvType.t) : Prop :=
   | env_empty
     (ENV: env = IdMap.empty _)
     (ENVT: envt = IdMap.empty _)
