@@ -46,6 +46,8 @@ Program Instance Label_eqdec: EqDec Label eq.
   [apply Nat.eqb_eq in Heq | apply Nat.eqb_neq in Heq]; eauto.
   Defined.
 
+Definition FnId := Id.t.
+
 Inductive Stmt :=
   | stmt_assign (r: VReg) (e: Expr)
   | stmt_pload (r: VReg) (e: Expr)
@@ -54,14 +56,12 @@ Inductive Stmt :=
   | stmt_loop (r: VReg) (e: Expr) (s: list Stmt)
   | stmt_continue (e: Expr)
   | stmt_break
-  | stmt_call (r: VReg) (e: Expr)
+  | stmt_call (r: VReg) (f: FnId) (e: Expr)
   | stmt_return (e: Expr)
   | stmt_chkpt (r: VReg) (s: list Stmt) (mid: list Label)
   | stmt_pcas (r: VReg) (e_loc e_old e_new: Expr) (mid: list Label)
   .
   Hint Constructors Stmt : syntax.
-
-Definition FnId := Id.t.
 
 Module Env.
   Definition t := IdMap.t (list VReg * list Stmt)%type.

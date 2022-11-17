@@ -161,12 +161,11 @@ Module Thread.
   Inductive pcas_replay (tr: list Event.t) (thr1 thr2: t): Prop :=
   | pcas_replay_intro
       r e_loc e_old e_new mid s2
-      v_r rmap2
+      rmap2
       (STMT: thr1.(stmt) = (stmt_pcas r e_loc e_old e_new mid) :: s2)
       (TRACE: tr = [])
-      (RET: v_r = (thr1.(mmts) mid).(Mmt.val))
       (LOCAL_TIME: thr1.(ts).(TState.time) < (thr1.(mmts) mid).(Mmt.time))
-      (RMAP: rmap2 = VRegMap.add r v_r thr1.(ts).(TState.regs))
+      (RMAP: rmap2 = VRegMap.add r (thr1.(mmts) mid).(Mmt.val) thr1.(ts).(TState.regs))
       (THR2: thr2 =
               mk
                 s2
@@ -176,6 +175,64 @@ Module Thread.
       )
   .
   Hint Constructors pcas_replay : semantics.
+
+  Inductive chkpt_call (tr: list Event.t) (thr1 thr2: t): Prop :=
+  | chkpt_call_intro
+      r s_c mid s
+      c2
+      (STMT: thr1.(stmt) = (stmt_chkpt r s_c mid) :: s)
+      (TRACE: tr = [])
+      (LOCAL_TIME: (thr1.(mmts) mid).(Mmt.time) <= thr1.(ts).(TState.time))
+      (CONT: c2 = (Cont.chkptcont thr1.(ts).(TState.regs) r s mid) :: thr1.(cont))
+      (THR2: thr2 =
+              mk
+                s_c
+                c2
+                thr1.(ts)
+                thr1.(mmts)
+      )
+  .
+  Hint Constructors chkpt_call : semantics.
+
+  Inductive chkpt_return (tr: list Event.t) (thr1 thr2: t): Prop :=
+  | chkpt_return_intro
+      e s_rem r s2 mid
+      c_loops c2 t v rmap rmap2 mmts2
+      (STMT: thr1.(stmt) = (stmt_return e) :: s_rem)
+      (TRACE: tr = [])
+      (CONT: thr1.(cont) = c_loops ++ [Cont.chkptcont rmap r s2 mid] ++ c2)
+      (LOOPS: Cont.Loops(c_loops))
+      (NEW_TIME: thr1.(ts).(TState.time) < t)
+      (RET: sem_expr thr1.(ts).(TState.regs) e = v)
+      (RMAP: rmap2 = VRegMap.add r v rmap)
+      (MMTS: mmts2 = fun_add mid (Mmt.mk v t) thr1.(mmts))
+      (THR2: thr2 =
+              mk
+                s2
+                c2
+                (TState.mk rmap2 t)
+                mmts2
+      )
+  .
+  Hint Constructors chkpt_return : semantics.
+
+  Inductive chkpt_replay (tr: list Event.t) (thr1 thr2: t): Prop :=
+  | chkpt_replay_intro
+      r s_c mid s
+      rmap2
+      (STMT: thr1.(stmt) = (stmt_chkpt r s_c mid) :: s)
+      (TRACE: tr = [])
+      (LOCAL_TIME: thr1.(ts).(TState.time) < (thr1.(mmts) mid).(Mmt.time))
+      (RMAP: rmap2 = VRegMap.add r (thr1.(mmts) mid).(Mmt.val) thr1.(ts).(TState.regs))
+      (THR2: thr2 =
+              mk
+                s
+                thr1.(cont)
+                (TState.mk rmap2 (thr1.(mmts) mid).(Mmt.time))
+                thr1.(mmts)
+      )
+  .
+  Hint Constructors chkpt_replay : semantics.
 
   (* TODO: Fix eqdec *)
   Inductive branch (tr: list Event.t) (thr1 thr2: t): Prop :=
@@ -199,12 +256,19 @@ Module Thread.
   Inductive step (env: Env.t) (tr: list Event.t) (thr1 thr2: t): Prop :=
   | step_assign
       (STEP: assign tr thr1 thr2)
+  (* TODO: Define break, continue, return *)
   | step_pcas_succ
       (STEP: pcas_succ tr thr1 thr2)
   | step_pcas_fail
       (STEP: pcas_fail tr thr1 thr2)
   | step_pcas_replay
       (STEP: pcas_replay tr thr1 thr2)
+  | step_chkpt_call
+      (STEP: chkpt_call tr thr1 thr2)
+  | step_chkpt_return
+      (STEP: chkpt_return tr thr1 thr2)
+  | step_chkpt_replay
+      (STEP: chkpt_replay tr thr1 thr2)
   | step_branch
       (STEP: branch tr thr1 thr2)
 
@@ -219,24 +283,32 @@ Module Thread.
       (BASE: thr2.(cont) = c' ++ c)
   .
 
-  Inductive rtc (env: Env.t) (tr: list Event.t) (thr1 thr2: t) (c: list Cont.t): Prop :=
+  Inductive rtc (env: Env.t) (tr: list Event.t) (thr thr_term: t) (c: list Cont.t): Prop :=
   | rtc_refl
-      (THR: thr1 = thr2)
+      (THR: thr = thr_term)
       (TRACE: tr = [])
   | rtc_trans
-      tr' thr' tr''
-      (ONE: step_base_cont env tr' thr1 thr' c)
-      (RTC: rtc env tr'' thr' thr2 c)
-      (TRACE: tr = tr' ++ tr'')
+      tr0 thr0 tr1
+      (ONE: step_base_cont env tr0 thr thr0 c)
+      (RTC: rtc env tr1 thr0 thr_term c)
+      (TRACE: tr = tr0 ++ tr1)
   .
 
-  Inductive tc (env: Env.t) (tr: list Event.t) (thr1 thr2: t) (c: list Cont.t): Prop :=
+  Inductive tc (env: Env.t) (tr: list Event.t) (thr thr_term: t) (c: list Cont.t): Prop :=
   | tc_intro
-      tr' thr' tr''
-      (ONE: step_base_cont env tr' thr1 thr' c)
-      (RTC: rtc env tr'' thr' thr2 c)
-      (TRACE: tr = tr' ++ tr'')
+      tr0 thr0 tr1
+      (ONE: step_base_cont env tr0 thr thr0 c)
+      (RTC: rtc env tr1 thr0 thr_term c)
+      (TRACE: tr = tr0 ++ tr1)
   .
+
+  Lemma step_time_mon :
+    forall env tr thr thr_term,
+      rtc env tr thr thr_term [] ->
+    thr.(ts).(TState.time) <= thr_term.(ts).(TState.time).
+  Proof.
+    admit.
+  Qed.
 End Thread.
 
 Definition Mem := PLoc.t -> Val.t.

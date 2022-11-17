@@ -10,8 +10,19 @@ From Memento Require Import Syntax.
 From Memento Require Import Semantics.
 From Memento Require Import Env.
 From Memento Require Import Common.
+From Memento Require Import ControlConstructCases.
 
 Set Implicit Arguments.
+
+Lemma read_only_statements:
+  forall env envt s tr ts mmts thr_term,
+    TypeSystem.judge env envt ->
+    EnvType.ro_judge envt s ->
+    Thread.rtc env tr (Thread.mk s [] ts mmts) thr_term [] ->
+  [] ~ tr /\ mmts = thr_term.(Thread.mmts).
+Proof.
+  admit.
+Qed.
 
 Definition DR (env: Env.t) (s: list Stmt) :=
   forall tr tr' thr_term thr_term' ts mmts,
@@ -35,89 +46,73 @@ Definition DR (env: Env.t) (s: list Stmt) :=
 Lemma DR_RW :
   forall env envt labs s,
     TypeSystem.judge env envt ->
-    EnvType.judge envt labs s ->
+    EnvType.rw_judge envt labs s ->
     (* TODO: forall function *)
   DR env s.
 Proof.
   intros env envt labs s TYPEJ ENVTJ.
   induction ENVTJ; intros tr tr' thr_term thr_term' ts mmts EX1 EX2.
-  - eexists []. eexists s. eexists []. eexists ts.
-    inv EX1; ss; cycle 1.
+  - inv EX1; ss; cycle 1.
     { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
     inv EX2; ss; cycle 1.
     { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
-    splits; eauto.
+    esplits; eauto.
     + apply Thread.rtc_refl; eauto.
-    + apply refine_empty; eauto.
-    + i. splits; eauto. apply refine_empty; eauto.
-  - eexists []. eexists s. eexists []. eexists ts.
-    inv EX1; ss; cycle 1.
+    + apply trace_refine_eq.
+    + i. splits; eauto. apply trace_refine_eq.
+  - inv EX1; ss; cycle 1.
     { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
     inv EX2; ss; cycle 1.
     { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
-    splits; eauto.
+    esplits; eauto.
     + apply Thread.rtc_refl; eauto.
-    + apply refine_empty; eauto.
-    + i. splits; eauto. apply refine_empty; eauto.
-  - eexists []. eexists s. eexists []. eexists ts.
-    inv EX1; ss; cycle 1.
+    + apply trace_refine_eq.
+    + i. splits; eauto. apply trace_refine_eq.
+  - inv EX1; ss; cycle 1.
     { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
     inv EX2; ss; cycle 1.
     { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
-    splits; eauto.
+    esplits; eauto.
     + apply Thread.rtc_refl; eauto.
-    + apply refine_empty; eauto.
-    + i. splits; eauto. apply refine_empty; eauto.
-  - eexists []. eexists s. eexists []. eexists ts.
-    inv EX1; ss; cycle 1.
-    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+    + apply trace_refine_eq.
+    + i. splits; eauto. apply trace_refine_eq.
+  - inv EX1; ss; cycle 1.
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. destruct c_loops; ss. }
     inv EX2; ss; cycle 1.
-    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
-    splits; eauto.
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. destruct c_loops; ss. }
+    esplits; eauto.
     + apply Thread.rtc_refl; eauto.
-    + apply refine_empty; eauto.
-    + i. splits; eauto. apply refine_empty; eauto.
+    + apply trace_refine_eq.
+    + i. splits; eauto. apply trace_refine_eq.
   - inversion EX1; [subst|].
-    { eexists tr'. eexists thr_term'.(Thread.stmt). eexists thr_term'.(Thread.cont). eexists thr_term'.(Thread.ts).
-      splits; ss.
-      - destruct thr_term'; ss.
-      - apply trace_refine_eq.
-      - i. inv H; des; ss.
+    { destruct thr_term'. esplits; ss; eauto; [apply trace_refine_eq |].
+      i. inv H; des; ss.
     }
-    inversion EX2; [|subst].
-    { eexists tr. eexists thr_term.(Thread.stmt). eexists thr_term.(Thread.cont). eexists thr_term.(Thread.ts).
-      subst. splits; ss.
-      - destruct thr_term; ss.
+    inv EX2; [|subst].
+    { destruct thr_term. ss. esplits; [eauto | | |].
       - rewrite app_nil_r. apply trace_refine_eq.
-      - i. splits; ss. apply refine_empty; eauto.
+      - i. splits; ss. apply trace_refine_eq.
       - i. inv H; des; ss.
     }
-    eexists []. eexists []. eexists []. eexists thr_term.(Thread.ts).
     inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
     inv ONE0. inv NORMAL_STEP; inv STEP; ss. inv STMT.
     inv RTC; ss; cycle 1.
     { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
     inv RTC0; ss; cycle 1.
     { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
-    rewrite app_nil_r in *. subst. splits; ss.
-    { apply refine_empty; eauto. }
-    i. splits; ss. apply refine_empty; eauto.
+    rewrite app_nil_r in *. subst.
+    esplits; eauto; [apply trace_refine_eq |].
+    i. splits; ss. apply trace_refine_eq.
   - inversion EX1; [subst|].
-    { eexists tr'. eexists thr_term'.(Thread.stmt). eexists thr_term'.(Thread.cont). eexists thr_term'.(Thread.ts).
-      splits; ss.
-      - destruct thr_term'; ss.
-      - apply trace_refine_eq.
-      - i. inv H; des; ss.
+    { destruct thr_term'. esplits; ss; eauto; [apply trace_refine_eq |].
+      i. inv H; des; ss.
     }
-    inversion EX2.
-    { eexists tr. eexists thr_term.(Thread.stmt). eexists thr_term.(Thread.cont). eexists thr_term.(Thread.ts).
-      subst. splits; ss.
-      - destruct thr_term; ss.
+    inv EX2; [|subst].
+    { destruct thr_term. ss. esplits; [eauto | | |].
       - rewrite app_nil_r. apply trace_refine_eq.
-      - i. splits; ss. apply refine_empty; eauto.
+      - i. splits; ss. apply trace_refine_eq.
       - i. inv H; des; ss.
     }
-    eexists tr. eexists []. eexists []. eexists thr_term.(Thread.ts). subst.
     inv ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
     + inv RTC; ss; cycle 1.
       { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
@@ -134,7 +129,7 @@ Proof.
       }
       inv RTC0; ss; cycle 1.
       { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
-      rewrite app_nil_r in *. subst. splits; ss.
+      rewrite app_nil_r in *. subst. esplits; eauto.
       { apply trace_refine_eq. }
       { i. splits; ss. apply refine_empty; ss. }
       i. splits; ss. rewrite fun_add_spec.
@@ -156,7 +151,7 @@ Proof.
       }
       inv RTC0; ss; cycle 1.
       { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
-      rewrite app_nil_r in *. subst. splits; ss.
+      rewrite app_nil_r in *. subst. esplits; eauto.
       { apply trace_refine_eq. }
       { i. splits; ss. apply refine_empty; ss. }
       i. splits; ss. rewrite fun_add_spec.
@@ -168,9 +163,50 @@ Proof.
       inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT; try lia.
       inv RTC0; ss; cycle 1.
       { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
-      rewrite app_nil_r in *. subst. splits; ss.
+      rewrite app_nil_r in *. subst. esplits; eauto.
       { apply trace_refine_eq. }
       i. splits; ss. apply refine_empty; ss.
+  - inversion EX1; [subst|].
+    { destruct thr_term'. esplits; ss; eauto; [apply trace_refine_eq |].
+      i. inv H; des; ss.
+    }
+    remember EX2 as EX2'. clear HeqEX2'. inv EX2'; [|subst].
+    { destruct thr_term. ss. esplits; [apply EX1 | | |].
+      - rewrite app_nil_r. apply trace_refine_eq.
+      - i. splits; ss. apply trace_refine_eq.
+      - i. inv H; des; ss.
+    }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
+    + destruct thr_term. ss. hexploit checkpoint_cases; eauto. i. des; hexploit read_only_statements; eauto; i; des; subst; ss.
+      * destruct thr_term'. esplits; eauto.
+        { admit.
+          (* refinement *) }
+        unfold STOP. i. des; try by destruct c_pfx; ss.
+        unfold Cont.Loops in H1. exploit H1.
+        { instantiate (1 := Cont.chkptcont (TState.regs ts) r0 [] (mid ++ [lab])).
+          rewrite in_app_iff. right. ss. left. ss.
+        }
+        i. des. ss.
+      * inv CALL_DONE0; inv STEP; ss. inv STMT. inv THR2.
+        rewrite <- HahnList.rev_eq in CONT. repeat rewrite HahnList.rev_app in CONT. ss. inv CONT.
+        inv ONE0. inv NORMAL_STEP; inv STEP; inv STMT; ss.
+        { hexploit Thread.step_time_mon; eauto. i. ss.
+          rewrite fun_add_spec in *. destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); ss; [lia |].
+          admit.
+          (* Equivdec false *)
+        }
+        inv RTC0; ss; cycle 1.
+        { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+        esplits; eauto.
+        { rewrite app_nil_r. eauto. }
+        i. splits; ss; [funtac | apply trace_refine_eq].
+    + inv RTC; ss; cycle 1.
+      { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+      inv ONE0. inv NORMAL_STEP; inv STEP; inv STMT; ss; [lia |].
+      inv RTC0; ss; cycle 1.
+      { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+      esplits; eauto; [apply trace_refine_eq |].
+      i. splits; ss. apply trace_refine_eq.
   - inversion EX1; [subst|].
     { eexists tr'. eexists thr_term'.(Thread.stmt). eexists thr_term'.(Thread.cont). eexists thr_term'.(Thread.ts).
       splits; ss.
@@ -183,7 +219,7 @@ Proof.
       subst. splits; ss.
       - destruct thr_term; ss.
       - rewrite app_nil_r. apply trace_refine_eq.
-      - i. splits; ss. apply refine_empty; eauto.
+      - i. splits; ss. apply trace_refine_eq.
       - i. inv H; des; ss.
     }
     inv ONE. inversion NORMAL_STEP; inv STEP; ss. inv STMT.
