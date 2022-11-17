@@ -1,8 +1,10 @@
 Require Import ZArith.
+Require Import EquivDec.
 Require Import List.
 Import ListNotations.
 
 From Memento Require Import Utils.
+From Memento Require Import Order.
 From Memento Require Import Syntax.
 
 Set Implicit Arguments.
@@ -21,7 +23,7 @@ Module VRegMap.
   Definition find (reg:Id.t) (rmap:t): Val.t :=
     match IdMap.find reg rmap with
     | Some v => v
-    | None => 0
+    | None => Val.int 0
     end.
 
   Definition add (reg: Id.t) (val: Val.t) (rmap: t): t :=
@@ -106,6 +108,48 @@ Module Thread.
       )
   .
   #[export] Hint Constructors assign : semantics.
+
+  Inductive pcas (thr1 thr2: t): Prop :=
+  | pcas_intro
+      r e_loc e_old e_new mid s2
+      loc v_old v_new ev v_r t rmap2 mmts2
+      (LOC: sem_expr thr1.(ts).(TState.regs) e_loc = loc)
+      (OLD: sem_expr thr1.(ts).(TState.regs) e_old = v_old)
+      (NEW: sem_expr thr1.(ts).(TState.regs) e_new = v_new)
+      (EVENT: ev = Event.U loc v_old v_new)
+      (STMT: thr1.(stmt) = (stmt_pcas r e_loc e_old e_new mid) :: s2)
+      (RET: v_r = Val.tuple (Val.bool true, v_old))
+      (LOCAL_TIME: (thr1.(mmts) mid).(Mmt.time) <= thr1.(ts).(TState.time))
+      (NEW_TIME: thr1.(ts).(TState.time) < t)
+      (RMAP: rmap2 = VRegMap.add r v_r thr1.(ts).(TState.regs))
+      (MMTS: mmts2 = fun_add mid (Mmt.mk v_r t) thr1.(mmts))
+      (THR2: thr2 =
+              mk
+                s2
+                thr1.(cont)
+                (TState.mk rmap2 t)
+                mmts2
+      )
+  .
+  #[export] Hint Constructors pcas : semantics.
+
+  (* TODO: Fix eqdec *)
+  (* Inductive branch (thr1 thr2: t): Prop :=
+  | branch_intro
+      e s_t s_f s
+      v s_d
+      (STMT: thr1.(stmt) = (stmt_if e s_t s_f) :: s)
+      (EVAL: sem_expr thr1.(ts).(TState.regs) e = v)
+      (ITE: s_d = if v <> 0%Z then s_t else s_f)
+      (THR2: thr2 =
+              mk
+                (s_d ++ s)
+                thr1.(cont)
+                thr1.(ts)
+                thr1.(mmts)
+      )
+  .
+  #[export] Hint Constructors branch : semantics. *)
 
   Inductive step (env: Env.t) (tr: list Event.t) (thr1 thr2: t): Prop :=
   | step_assign
