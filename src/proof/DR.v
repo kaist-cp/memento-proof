@@ -1,9 +1,11 @@
+Require Import Lia.
 Require Import List.
 Import ListNotations.
 
 Require Import sflib.
 
 From Memento Require Import Utils.
+From Memento Require Import Order.
 From Memento Require Import Syntax.
 From Memento Require Import Semantics.
 From Memento Require Import Env.
@@ -100,6 +102,74 @@ Proof.
     rewrite app_nil_r in *. subst. splits; ss.
     { apply refine_empty; eauto. }
     i. splits; ss. apply refine_empty; eauto.
-  - admit.
+  - inversion EX1; [subst|].
+    { eexists tr'. eexists thr_term'.(Thread.stmt). eexists thr_term'.(Thread.cont). eexists thr_term'.(Thread.ts).
+      splits; ss.
+      - destruct thr_term'; ss.
+      - apply trace_refine_eq.
+      - i. inv H; des; ss.
+    }
+    inversion EX2.
+    { eexists tr. eexists thr_term.(Thread.stmt). eexists thr_term.(Thread.cont). eexists thr_term.(Thread.ts).
+      subst. splits; ss.
+      - destruct thr_term; ss.
+      - rewrite app_nil_r. apply trace_refine_eq.
+      - i. splits; ss. apply refine_empty; eauto.
+      - i. inv H; des; ss.
+    }
+    eexists tr. eexists []. eexists []. eexists thr_term.(Thread.ts). subst.
+    inv ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
+    + inv RTC; ss; cycle 1.
+      { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+      inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT.
+      { rewrite fun_add_spec in LOCAL_TIME0.
+        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])) eqn:Heq; ss; [lia |].
+        admit.
+        (* Equivdec false *)
+      }
+      { rewrite fun_add_spec in LOCAL_TIME0.
+        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])) eqn:Heq; ss; [lia |].
+        admit.
+        (* Equivdec false *)
+      }
+      inv RTC0; ss; cycle 1.
+      { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+      rewrite app_nil_r in *. subst. splits; ss.
+      { apply trace_refine_eq. }
+      { i. splits; ss. apply refine_empty; ss. }
+      i. splits; ss. rewrite fun_add_spec.
+      destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])) eqn:Heq; ss.
+      admit.
+      (* Equivdec false *)
+    + inv RTC; ss; cycle 1.
+      { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+      inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT.
+      { rewrite fun_add_spec in LOCAL_TIME0.
+        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])) eqn:Heq; ss; [lia |].
+        admit.
+        (* Equivdec false *)
+      }
+      { rewrite fun_add_spec in LOCAL_TIME0.
+        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])) eqn:Heq; ss; [lia |].
+        admit.
+        (* Equivdec false *)
+      }
+      inv RTC0; ss; cycle 1.
+      { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+      rewrite app_nil_r in *. subst. splits; ss.
+      { apply trace_refine_eq. }
+      { i. splits; ss. apply refine_empty; ss. }
+      i. splits; ss. rewrite fun_add_spec.
+      destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])) eqn:Heq; ss.
+      admit.
+      (* Equivdec false *)
+    + inv RTC; ss; cycle 1.
+      { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+      inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT; try lia.
+      inv RTC0; ss; cycle 1.
+      { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+      rewrite app_nil_r in *. subst. splits; ss.
+      { apply trace_refine_eq. }
+      i. splits; ss. apply refine_empty; ss.
   - admit.
 Qed.
