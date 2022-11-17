@@ -103,6 +103,12 @@ Module EnvType.
     (RIGHT: rw_judge envt labs_r s_r)
     (LABS: labs = Union _ labs_l labs_r)
     (STMT: s = s_l ++ s_r)
+  | rw_loop
+    s_body r e lab mid
+    (BODY: rw_judge envt labs s)
+    (NIN: In _ labs lab -> False)
+    (LABS: labs = Union _ (Singleton _ lab) labs)
+    (STMT: s = [stmt_loop r e ((stmt_chkpt r [stmt_return r] (mid ++ [lab])) :: s_body)])
   (* TODO: Define other rules *)
   .
 End EnvType.
