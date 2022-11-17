@@ -31,7 +31,7 @@ Inductive trace_refine (tr1 tr2: list Event.t) : Prop :=
   (REFINE: trace_refine tr1 tr2')
   (TRACE2: tr2 = tr2' ++ [Event.R l v])
 .
-#[export] Hint Constructors trace_refine : proof.
+Hint Constructors trace_refine : proof.
 
 Notation "tr1 ~ tr2" := (trace_refine tr1 tr2) (at level 62).
 

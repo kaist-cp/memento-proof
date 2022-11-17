@@ -42,7 +42,7 @@ Module Cont.
   | fncont (rmap: VRegMap.t) (r: VReg) (s_cont: list Stmt)
   | chkptcont (rmap: VRegMap.t) (r: VReg) (s_cont: list Stmt) (mid: list Label)
   .
-  #[export] Hint Constructors t : semantics.
+  Hint Constructors t : semantics.
 
   Definition Loops (c_loops: list t) :=
     forall c,
@@ -56,7 +56,7 @@ Module TState.
     regs: VRegMap.t;
     time: Time.t;
   }.
-  #[export] Hint Constructors t : semantics.
+  Hint Constructors t : semantics.
 
   (* TODO: init *)
 End TState.
@@ -66,7 +66,7 @@ Module Mmt.
     val: Val.t;
     time: Time.t;
   }.
-  #[export] Hint Constructors t : semantics.
+  Hint Constructors t : semantics.
 End Mmt.
 
 Module Mmts.
@@ -80,7 +80,7 @@ Module Event.
   | R (l: PLoc.t) (v: Val.t)
   | U (l: PLoc.t) (old new:Val.t)
   .
-  #[export] Hint Constructors t : semantics.
+  Hint Constructors t : semantics.
 End Event.
 
 Module Thread.
@@ -90,7 +90,7 @@ Module Thread.
     ts: TState.t;
     mmts: Mmts.t;
   }.
-  #[export] Hint Constructors t : semantics.
+  Hint Constructors t : semantics.
 
   Inductive assign (tr: list Event.t) (thr1 thr2: t): Prop :=
   | assign_intro
@@ -108,7 +108,7 @@ Module Thread.
                 thr1.(mmts)
       )
   .
-  #[export] Hint Constructors assign : semantics.
+  Hint Constructors assign : semantics.
 
   Inductive pcas_succ (tr: list Event.t) (thr1 thr2: t): Prop :=
   | pcas_succ_intro
@@ -132,7 +132,7 @@ Module Thread.
                 mmts2
       )
   .
-  #[export] Hint Constructors pcas_succ : semantics.
+  Hint Constructors pcas_succ : semantics.
 
   Inductive pcas_fail (tr: list Event.t) (thr1 thr2: t): Prop :=
   | pcas_fail_intro
@@ -156,7 +156,7 @@ Module Thread.
                 mmts2
       )
   .
-  #[export] Hint Constructors pcas_fail : semantics.
+  Hint Constructors pcas_fail : semantics.
 
   Inductive pcas_replay (tr: list Event.t) (thr1 thr2: t): Prop :=
   | pcas_replay_intro
@@ -175,16 +175,17 @@ Module Thread.
                 thr1.(mmts)
       )
   .
-  #[export] Hint Constructors pcas_replay : semantics.
+  Hint Constructors pcas_replay : semantics.
 
   (* TODO: Fix eqdec *)
-  (* Inductive branch (thr1 thr2: t): Prop :=
+  Inductive branch (tr: list Event.t) (thr1 thr2: t): Prop :=
   | branch_intro
       e s_t s_f s
       v s_d
       (STMT: thr1.(stmt) = (stmt_if e s_t s_f) :: s)
+      (TRACE: tr = [])
       (EVAL: sem_expr thr1.(ts).(TState.regs) e = v)
-      (ITE: s_d = if v <> Val.bool false then s_t else s_f)
+      (ITE: s_d = if v == Val.bool true then s_t else s_f)
       (THR2: thr2 =
               mk
                 (s_d ++ s)
@@ -193,7 +194,7 @@ Module Thread.
                 thr1.(mmts)
       )
   .
-  #[export] Hint Constructors branch : semantics. *)
+  Hint Constructors branch : semantics.
 
   Inductive step (env: Env.t) (tr: list Event.t) (thr1 thr2: t): Prop :=
   | step_assign
@@ -204,10 +205,12 @@ Module Thread.
       (STEP: pcas_fail tr thr1 thr2)
   | step_pcas_replay
       (STEP: pcas_replay tr thr1 thr2)
+  | step_branch
+      (STEP: branch tr thr1 thr2)
 
   (* TODO: Define other steps *)
   .
-  #[export] Hint Constructors step : semantics.
+  Hint Constructors step : semantics.
 
   Inductive step_base_cont (env: Env.t) (tr: list Event.t) (thr1 thr2: t) (c: list Cont.t): Prop :=
   | step_base_cont_intro
@@ -222,7 +225,7 @@ Module Thread.
       (TRACE: tr = [])
   | rtc_trans
       tr' thr' tr''
-      (ONE: step_base_cont env tr thr1 thr' c)
+      (ONE: step_base_cont env tr' thr1 thr' c)
       (RTC: rtc env tr'' thr' thr2 c)
       (TRACE: tr = tr' ++ tr'')
   .

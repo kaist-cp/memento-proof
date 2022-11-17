@@ -171,5 +171,30 @@ Proof.
       rewrite app_nil_r in *. subst. splits; ss.
       { apply trace_refine_eq. }
       i. splits; ss. apply refine_empty; ss.
+  - inversion EX1; [subst|].
+    { eexists tr'. eexists thr_term'.(Thread.stmt). eexists thr_term'.(Thread.cont). eexists thr_term'.(Thread.ts).
+      splits; ss.
+      - destruct thr_term'; ss.
+      - apply trace_refine_eq.
+      - i. inv H; des; ss.
+    }
+    inversion EX2.
+    { eexists tr. eexists thr_term.(Thread.stmt). eexists thr_term.(Thread.cont). eexists thr_term.(Thread.ts).
+      subst. splits; ss.
+      - destruct thr_term; ss.
+      - rewrite app_nil_r. apply trace_refine_eq.
+      - i. splits; ss. apply refine_empty; eauto.
+      - i. inv H; des; ss.
+    }
+    inv ONE. inversion NORMAL_STEP; inv STEP; ss. inv STMT.
+    inv ONE0. inv NORMAL_STEP0; inv STEP; ss. inv STMT.
+    rewrite app_nil_r in *. subst. unfold DR in *.
+    destruct (EquivDec.equiv_dec (sem_expr (TState.regs ts) e) (Val.bool true)) eqn:Heq.
+    + hexploit IHENVTJ1; [apply RTC | apply RTC0 |].
+      i. des. eexists tr_x. eexists s_x. eexists c_x. eexists ts_x. splits; ss.
+      econs 2; eauto; [econs; eauto |]; rewrite app_nil_l; ss.
+    + hexploit IHENVTJ2; [apply RTC | apply RTC0 |].
+      i. des. eexists tr_x. eexists s_x. eexists c_x. eexists ts_x. splits; ss.
+      econs 2; eauto; [econs; eauto |]; rewrite app_nil_l; ss.
   - admit.
 Qed.

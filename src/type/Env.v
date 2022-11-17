@@ -14,7 +14,7 @@ Module FnType.
   | RO
   | RW
   .
-  #[export] Hint Constructors t : env.
+  Hint Constructors t : env.
 End FnType.
 
 Module EnvType.
@@ -44,6 +44,12 @@ Module EnvType.
     (LABS: labs = Singleton _ lab)
     (STMT: s = [stmt_pcas r e_loc e_old e_new (mid ++ [lab])])
     (* TODO: mid is a variable *)
+  | rw_if_then_else
+    labs_t labs_f e s_t s_f
+    (LABS: labs = Union _ labs_t labs_f)
+    (TRUE: judge envt labs_t s_t)
+    (FALSE: judge envt labs_f s_f)
+    (STMT: s = [stmt_if e s_t s_f])
   | rw_seq
     s_l s_r labs_l labs_r
     (DISJ: Disjoint _ labs_l labs_r)

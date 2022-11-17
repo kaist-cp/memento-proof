@@ -1,4 +1,8 @@
 Require Import ZArith.
+Require Import NArith.
+Require Import EquivDec.
+
+Require Import sflib.
 
 From Memento Require Import Utils.
 
@@ -14,6 +18,14 @@ Module Val.
   | tuple (tup: (t * t))
   .
 
+  Program Instance Val_eqdec: EqDec t eq.
+  Next Obligation.
+  admit.
+  Defined.
+  (* destruct x, y.
+  -
+    (try by left);
+    (try by right; i; ss). *)
 End Val.
 
 Definition VReg := Id.t.
@@ -23,11 +35,16 @@ Inductive Expr :=
 | expr_const (const: Val.t)
 | expr_reg (r: VReg)
 .
-#[export] Hint Constructors Expr : syntax.
+Hint Constructors Expr : syntax.
 Coercion expr_const: Val.t >-> Expr.
 Coercion expr_reg: VReg >-> Expr.
 
 Definition Label := nat.
+Program Instance Label_eqdec: EqDec Label eq.
+  Next Obligation.
+  destruct (x =? y) eqn:Heq;
+  [apply Nat.eqb_eq in Heq | apply Nat.eqb_neq in Heq]; eauto.
+  Defined.
 
 Inductive Stmt :=
   | stmt_assign (r: VReg) (e: Expr)
@@ -42,7 +59,7 @@ Inductive Stmt :=
   | stmt_chkpt (r: VReg) (s: list Stmt) (mid: list Label)
   | stmt_pcas (r: VReg) (e_loc e_old e_new: Expr) (mid: list Label)
   .
-  #[export] Hint Constructors Stmt : syntax.
+  Hint Constructors Stmt : syntax.
 
 Definition FnId := Id.t.
 
@@ -53,7 +70,7 @@ End Env.
 Inductive Prog :=
 | prog_intro (env: Env.t) (s: list (list Stmt))
 .
-#[export] Hint Constructors Prog : syntax.
+Hint Constructors Prog : syntax.
 
 Module PLoc.
   Include Val.
