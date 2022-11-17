@@ -91,8 +91,8 @@ Proof.
       - i. inv H; des; ss.
     }
     eexists []. eexists []. eexists []. eexists thr_term.(Thread.ts).
-    inv ONE. inv NORMAL_STEP. inv STEP; ss. inv STMT.
-    inv ONE0. inv NORMAL_STEP. inv STEP; ss. inv STMT.
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inv ONE0. inv NORMAL_STEP; inv STEP; ss. inv STMT.
     inv RTC; ss; cycle 1.
     { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
     inv RTC0; ss; cycle 1.
@@ -100,5 +100,6 @@ Proof.
     rewrite app_nil_r in *. subst. splits; ss.
     { apply refine_empty; eauto. }
     i. splits; ss. apply refine_empty; eauto.
+  - admit.
   - admit.
 Qed.

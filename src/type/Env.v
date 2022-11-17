@@ -39,6 +39,11 @@ Module EnvType.
     r e
     (LABS: labs = Empty_set _)
     (STMT: s = [stmt_assign r e])
+  | rw_pcas
+    r e_loc e_old e_new lab mid
+    (LABS: labs = Singleton _ lab)
+    (STMT: s = [stmt_pcas r e_loc e_old e_new (mid ++ [lab])])
+    (* TODO: mid is a variable *)
   | rw_seq
     s_l s_r labs_l labs_r
     (DISJ: Disjoint _ labs_l labs_r)
