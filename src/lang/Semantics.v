@@ -1,7 +1,10 @@
+Require Import Lia.
 Require Import ZArith.
 Require Import EquivDec.
 Require Import List.
 Import ListNotations.
+
+Require Import sflib.
 
 From Memento Require Import Utils.
 From Memento Require Import Order.
@@ -446,7 +449,9 @@ Module Thread.
       rtc env tr thr thr_term [] ->
     thr.(ts).(TState.time) <= thr_term.(ts).(TState.time).
   Proof.
-    admit.
+    i. induction H; subst; eauto.
+    etrans; cycle 1; eauto.
+    inv ONE. inv NORMAL_STEP; inv STEP; ss; lia.
   Qed.
 End Thread.
 
