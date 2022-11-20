@@ -179,8 +179,7 @@ Proof.
     inv ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
     + destruct thr_term. ss. hexploit checkpoint_cases; eauto. i. des; hexploit read_only_statements; eauto; i; des; subst; ss.
       * destruct thr_term'. esplits; eauto.
-        { admit.
-          (* refinement *) }
+        { hexploit trace_refine_app; [apply H | apply trace_refine_eq | rewrite app_nil_l; eauto]. }
         unfold STOP. i. des; try by destruct c_pfx; ss.
         unfold Cont.Loops in H1. exploit H1.
         { instantiate (1 := Cont.chkptcont (TState.regs ts) r0 [] (mid ++ [lab])).

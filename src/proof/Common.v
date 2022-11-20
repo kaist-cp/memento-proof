@@ -37,11 +37,14 @@ Notation "tr1 ~ tr2" := (trace_refine tr1 tr2) (at level 62).
 
 Lemma trace_refine_app :
   forall tr1 tr1' tr2 tr2',
-    tr1 ~ tr2 ->
     tr1' ~ tr2' ->
+    tr1 ~ tr2 ->
   tr1 ++ tr1' ~ tr2 ++ tr2'.
 Proof.
-  admit.
+  intros tr1 tr1' tr2 tr2' H. generalize tr1 tr2. induction H; ii; subst; eauto.
+  - repeat rewrite app_nil_r. eauto.
+  - apply IHtrace_refine in H0. eapply refine_both; eauto; rewrite <- app_assoc; eauto.
+  - apply IHtrace_refine in H0. eapply refine_read; eauto. rewrite <- app_assoc. eauto.
 Qed.
 
 Lemma trace_refine_eq :
