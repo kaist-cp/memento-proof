@@ -33,9 +33,9 @@ Module EnvType.
     r e
     (STMT: s = [stmt_palloc r e])
   | ro_loop
-    r e s
-    (BODY: ro_judge envt s)
-    (STMT: s = [stmt_loop r e s])
+    r e s_body
+    (BODY: ro_judge envt s_body)
+    (STMT: s = [stmt_loop r e s_body])
   | ro_continue
     e
     (STMT: s = [stmt_continue e])
@@ -105,7 +105,7 @@ Module EnvType.
     (STMT: s = s_l ++ s_r)
   | rw_loop
     s_body r e lab mid
-    (BODY: rw_judge envt labs s)
+    (BODY: rw_judge envt labs s_body)
     (NIN: In _ labs lab -> False)
     (LABS: labs = Union _ (Singleton _ lab) labs)
     (STMT: s = [stmt_loop r e ((stmt_chkpt r [stmt_return r] (mid ++ [lab])) :: s_body)])

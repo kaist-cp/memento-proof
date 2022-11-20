@@ -110,6 +110,42 @@ Module Thread.
   .
   Hint Constructors assign : semantics.
 
+  Inductive pload (tr: list Event.t) (thr1 thr2: t): Prop :=
+  | pload_intro
+      r e l v
+      s2 rmap2
+      (STMT: thr1.(stmt) = (stmt_pload r e) :: s2)
+      (TRACE: tr = [Event.R l v])
+      (EVAL: sem_expr thr1.(ts).(TState.regs) e = l)
+      (RMAP: rmap2 = VRegMap.add r v thr1.(ts).(TState.regs))
+      (THR2: thr2 =
+              mk
+                s2
+                thr1.(cont)
+                (TState.mk rmap2 thr1.(ts).(TState.time))
+                thr1.(mmts)
+      )
+  .
+  Hint Constructors pload : semantics.
+
+  Inductive palloc (tr: list Event.t) (thr1 thr2: t): Prop :=
+  | palloc_intro
+      r e l v
+      s2 rmap2
+      (STMT: thr1.(stmt) = (stmt_pload r e) :: s2)
+      (TRACE: tr = [Event.R l v])
+      (EVAL: sem_expr thr1.(ts).(TState.regs) e = v)
+      (RMAP: rmap2 = VRegMap.add r l thr1.(ts).(TState.regs))
+      (THR2: thr2 =
+              mk
+                s2
+                thr1.(cont)
+                (TState.mk rmap2 thr1.(ts).(TState.time))
+                thr1.(mmts)
+      )
+  .
+  Hint Constructors palloc : semantics.
+
   Inductive pcas_succ (tr: list Event.t) (thr1 thr2: t): Prop :=
   | pcas_succ_intro
       r e_loc e_old e_new mid s2
@@ -253,10 +289,105 @@ Module Thread.
   .
   Hint Constructors branch : semantics.
 
+  Inductive loop (tr: list Event.t) (thr1 thr2: t): Prop :=
+  | loop_intro
+      r e s_body s_cont
+      v c2 rmap2
+      (STMT: thr1.(stmt) = (stmt_loop r e s_body) :: s_cont)
+      (TRACE: tr = [])
+      (EVAL: sem_expr thr1.(ts).(TState.regs) e = v)
+      (CONT: c2 = (Cont.loopcont thr1.(ts).(TState.regs) r s_body s_cont) :: thr1.(cont))
+      (RMAP: rmap2 = VRegMap.add r v thr1.(ts).(TState.regs))
+      (THR2: thr2 =
+              mk
+                s_body
+                c2
+                (TState.mk rmap2 thr1.(ts).(TState.time))
+                thr1.(mmts)
+      )
+  .
+  Hint Constructors loop : semantics.
+
+  Inductive continue (tr: list Event.t) (thr1 thr2: t): Prop :=
+  | continue_intro
+      r e s_rem rmap s_body s_cont
+      v c_rem rmap2
+      (STMT: thr1.(stmt) = (stmt_continue e) :: s_rem)
+      (TRACE: tr = [])
+      (EVAL: sem_expr thr1.(ts).(TState.regs) e = v)
+      (CONT: thr1.(cont) = (Cont.loopcont rmap r s_body s_cont) :: c_rem)
+      (RMAP: rmap2 = VRegMap.add r v rmap)
+      (THR2: thr2 =
+              mk
+                s_body
+                thr1.(cont)
+                (TState.mk rmap2 thr1.(ts).(TState.time))
+                thr1.(mmts)
+      )
+  .
+  Hint Constructors continue : semantics.
+
+  Inductive break (tr: list Event.t) (thr1 thr2: t): Prop :=
+  | break_intro
+      r s_rem rmap s_body s_cont
+      c2
+      (STMT: thr1.(stmt) = stmt_break :: s_rem)
+      (TRACE: tr = [])
+      (CONT: thr1.(cont) = (Cont.loopcont rmap r s_body s_cont) :: c2)
+      (THR2: thr2 =
+              mk
+                s_cont
+                c2
+                (TState.mk rmap thr1.(ts).(TState.time))
+                thr1.(mmts)
+      )
+  .
+  Hint Constructors break : semantics.
+
+  Inductive call (env: Env.t) (tr: list Event.t) (thr1 thr2: t): Prop :=
+  | call_intro
+      r f ee s
+      vv prms s_f c2 rmap2
+      (STMT: thr1.(stmt) = (stmt_call r f ee) :: s)
+      (TRACE: tr = [])
+      (EVAL: map (sem_expr thr1.(ts).(TState.regs)) ee = vv)
+      (ENV_F: IdMap.find f env = Some (prms, s_f))
+      (CONT: c2 = (Cont.fncont thr1.(ts).(TState.regs) r s) :: thr1.(cont))
+      (RMAP: rmap2 = IdMap.empty _)
+      (* TODO: prms maps vv *)
+      (THR2: thr2 =
+              mk
+                s_f
+                c2
+                (TState.mk rmap2 thr1.(ts).(TState.time))
+                thr1.(mmts)
+      )
+  .
+  Hint Constructors call : semantics.
+
+  Inductive ret (tr: list Event.t) (thr1 thr2: t): Prop :=
+  | return_intro
+      e s_rem rmap
+      v c_loops r s2 c2 rmap2
+      (STMT: thr1.(stmt) = (stmt_return e) :: s_rem)
+      (TRACE: tr = [])
+      (EVAL: sem_expr thr1.(ts).(TState.regs) e = v)
+      (CONT: thr1.(cont) = c_loops ++ [Cont.fncont rmap r s2] ++ c2)
+      (LOOPS: Cont.Loops(c_loops))
+      (RMAP: rmap2 = VRegMap.add r v rmap)
+      (THR2: thr2 =
+              mk
+                s2
+                c2
+                (TState.mk rmap2 thr1.(ts).(TState.time))
+                thr1.(mmts)
+      )
+  .
+  Hint Constructors ret : semantics.
+
   Inductive step (env: Env.t) (tr: list Event.t) (thr1 thr2: t): Prop :=
   | step_assign
       (STEP: assign tr thr1 thr2)
-  (* TODO: Define break, continue, return *)
   | step_pcas_succ
       (STEP: pcas_succ tr thr1 thr2)
   | step_pcas_fail
@@ -271,8 +402,16 @@ Module Thread.
       (STEP: chkpt_replay tr thr1 thr2)
   | step_branch
       (STEP: branch tr thr1 thr2)
-
-  (* TODO: Define other steps *)
+  | step_loop
+      (STEP: loop tr thr1 thr2)
+  | step_continue
+      (STEP: continue tr thr1 thr2)
+  | step_break
+      (STEP: break tr thr1 thr2)
+  | step_call
+      (STEP: call env tr thr1 thr2)
+  | step_return
+      (STEP: ret tr thr1 thr2)
   .
   Hint Constructors step : semantics.
 

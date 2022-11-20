@@ -2,6 +2,7 @@ Require Import List.
 Import ListNotations.
 
 Require Import sflib.
+Require Import HahnList.
 
 From Memento Require Import Utils.
 From Memento Require Import Syntax.
@@ -16,6 +17,26 @@ Definition STOP (s: list Stmt) (c: list Cont.t) :=
   \/ (exists s_rem e, s = (stmt_continue e) :: s_rem /\ c = [])
   \/ (exists s_rem e, s = (stmt_return e) :: s_rem /\ (Cont.Loops c))
   .
+
+Lemma stop_means_no_step :
+  forall env tr thr thr_term,
+    STOP thr.(Thread.stmt) thr.(Thread.cont) ->
+    Thread.rtc env tr thr thr_term [] ->
+  thr = thr_term.
+Proof.
+  i. inv H0; ss.
+  destruct thr. ss. unfold STOP in H. des; subst.
+  all: inv ONE.
+  all: inv NORMAL_STEP; inv STEP; inv STMT; ss.
+  - rewrite app_nil_r in *. subst.
+    unfold Cont.Loops in H0. hexploit H0; cycle 1.
+    { instantiate (1 := Cont.chkptcont rmap r s2 mid). i. des. ss. }
+    apply in_app_r. ss. left. ss.
+  - rewrite app_nil_r in *. subst.
+    unfold Cont.Loops in H0. hexploit H0; cycle 1.
+    { instantiate (1 := Cont.fncont rmap r s2). i. des. ss. }
+    apply in_app_r. ss. left. ss.
+Qed.
 
 Inductive trace_refine (tr1 tr2: list Event.t) : Prop :=
 | refine_empty

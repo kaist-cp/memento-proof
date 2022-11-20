@@ -56,7 +56,7 @@ Inductive Stmt :=
   | stmt_loop (r: VReg) (e: Expr) (s: list Stmt)
   | stmt_continue (e: Expr)
   | stmt_break
-  | stmt_call (r: VReg) (f: FnId) (e: Expr)
+  | stmt_call (r: VReg) (f: FnId) (e: list Expr)
   | stmt_return (e: Expr)
   | stmt_chkpt (r: VReg) (s: list Stmt) (mid: list Label)
   | stmt_pcas (r: VReg) (e_loc e_old e_new: Expr) (mid: list Label)

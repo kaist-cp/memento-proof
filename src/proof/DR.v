@@ -2,6 +2,7 @@ Require Import Lia.
 Require Import List.
 Import ListNotations.
 
+Require Import HahnList.
 Require Import sflib.
 
 From Memento Require Import Utils.
@@ -21,7 +22,45 @@ Lemma read_only_statements:
     Thread.rtc env tr (Thread.mk s [] ts mmts) thr_term [] ->
   [] ~ tr /\ mmts = thr_term.(Thread.mmts).
 Proof.
-  admit.
+  intros env envt s tr ts mmts thr_term TYPEJ ROJ. generalize tr ts mmts thr_term. induction ROJ; subst; i.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inv RTC; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    (* eapply IHROJ. eauto. *)
+    admit.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    admit.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss; destruct c_loops; inv CONT.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    admit.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    admit.
 Qed.
 
 Definition DR (env: Env.t) (s: list Stmt) :=
@@ -77,9 +116,9 @@ Proof.
     + apply trace_refine_eq.
     + i. splits; eauto. apply trace_refine_eq.
   - inv EX1; ss; cycle 1.
-    { inv ONE. inv NORMAL_STEP; inv STEP; ss. destruct c_loops; ss. }
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss; destruct c_loops; ss. }
     inv EX2; ss; cycle 1.
-    { inv ONE. inv NORMAL_STEP; inv STEP; ss. destruct c_loops; ss. }
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss; destruct c_loops; ss. }
     esplits; eauto.
     + apply Thread.rtc_refl; eauto.
     + apply trace_refine_eq.
@@ -179,15 +218,14 @@ Proof.
     inv ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
     + destruct thr_term. ss. hexploit checkpoint_cases; eauto. i. des; hexploit read_only_statements; eauto; i; des; subst; ss.
       * destruct thr_term'. esplits; eauto.
-        { hexploit trace_refine_app; [apply H | apply trace_refine_eq | rewrite app_nil_l; eauto]. }
+        { hexploit trace_refine_app; [apply trace_refine_eq | apply H | rewrite app_nil_l; eauto]. }
         unfold STOP. i. des; try by destruct c_pfx; ss.
         unfold Cont.Loops in H1. exploit H1.
         { instantiate (1 := Cont.chkptcont (TState.regs ts) r0 [] (mid ++ [lab])).
           rewrite in_app_iff. right. ss. left. ss.
         }
         i. des. ss.
-      * inv CALL_DONE0; inv STEP; ss. inv STMT. inv THR2.
-        rewrite <- HahnList.rev_eq in CONT. repeat rewrite HahnList.rev_app in CONT. ss. inv CONT.
+      * inv CALL_DONE0; inv STEP; ss; inv STMT; inv THR2; rewrite <- rev_eq in CONT; repeat rewrite rev_app in CONT; ss. inv CONT.
         inv ONE0. inv NORMAL_STEP; inv STEP; inv STMT; ss.
         { hexploit Thread.step_time_mon; eauto. i. ss.
           rewrite fun_add_spec in *. destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); ss; [lia |].
@@ -231,5 +269,6 @@ Proof.
     + hexploit IHENVTJ2; [apply RTC | apply RTC0 |].
       i. des. eexists tr_x. eexists s_x. eexists c_x. eexists ts_x. splits; ss.
       econs 2; eauto; [econs; eauto |]; rewrite app_nil_l; ss.
+  - admit.
   - admit.
 Qed.
