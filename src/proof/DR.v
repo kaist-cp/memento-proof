@@ -217,8 +217,8 @@ Proof.
     }
     inv ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
     + destruct thr_term. ss.
-      (* rewrite app_nil_r in *. subst. *)
-      hexploit checkpoint_cases; [| apply RTC | |]; ss; eauto.
+      rewrite app_nil_r in *. subst.
+      hexploit checkpoint_cases; [| apply RTC | | left |]; ss; eauto.
       { rewrite app_nil_l. eauto. }
       i. des; hexploit read_only_statements; eauto; i; des; subst; ss.
       * destruct thr_term'. esplits; eauto.
