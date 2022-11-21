@@ -957,3 +957,12 @@ Proof.
     + left. ss.
     + right. ss.
 Qed.
+
+Lemma list_construct_app A (l: list A) :
+  l = [] \/ exists l' a, l = l' ++ [a].
+Proof.
+  induction l; [left | right]; ss.
+  des; subst.
+  - esplits. rewrite app_nil_l. eauto.
+  - eexists (a :: l'). eexists a0. eauto.
+Qed.
