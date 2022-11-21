@@ -135,7 +135,7 @@ Module Thread.
   | palloc_intro
       r e l v
       s2 rmap2
-      (STMT: thr1.(stmt) = (stmt_pload r e) :: s2)
+      (STMT: thr1.(stmt) = (stmt_palloc r e) :: s2)
       (TRACE: tr = [Event.R l v])
       (EVAL: sem_expr thr1.(ts).(TState.regs) e = v)
       (RMAP: rmap2 = VRegMap.add r l thr1.(ts).(TState.regs))
@@ -391,6 +391,10 @@ Module Thread.
   Inductive step (env: Env.t) (tr: list Event.t) (thr1 thr2: t): Prop :=
   | step_assign
       (STEP: assign tr thr1 thr2)
+  | step_pload
+      (STEP: pload tr thr1 thr2)
+  | step_palloc
+      (STEP: palloc tr thr1 thr2)
   | step_pcas_succ
       (STEP: pcas_succ tr thr1 thr2)
   | step_pcas_fail

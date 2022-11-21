@@ -60,21 +60,37 @@ Proof.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite app_nil_r]; ss. econs 3. econs; eauto.
   - hexploit IHRTC; eauto. i. des.
-    + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
+    + left. esplits; eauto. econs 2; eauto; cycle 1.
+      { instantiate (1 := [_]). ss. }
       econs; [| rewrite app_nil_r]; ss. econs 4. econs; eauto.
     + right. esplits; eauto.
-      econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs 2; eauto; cycle 1.
+      { instantiate (1 := [_]). ss. }
       econs; [| rewrite app_nil_r]; ss. econs 4. econs; eauto.
+  - hexploit IHRTC; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; cycle 1.
+      { instantiate (1 := [_]). ss. }
+      econs; [| rewrite app_nil_r]; ss. econs 5. econs; eauto.
+    + right. esplits; eauto.
+      econs 2; eauto; cycle 1.
+      { instantiate (1 := [_]). ss. }
+      econs; [| rewrite app_nil_r]; ss. econs 5. econs; eauto.
+  - hexploit IHRTC; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 6. econs; eauto.
+    + right. esplits; eauto.
+      econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 6. econs; eauto.
   - destruct thr. ss. subst.
     hexploit IHRTC; eauto.
     { instantiate (1 := _ :: _). ss. }
     i. des.
     + left. esplits; eauto.
       econs 2; eauto; [| rewrite app_nil_l]; ss.
-      econs; [| rewrite app_nil_r]; ss. econs 5. econs; eauto. ss.
+      econs; [| rewrite app_nil_r]; ss. econs 7. econs; eauto. ss.
     + right. esplits; eauto.
       econs 2; eauto; [| rewrite app_nil_l]; ss.
-      econs; [| rewrite app_nil_r]; ss. econs 5. econs; eauto. ss.
+      econs; [| rewrite app_nil_r]; ss. econs 7. econs; eauto. ss.
   - destruct thr. ss. subst.
     assert (c2 = [] \/ exists c2', c2 = c2' ++ [c']).
     { clear - c2 CONT.
@@ -94,33 +110,33 @@ Proof.
     + hexploit IHRTC; eauto. i. des.
       * left. esplits; eauto.
         econs 2; eauto; [| rewrite app_nil_l]; ss.
-        econs; [| rewrite app_nil_r]; ss. econs 6. econs; eauto; ss.
+        econs; [| rewrite app_nil_r]; ss. econs 8. econs; eauto; ss.
         rewrite <- app_inv_tail_iff. rewrite <- app_assoc. eauto.
       * right. esplits; eauto.
         econs 2; eauto; [| rewrite app_nil_l]; ss.
-        econs; [| rewrite app_nil_r]; ss. econs 6. econs; eauto; ss.
+        econs; [| rewrite app_nil_r]; ss. econs 8. econs; eauto; ss.
         rewrite <- app_inv_tail_iff. rewrite <- app_assoc. eauto.
   - hexploit IHRTC; eauto. i. des.
     + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
-      econs; [| rewrite app_nil_r]; ss. econs 7. econs; eauto.
+      econs; [| rewrite app_nil_r]; ss. econs 9. econs; eauto.
     + right. esplits; eauto.
       econs 2; eauto; [| rewrite app_nil_l]; ss.
-      econs; [| rewrite app_nil_r]; ss. econs 7. econs; eauto.
+      econs; [| rewrite app_nil_r]; ss. econs 9. econs; eauto.
   - hexploit IHRTC; eauto. i. des.
     + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
-      econs; [| rewrite app_nil_r]; ss. econs 8. econs; eauto.
+      econs; [| rewrite app_nil_r]; ss. econs 10. econs; eauto.
     + right. esplits; eauto.
       econs 2; eauto; [| rewrite app_nil_l]; ss.
-      econs; [| rewrite app_nil_r]; ss. econs 8. econs; eauto.
+      econs; [| rewrite app_nil_r]; ss. econs 10. econs; eauto.
   - destruct thr. ss. subst.
     hexploit IHRTC; eauto.
     { instantiate (1 := _ :: _). ss. }
     i. des.
     + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
-      econs; [| rewrite app_nil_r]; ss. econs 9. econs; eauto. ss.
+      econs; [| rewrite app_nil_r]; ss. econs 11. econs; eauto. ss.
     + right. esplits; eauto.
       econs 2; eauto; [| rewrite app_nil_l]; ss.
-      econs; [| rewrite app_nil_r]; ss. econs 9. econs; eauto. ss.
+      econs; [| rewrite app_nil_r]; ss. econs 11. econs; eauto. ss.
   - destruct thr. ss. subst.
     assert (c_rem = [] \/ exists c_rem', c_rem = c_rem' ++ [c']).
     { clear - c_rem CONT.
@@ -133,11 +149,11 @@ Proof.
     { unguard. rewrite <- app_nil_l in CONT. rewrite snoc_eq_snoc in CONT. des; subst; ss. }
     hexploit IHRTC; eauto. i. des.
     + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
-      econs; [| rewrite app_nil_r]; ss. econs 10. econs; eauto; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 12. econs; eauto; ss.
       rewrite <- app_inv_tail_iff. eauto.
     + right. esplits; eauto.
       econs 2; eauto; [| rewrite app_nil_l]; ss.
-      econs; [| rewrite app_nil_r]; ss. econs 10. econs; eauto; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 12. econs; eauto; ss.
       rewrite <- app_inv_tail_iff. eauto.
   - destruct thr. ss. subst.
     assert (c2 = [] \/ exists c2', c2 = c2' ++ [c']).
@@ -151,21 +167,21 @@ Proof.
     { unguard. rewrite <- app_nil_l in CONT. rewrite snoc_eq_snoc in CONT. des; subst; ss. }
     hexploit IHRTC; eauto. i. des.
     + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
-      econs; [| rewrite app_nil_r]; ss. econs 11. econs; eauto; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 13. econs; eauto; ss.
       rewrite <- app_inv_tail_iff. eauto.
     + right. esplits; eauto.
       econs 2; eauto; [| rewrite app_nil_l]; ss.
-      econs; [| rewrite app_nil_r]; ss. econs 11. econs; eauto; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 13. econs; eauto; ss.
       rewrite <- app_inv_tail_iff. eauto.
   - destruct thr. ss. subst.
     hexploit IHRTC; eauto.
     { instantiate (1 := _ :: _). ss. }
     i. des.
     + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
-      econs; [| rewrite app_nil_r]; ss. econs 12. econs; eauto; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 14. econs; eauto; ss.
     + right. esplits; eauto.
       econs 2; eauto; [| rewrite app_nil_l]; ss.
-      econs; [| rewrite app_nil_r]; ss. econs 12. econs; eauto. ss.
+      econs; [| rewrite app_nil_r]; ss. econs 14. econs; eauto. ss.
   - destruct thr. ss. subst.
     assert (c2 = [] \/ exists c2', c2 = c2' ++ [c']).
     { clear - c2 CONT.
@@ -186,9 +202,9 @@ Proof.
     + hexploit IHRTC; eauto. i. des.
       * left. esplits; eauto.
         econs 2; eauto; [| rewrite app_nil_l]; ss.
-        econs; [| rewrite app_nil_r]; ss. econs 13. econs; eauto; ss.
+        econs; [| rewrite app_nil_r]; ss. econs 15. econs; eauto; ss.
         rewrite <- app_inv_tail_iff. rewrite <- app_assoc. eauto.
       * right. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
-        econs; [| rewrite app_nil_r]; ss. econs 13. econs; eauto; ss.
+        econs; [| rewrite app_nil_r]; ss. econs 15. econs; eauto; ss.
         rewrite <- app_inv_tail_iff. rewrite <- app_assoc. eauto.
 Qed.

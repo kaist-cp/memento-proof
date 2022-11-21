@@ -35,10 +35,16 @@ Proof.
     inv ONE. inv NORMAL_STEP; inv STEP; ss.
   - inv H; ss.
     { split; ss. apply trace_refine_eq. }
-    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inv RTC; ss; cycle 1.
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+    split; ss. eapply refine_read; [apply trace_refine_eq |]; ss.
   - inv H; ss.
     { split; ss. apply trace_refine_eq. }
-    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inv RTC; ss; cycle 1.
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+    split; ss. eapply refine_read; [apply trace_refine_eq |]; ss.
   - inv H; ss.
     { split; ss. apply trace_refine_eq. }
     inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
@@ -52,6 +58,9 @@ Proof.
     inv ONE. inv NORMAL_STEP; inv STEP; ss.
   - inv H; ss.
     { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inv RTC; ss.
+    { split; ss. apply trace_refine_eq. }
     admit.
   - inv H; ss.
     { split; ss. apply trace_refine_eq. }
@@ -61,7 +70,13 @@ Proof.
     admit.
   - inv H; ss.
     { split; ss. apply trace_refine_eq. }
-    admit.
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inversion RTC; ss; subst.
+    { split; ss. apply trace_refine_eq. }
+    rewrite app_nil_r in *.
+    destruct (EquivDec.equiv_dec (sem_expr (TState.regs ts0) e0) (Val.bool true)) eqn:Heq.
+    + eapply IHROJ1; eauto.
+    + eapply IHROJ2; eauto.
 Qed.
 
 Definition DR (env: Env.t) (s: list Stmt) :=
@@ -254,16 +269,11 @@ Proof.
       esplits; eauto; [apply trace_refine_eq |].
       i. splits; ss. apply trace_refine_eq.
   - inversion EX1; [subst|].
-    { eexists tr'. eexists thr_term'.(Thread.stmt). eexists thr_term'.(Thread.cont). eexists thr_term'.(Thread.ts).
-      splits; ss.
-      - destruct thr_term'; ss.
-      - apply trace_refine_eq.
-      - i. inv H; des; ss.
+    { destruct thr_term'. esplits; ss; eauto; [apply trace_refine_eq |].
+      i. inv H; des; ss.
     }
-    inversion EX2.
-    { eexists tr. eexists thr_term.(Thread.stmt). eexists thr_term.(Thread.cont). eexists thr_term.(Thread.ts).
-      subst. splits; ss.
-      - destruct thr_term; ss.
+    inv EX2; [|subst].
+    { destruct thr_term. ss. esplits; [eauto | | |].
       - rewrite app_nil_r. apply trace_refine_eq.
       - i. splits; ss. apply trace_refine_eq.
       - i. inv H; des; ss.
@@ -359,16 +369,11 @@ Proof.
       { rewrite app_nil_r. eauto. }
       apply trace_refine_eq.
   - inversion EX1; [subst|].
-    { eexists tr'. eexists thr_term'.(Thread.stmt). eexists thr_term'.(Thread.cont). eexists thr_term'.(Thread.ts).
-      splits; ss.
-      - destruct thr_term'; ss.
-      - apply trace_refine_eq.
-      - i. inv H; des; ss.
+    { destruct thr_term'. esplits; ss; eauto; [apply trace_refine_eq |].
+      i. inv H; des; ss.
     }
-    inversion EX2.
-    { eexists tr. eexists thr_term.(Thread.stmt). eexists thr_term.(Thread.cont). eexists thr_term.(Thread.ts).
-      subst. splits; ss.
-      - destruct thr_term; ss.
+    inv EX2; [|subst].
+    { destruct thr_term. ss. esplits; [eauto | | |].
       - rewrite app_nil_r. apply trace_refine_eq.
       - i. splits; ss. apply trace_refine_eq.
       - i. inv H; des; ss.
