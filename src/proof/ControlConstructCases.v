@@ -1,4 +1,3 @@
-Require Import Lia.
 Require Import List.
 Import ListNotations.
 
@@ -12,25 +11,12 @@ From Memento Require Import Common.
 
 Set Implicit Arguments.
 
-Lemma unlift_not_loopcont :
-  forall env tr thr thr_term c_base rmap r s mid c c_sfx,
-    c_base = c :: c_sfx ->
-    (c = Cont.chkptcont rmap r s mid \/ c = Cont.fncont rmap r s)->
-    Thread.rtc env tr thr thr_term c_base ->
-  Thread.rtc env tr thr thr_term [].
-Proof.
-  i. induction H1; subst; [econs |]; ss.
-  hexploit IHrtc; eauto. i. econs 2; eauto.
-  inv ONE. inversion NORMAL_STEP; inv STEP; econs; eauto; ss.
-  all: rewrite app_nil_r; eauto.
-Qed.
-
-Lemma checkpoint_cases :
-  forall env c_base tr thr thr_term c c' rmap r mid,
+Lemma chkpt_fn_cases :
+  forall env c_base tr thr thr_term c c' rmap r,
     c_base = [] ->
     Thread.rtc env tr thr thr_term c_base ->
     thr.(Thread.cont) = c ++ [c'] ->
-    (c' = Cont.chkptcont rmap r [] mid \/ c' = Cont.fncont rmap r []) ->
+    ((exists mid, c' = Cont.chkptcont rmap r [] mid) \/ c' = Cont.fncont rmap r []) ->
   <<CALL_ONGOING:
     exists c_pfx, thr_term.(Thread.cont) = c_pfx ++ [c']
     /\ Thread.rtc env tr
@@ -45,8 +31,8 @@ Lemma checkpoint_cases :
       /\ thr_term.(Thread.stmt) = [] /\ thr_term.(Thread.cont) = []
       /\ (c' = Cont.fncont rmap r [] -> thr_term.(Thread.mmts) = mmts_r)>>.
 Proof.
-  intros env c_base tr thr thr_term c c' rmap r mid EMPTY RTC.
-  generalize dependent rmap. generalize dependent r. generalize dependent mid. generalize dependent c. generalize dependent c'.
+  intros env c_base tr thr thr_term c c' rmap r EMPTY RTC.
+  generalize dependent rmap. generalize dependent r. generalize dependent c. generalize dependent c'.
   induction RTC; i; subst.
   { left. esplits; eauto. econs; ss. }
   guardH H0.

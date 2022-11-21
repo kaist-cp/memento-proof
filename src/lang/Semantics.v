@@ -445,13 +445,27 @@ Module Thread.
   .
 
   Lemma step_time_mon :
-    forall env tr thr thr_term,
-      rtc env tr thr thr_term [] ->
+    forall env tr thr thr_term c,
+      rtc env tr thr thr_term c ->
     thr.(ts).(TState.time) <= thr_term.(ts).(TState.time).
   Proof.
     i. induction H; subst; eauto.
     etrans; cycle 1; eauto.
     inv ONE. inv NORMAL_STEP; inv STEP; ss; lia.
+  Qed.
+
+  Lemma rtc_step_trans :
+    forall env tr1 thr1 thr2 c tr2 thr3,
+      rtc env tr1 thr1 thr2 c ->
+      rtc env tr2 thr2 thr3 c ->
+    rtc env (tr1 ++ tr2) thr1 thr3 c.
+  Proof.
+    i. generalize dependent thr3. generalize dependent tr2.
+    induction H.
+    { subst. i. rewrite app_nil_l. ss. }
+    i. subst.
+    hexploit IHrtc; eauto. i.
+    econs 2; eauto. rewrite app_assoc. ss.
   Qed.
 End Thread.
 
