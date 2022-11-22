@@ -1,6 +1,7 @@
 Require Import ZArith.
 Require Import NArith.
 Require Import EquivDec.
+Require Import List.
 
 Require Import sflib.
 
@@ -20,12 +21,15 @@ Module Val.
 
   Program Instance Val_eqdec: EqDec t eq.
   Next Obligation.
-  admit.
+  destruct x, y; try by right; ss.
+  - destruct (z == z0); [left | right].
+    + inv e. ss.
+    + i. inv H. apply c. ss.
+  - destruct (b == b0); [left | right].
+    + inv e. ss.
+    + i. inv H. apply c. ss.
+  - admit.
   Defined.
-  (* destruct x, y.
-  -
-    (try by left);
-    (try by right; i; ss). *)
 End Val.
 
 Definition VReg := Id.t.
@@ -40,11 +44,6 @@ Coercion expr_const: Val.t >-> Expr.
 Coercion expr_reg: VReg >-> Expr.
 
 Definition Label := nat.
-Program Instance Label_eqdec: EqDec Label eq.
-  Next Obligation.
-  destruct (x =? y) eqn:Heq;
-  [apply Nat.eqb_eq in Heq | apply Nat.eqb_neq in Heq]; eauto.
-  Defined.
 
 Definition FnId := Id.t.
 

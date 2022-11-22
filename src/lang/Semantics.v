@@ -1,3 +1,4 @@
+Require Import Ensembles.
 Require Import Lia.
 Require Import ZArith.
 Require Import EquivDec.
@@ -70,13 +71,30 @@ Module Mmt.
     time: Time.t;
   }.
   Hint Constructors t : semantics.
+
+  Definition default := Mmt.mk (Val.int 0) 0.
 End Mmt.
 
 Module Mmts.
-  Definition t := list Label -> Mmt.t.
+  Definition t := list Label -> option Mmt.t.
 
   (* TODO: init *)
+
+  (* TODO: Do not use Parameter? *)
+  Parameter mmts_in : forall mids mid, { Ensembles.In (list Label) mids mid } + { ~ Ensembles.In (list Label) mids mid }.
+
+  Definition proj (mmts: t) (mids: Ensemble (list Label)) (mid: list Label) : option Mmt.t :=
+    if mmts_in mids mid then mmts mid else None.
+
+  Definition union (mmts1 mmts2: t) (mid: list Label) : option Mmt.t :=
+    match mmts1 mid with
+    | Some v => Some v
+    | None => mmts2 mid
+    end.
 End Mmts.
+
+Notation "mmts | mids" := (Mmts.proj mmts mids) (at level 62).
+Notation "mmts1 ⊎ mmts2" := (Mmts.union mmts1 mmts2) (at level 64).
 
 Module Event.
   Inductive t :=
@@ -152,17 +170,18 @@ Module Thread.
   Inductive pcas_succ (tr: list Event.t) (thr1 thr2: t): Prop :=
   | pcas_succ_intro
       r e_loc e_old e_new mid s2
-      l v_old v_new v_r t rmap2 mmts2
+      l v_old v_new v_r mmt t rmap2 mmts2
       (STMT: thr1.(stmt) = (stmt_pcas r e_loc e_old e_new mid) :: s2)
       (TRACE: tr = [Event.U l v_old v_new])
       (LOC: sem_expr thr1.(ts).(TState.regs) e_loc = l)
       (OLD: sem_expr thr1.(ts).(TState.regs) e_old = v_old)
       (NEW: sem_expr thr1.(ts).(TState.regs) e_new = v_new)
       (RET: v_r = Val.tuple (Val.bool true, v_old))
-      (LOCAL_TIME: (thr1.(mmts) mid).(Mmt.time) <= thr1.(ts).(TState.time))
+      (MMT: thr1.(mmts) mid = Some mmt)
+      (LOCAL_TIME: mmt.(Mmt.time) <= thr1.(ts).(TState.time))
       (NEW_TIME: thr1.(ts).(TState.time) < t)
       (RMAP: rmap2 = VRegMap.add r v_r thr1.(ts).(TState.regs))
-      (MMTS: mmts2 = fun_add mid (Mmt.mk v_r t) thr1.(mmts))
+      (MMTS: mmts2 = fun_add mid (Some (Mmt.mk v_r t)) thr1.(mmts))
       (THR2: thr2 =
               mk
                 s2
@@ -176,17 +195,18 @@ Module Thread.
   Inductive pcas_fail (tr: list Event.t) (thr1 thr2: t): Prop :=
   | pcas_fail_intro
       r e_loc e_old e_new mid s2
-      l v_old v v_r t rmap2 mmts2
+      l v_old v v_r mmt t rmap2 mmts2
       (STMT: thr1.(stmt) = (stmt_pcas r e_loc e_old e_new mid) :: s2)
       (TRACE: tr = [Event.R l v])
       (LOC: sem_expr thr1.(ts).(TState.regs) e_loc = l)
       (OLD: sem_expr thr1.(ts).(TState.regs) e_old = v_old)
       (NE: v <> v_old)
       (RET: v_r = Val.tuple (Val.bool false, v_old))
-      (LOCAL_TIME: (thr1.(mmts) mid).(Mmt.time) <= thr1.(ts).(TState.time))
+      (MMT: thr1.(mmts) mid = Some mmt)
+      (LOCAL_TIME: mmt.(Mmt.time) <= thr1.(ts).(TState.time))
       (NEW_TIME: thr1.(ts).(TState.time) < t)
       (RMAP: rmap2 = VRegMap.add r v_r thr1.(ts).(TState.regs))
-      (MMTS: mmts2 = fun_add mid (Mmt.mk v_r t) thr1.(mmts))
+      (MMTS: mmts2 = fun_add mid (Some (Mmt.mk v_r t)) thr1.(mmts))
       (THR2: thr2 =
               mk
                 s2
@@ -199,17 +219,18 @@ Module Thread.
 
   Inductive pcas_replay (tr: list Event.t) (thr1 thr2: t): Prop :=
   | pcas_replay_intro
-      r e_loc e_old e_new mid s2
+      r e_loc e_old e_new mmt mid s2
       rmap2
       (STMT: thr1.(stmt) = (stmt_pcas r e_loc e_old e_new mid) :: s2)
       (TRACE: tr = [])
-      (LOCAL_TIME: thr1.(ts).(TState.time) < (thr1.(mmts) mid).(Mmt.time))
-      (RMAP: rmap2 = VRegMap.add r (thr1.(mmts) mid).(Mmt.val) thr1.(ts).(TState.regs))
+      (MMT: thr1.(mmts) mid = Some mmt)
+      (LOCAL_TIME: thr1.(ts).(TState.time) < mmt.(Mmt.time))
+      (RMAP: rmap2 = VRegMap.add r mmt.(Mmt.val) thr1.(ts).(TState.regs))
       (THR2: thr2 =
               mk
                 s2
                 thr1.(cont)
-                (TState.mk rmap2 (thr1.(mmts) mid).(Mmt.time))
+                (TState.mk rmap2 mmt.(Mmt.time))
                 thr1.(mmts)
       )
   .
@@ -218,10 +239,11 @@ Module Thread.
   Inductive chkpt_call (tr: list Event.t) (thr1 thr2: t): Prop :=
   | chkpt_call_intro
       r s_c mid s
-      c2
+      mmt c2
       (STMT: thr1.(stmt) = (stmt_chkpt r s_c mid) :: s)
       (TRACE: tr = [])
-      (LOCAL_TIME: (thr1.(mmts) mid).(Mmt.time) <= thr1.(ts).(TState.time))
+      (MMT: thr1.(mmts) mid = Some mmt)
+      (LOCAL_TIME: mmt.(Mmt.time) <= thr1.(ts).(TState.time))
       (CONT: c2 = (Cont.chkptcont thr1.(ts).(TState.regs) r s mid) :: thr1.(cont))
       (THR2: thr2 =
               mk
@@ -244,7 +266,7 @@ Module Thread.
       (NEW_TIME: thr1.(ts).(TState.time) < t)
       (RET: sem_expr thr1.(ts).(TState.regs) e = v)
       (RMAP: rmap2 = VRegMap.add r v rmap)
-      (MMTS: mmts2 = fun_add mid (Mmt.mk v t) thr1.(mmts))
+      (MMTS: mmts2 = fun_add mid (Some (Mmt.mk v t)) thr1.(mmts))
       (THR2: thr2 =
               mk
                 s2
@@ -258,16 +280,17 @@ Module Thread.
   Inductive chkpt_replay (tr: list Event.t) (thr1 thr2: t): Prop :=
   | chkpt_replay_intro
       r s_c mid s
-      rmap2
+      mmt rmap2
       (STMT: thr1.(stmt) = (stmt_chkpt r s_c mid) :: s)
       (TRACE: tr = [])
-      (LOCAL_TIME: thr1.(ts).(TState.time) < (thr1.(mmts) mid).(Mmt.time))
-      (RMAP: rmap2 = VRegMap.add r (thr1.(mmts) mid).(Mmt.val) thr1.(ts).(TState.regs))
+      (MMT: thr1.(mmts) mid = Some mmt)
+      (LOCAL_TIME: thr1.(ts).(TState.time) < mmt.(Mmt.time))
+      (RMAP: rmap2 = VRegMap.add r mmt.(Mmt.val) thr1.(ts).(TState.regs))
       (THR2: thr2 =
               mk
                 s
                 thr1.(cont)
-                (TState.mk rmap2 (thr1.(mmts) mid).(Mmt.time))
+                (TState.mk rmap2 mmt.(Mmt.time))
                 thr1.(mmts)
       )
   .

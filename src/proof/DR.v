@@ -1,3 +1,4 @@
+Require Import EquivDec.
 Require Import Lia.
 Require Import List.
 Import ListNotations.
@@ -74,7 +75,7 @@ Proof.
     inversion RTC; ss; subst.
     { split; ss. apply trace_refine_eq. }
     rewrite app_nil_r in *.
-    destruct (EquivDec.equiv_dec (sem_expr (TState.regs ts0) e0) (Val.bool true)) eqn:Heq.
+    destruct (EquivDec.equiv_dec (sem_expr (TState.regs ts0) e0) (Val.bool true)).
     + eapply IHROJ1; eauto.
     + eapply IHROJ2; eauto.
 Qed.
@@ -176,50 +177,50 @@ Proof.
     + inv RTC; ss; cycle 1.
       { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
       inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT.
-      { rewrite fun_add_spec in LOCAL_TIME0.
-        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])) eqn:Heq; ss; [lia |].
-        admit.
-        (* Equivdec false *)
+      { rewrite fun_add_spec in MMT0.
+        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+        { exfalso. apply c. ss. }
+        inv MMT0. ss. lia.
       }
-      { rewrite fun_add_spec in LOCAL_TIME0.
-        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])) eqn:Heq; ss; [lia |].
-        admit.
-        (* Equivdec false *)
+      { rewrite fun_add_spec in MMT0.
+        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+        { exfalso. apply c. ss. }
+        inv MMT0. ss. lia.
       }
       inv RTC0; ss; cycle 1.
       { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
       rewrite app_nil_r in *. subst. esplits; eauto.
       { apply trace_refine_eq. }
       { i. splits; ss. apply refine_empty; ss. }
-      i. splits; ss. rewrite fun_add_spec.
-      destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])) eqn:Heq; ss.
-      admit.
-      (* Equivdec false *)
+      i. splits; ss. rewrite fun_add_spec in MMT0.
+      destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+      { exfalso. apply c. ss. }
+      inv MMT0. ss.
     + inv RTC; ss; cycle 1.
       { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
       inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT.
-      { rewrite fun_add_spec in LOCAL_TIME0.
-        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])) eqn:Heq; ss; [lia |].
-        admit.
-        (* Equivdec false *)
+      { rewrite fun_add_spec in MMT0.
+        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+        { exfalso. apply c. ss. }
+        inv MMT0. ss. lia.
       }
-      { rewrite fun_add_spec in LOCAL_TIME0.
-        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])) eqn:Heq; ss; [lia |].
-        admit.
-        (* Equivdec false *)
+      { rewrite fun_add_spec in MMT0.
+        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+        { exfalso. apply c. ss. }
+        inv MMT0. ss. lia.
       }
       inv RTC0; ss; cycle 1.
       { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
       rewrite app_nil_r in *. subst. esplits; eauto.
       { apply trace_refine_eq. }
       { i. splits; ss. apply refine_empty; ss. }
-      i. splits; ss. rewrite fun_add_spec.
-      destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])) eqn:Heq; ss.
-      admit.
-      (* Equivdec false *)
+      i. splits; ss. rewrite fun_add_spec in MMT0.
+      destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+      { exfalso. apply c. ss. }
+      inv MMT0. ss.
     + inv RTC; ss; cycle 1.
       { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
-      inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT; try lia.
+      inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT; rewrite MMT in MMT0; inv MMT0; try lia.
       inv RTC0; ss; cycle 1.
       { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
       rewrite app_nil_r in *. subst. esplits; eauto.
@@ -252,18 +253,21 @@ Proof.
       * inv CALL_DONE0; inv STEP; ss; inv STMT; inv THR2; rewrite <- rev_eq in CONT; repeat rewrite rev_app in CONT; ss. inv CONT.
         inv ONE0. inv NORMAL_STEP; inv STEP; inv STMT; ss.
         { hexploit Thread.step_time_mon; eauto. i. ss.
-          rewrite fun_add_spec in *. destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); ss; [lia |].
-          admit.
-          (* Equivdec false *)
+          rewrite fun_add_spec in *. destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+          { exfalso. apply c. ss. }
+          inv MMT0. ss. lia.
         }
         inv RTC0; ss; cycle 1.
         { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+        rewrite fun_add_spec in *. destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+        { exfalso. apply c. ss. }
+        inv MMT0. ss.
         esplits; eauto.
         { rewrite app_nil_r. eauto. }
-        i. splits; ss; [funtac | apply trace_refine_eq].
+        i. splits; ss. apply trace_refine_eq.
     + inv RTC; ss; cycle 1.
       { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
-      inv ONE0. inv NORMAL_STEP; inv STEP; inv STMT; ss; [lia |].
+      inv ONE0. inv NORMAL_STEP; inv STEP; inv STMT; ss; rewrite MMT in MMT0; inv MMT0; try lia.
       inv RTC0; ss; cycle 1.
       { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
       esplits; eauto; [apply trace_refine_eq |].
@@ -381,7 +385,7 @@ Proof.
     inv ONE. inversion NORMAL_STEP; inv STEP; ss. inv STMT.
     inv ONE0. inv NORMAL_STEP0; inv STEP; ss. inv STMT.
     rewrite app_nil_r in *. subst. unfold DR in *.
-    destruct (EquivDec.equiv_dec (sem_expr (TState.regs ts) e) (Val.bool true)) eqn:Heq.
+    destruct (EquivDec.equiv_dec (sem_expr (TState.regs ts) e) (Val.bool true)).
     + hexploit IHENVTJ1; [| apply RTC | apply RTC0 |]; ss.
       i. des. eexists tr_x. eexists s_x. eexists c_x. eexists ts_x. splits; ss.
       econs 2; eauto; [econs; eauto |]; rewrite app_nil_l; ss.

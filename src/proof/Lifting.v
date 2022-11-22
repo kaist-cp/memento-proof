@@ -1,3 +1,4 @@
+Require Import Ensembles.
 Require Import List.
 Import ListNotations.
 
@@ -54,6 +55,28 @@ Proof.
   { econs; eauto. }
   subst. inv ONE. econs 2; eauto. econs; eauto. rewrite app_nil_r. ss.
 Qed.
+
+Lemma lift_mmt:
+  (* TODO: Define mid_pfx from ts.regs *)
+  forall envt env labs s mid_pfx mids tr ts mmts thr_term,
+    envt labs s ->
+    mmt_id_exp mid_pfx labs = mids ->
+    Thread.rtc env tr (Thread.mk s [] ts mmts) thr_term [] ->
+  Thread.rtc env tr
+    (Thread.mk s [] ts (mmts | mids))
+    (Thread.mk thr_term.(Thread.stmt) thr_term.(Thread.cont) thr_term.(Thread.ts) (thr_term.(Thread.mmts) | mids))
+    []
+  /\ mmts | (Complement _ mids) = thr_term.(Thread.mmts) | (Complement _ mids)
+  /\ exists mmts_a,
+      Thread.rtc env tr
+        (Thread.mk s [] ts ((mmts | mids) ⊎ (mmts_a | (Complement _ mids))))
+        (Thread.mk thr_term.(Thread.stmt) thr_term.(Thread.cont) thr_term.(Thread.ts) ((thr_term.(Thread.mmts) | mids) ⊎ (mmts_a | (Complement _ mids))))
+        [].
+Proof.
+  admit.
+Qed.
+
+
 
 (*
   TODO: Fix conclusion.
