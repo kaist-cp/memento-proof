@@ -423,7 +423,7 @@ Lemma first_loop_iter:
   <<FIRST_ONGOING:
       exists c_pfx, thr_term.(Thread.cont) = c_pfx ++ [c']
         /\ Thread.rtc env tr
-            thr
+            (Thread.mk thr.(Thread.stmt) c thr.(Thread.ts) thr.(Thread.mmts))
             (Thread.mk thr_term.(Thread.stmt) c_pfx thr_term.(Thread.ts) thr_term.(Thread.mmts))
             []>>
   \/
@@ -449,7 +449,7 @@ Lemma last_loop_iter:
     c' = Cont.loopcont rmap r s [] ->
   exists tr1 tr2 s1 c1 ts1 mmts1 c_pfx,
     tr = tr1 ++ tr2
-    /\ (<<LAST_FIRST:
+    /\ __guard__(<<LAST_FIRST:
           s1 = thr.(Thread.stmt) /\ c1 = c
           /\ ts1 = thr.(Thread.ts) /\ mmts1 = thr.(Thread.mmts)
           /\ tr1 = []>>

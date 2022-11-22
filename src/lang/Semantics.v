@@ -32,6 +32,12 @@ Module VRegMap.
 
   Definition add (reg: Id.t) (val: Val.t) (rmap: t): t :=
     IdMap.add reg val rmap.
+
+  Lemma add_add i v1 v2 (m:t):
+    add i v1 (add i v2 m) = add i v1 m.
+  Proof.
+    revert m. induction i; destruct m; ss; try congruence.
+  Qed.
 End VRegMap.
 
 Definition sem_expr (rmap: VRegMap.t) (e: Expr): Val.t :=
@@ -53,6 +59,16 @@ Module Cont.
     List.In c c_loops ->
       exists rmap r s_body s_cont,
       c = loopcont rmap r s_body s_cont.
+
+  Lemma loops_app :
+    forall c1 c2,
+      Loops (c1 ++ c2) ->
+    Loops c1 /\ Loops c2.
+  Proof.
+    unfold Loops. i. split.
+    - i. apply H. apply in_app_iff. auto.
+    - i. apply H. apply in_app_iff. auto.
+  Qed.
 End Cont.
 
 Module TState.
@@ -91,6 +107,15 @@ Module Mmts.
     | Some v => Some v
     | None => mmts2 mid
     end.
+
+  Lemma proj_inv:
+    forall mmts mids mid mmt,
+      Ensembles.In _ mids mid ->
+      proj mmts mids mid = mmt ->
+    mmts mid = mmt.
+  Proof.
+    admit.
+  Qed.
 End Mmts.
 
 Notation "mmts | mids" := (Mmts.proj mmts mids) (at level 62).

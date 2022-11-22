@@ -13,10 +13,10 @@ From Memento Require Import Env.
 Set Implicit Arguments.
 
 Definition STOP (s: list Stmt) (c: list Cont.t) :=
-  (s = [] /\ c = [])
-  \/ (exists s_rem, s = stmt_break :: s_rem /\ c = [])
-  \/ (exists s_rem e, s = (stmt_continue e) :: s_rem /\ c = [])
-  \/ (exists s_rem e, s = (stmt_return e) :: s_rem /\ (Cont.Loops c))
+  <<EMPTY: (s = [] /\ c = [])>>
+  \/ <<BREAK: (exists s_rem, s = stmt_break :: s_rem /\ c = [])>>
+  \/ <<CONTINUE: (exists s_rem e, s = (stmt_continue e) :: s_rem /\ c = [])>>
+  \/ <<RETURN: (exists s_rem e, s = (stmt_return e) :: s_rem /\ (Cont.Loops c))>>
   .
 
 Lemma stop_means_no_step :
@@ -30,11 +30,11 @@ Proof.
   all: inv ONE.
   all: inv NORMAL_STEP; inv STEP; inv STMT; ss.
   - rewrite app_nil_r in *. subst.
-    unfold Cont.Loops in H0. hexploit H0; cycle 1.
+    unfold Cont.Loops in RETURN0. hexploit RETURN0; cycle 1.
     { instantiate (1 := Cont.chkptcont rmap r s2 mid). i. des. ss. }
     apply in_app_r. ss. left. ss.
   - rewrite app_nil_r in *. subst.
-    unfold Cont.Loops in H0. hexploit H0; cycle 1.
+    unfold Cont.Loops in RETURN0. hexploit RETURN0; cycle 1.
     { instantiate (1 := Cont.fncont rmap r s2). i. des. ss. }
     apply in_app_r. ss. left. ss.
 Qed.

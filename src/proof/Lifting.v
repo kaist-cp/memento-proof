@@ -62,16 +62,21 @@ Lemma lift_mmt:
     envt labs s ->
     mmt_id_exp mid_pfx labs = mids ->
     Thread.rtc env tr (Thread.mk s [] ts mmts) thr_term [] ->
-  Thread.rtc env tr
+  <<UNLIFT:
+    Thread.rtc env tr
     (Thread.mk s [] ts (mmts | mids))
     (Thread.mk thr_term.(Thread.stmt) thr_term.(Thread.cont) thr_term.(Thread.ts) (thr_term.(Thread.mmts) | mids))
-    []
-  /\ mmts | (Complement _ mids) = thr_term.(Thread.mmts) | (Complement _ mids)
-  /\ exists mmts_a,
+    []>>
+  /\
+  <<COMPL_EQ:
+    forall mid, (mmts | (Complement _ mids)) mid = (thr_term.(Thread.mmts) | (Complement _ mids)) mid>>
+  /\
+  <<LIFT:
+    forall mmts_a,
       Thread.rtc env tr
         (Thread.mk s [] ts ((mmts | mids) ⊎ (mmts_a | (Complement _ mids))))
         (Thread.mk thr_term.(Thread.stmt) thr_term.(Thread.cont) thr_term.(Thread.ts) ((thr_term.(Thread.mmts) | mids) ⊎ (mmts_a | (Complement _ mids))))
-        [].
+        []>>.
 Proof.
   admit.
 Qed.
