@@ -1,3 +1,4 @@
+Require Import Ensembles.
 Require Import List.
 Import ListNotations.
 
@@ -79,3 +80,11 @@ Proof.
   instantiate (1 := a).
   all: eauto.
 Qed.
+
+Inductive mmt_id_exp (mid_pfx: list Label) (labs: Ensemble Label) : Ensemble (list Label) :=
+| mmt_id_exp_intro
+  lab mid mid_sfx
+  (LAB: Ensembles.In _ labs lab)
+  (MID: mid = mid_pfx ++ [lab] ++ mid_sfx)
+  : Ensembles.In _ (mmt_id_exp mid_pfx labs) mid
+.
