@@ -591,5 +591,583 @@ Proof.
             { unfold STOP. repeat right. esplits; ss. }
             i. des. ss.
     + (* EX1: LOOP-ONGOING *)
-      admit.
+      hexploit last_loop_iter; eauto; ss.
+      { rewrite app_nil_l. ss. }
+      i. des. rename H0 into TR3.
+
+      assert (s1 = stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s_body /\ c1 = [] /\ ts.(TState.time) <= ts1.(TState.time)).
+      { unguard. des; splits; subst; ss.
+        hexploit Thread.step_time_mon; [exact LAST_CONT |]; eauto.
+      }
+      des. subst.
+
+      inv H2.
+      { inv THR.
+        (* LAST SECOND ITER *)
+        admit.
+      }
+
+      inversion ONE0. inv NORMAL_STEP0; inv STEP; ss; inv STMT.
+      * (* EX1: CHKPT-CALL *)
+        inv RTC0.
+        { inv THR.
+          (* LAST SECOND ITER *)
+          admit.
+        }
+        inversion ONE1. inv NORMAL_STEP0; inv STEP; ss; inv STMT; ss; cycle 1.
+        { rewrite app_nil_r in CONT. destruct c_loops; ss. inv CONT. destruct c_loops; ss. }
+        rewrite app_nil_r in CONT. destruct c_loops; ss; inv CONT; cycle 1.
+        { destruct c_loops; ss. }
+        hexploit lift_mmt; eauto. ss. instantiate (1 := mid). i. des.
+        specialize COMPL_EQ with (mid ++ [lab]).
+        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs)) (mid ++ [lab])).
+        { clear - NIN.
+          unfold Ensembles.In. unfold Complement. ii.
+          inv H. induction mid; inv MID; eauto.
+        }
+        symmetry in COMPL_EQ.
+        hexploit Mmts.proj_inv; eauto.
+        unfold Mmts.proj. ss. condtac; ss.
+        funtac. intro MID_MMT.
+        inv ONE; inv NORMAL_STEP0; inv STEP; inv STMT; ss; rewrite MID_MMT in MMT0; inv MMT0; ss.
+        { lia. }
+
+        assert (TS_EQ: VRegMap.add r0 (VRegMap.find r0 (TState.regs ts1)) (TState.regs ts) =
+                       VRegMap.add r0 (VRegMap.find r0 (TState.regs ts1)) (TState.regs ts1)).
+        { move TR3 at bottom. unguard. des; ss; [rewrite LAST_FIRST1 | rewrite LAST_CONT2]; ss; rewrite VRegMap.add_add; ss. }
+
+        move RTC1 at bottom. rewrite VRegMap.add_add in *.
+        hexploit loop_cases; [| apply RTC1 | | |]; eauto.
+        { rewrite app_nil_l. ss. }
+        i. rewrite TS_EQ in *. des; ss; cycle 1.
+        -- (* EX2: LOOP-DONE *)
+          hexploit first_loop_iter; eauto.
+          { rewrite app_nil_l. ss. }
+          i. des; ss; cycle 1.
+          ++ (* EX2: FIRST-DONE *)
+            hexploit IH; [exact RTC2 | |]; eauto; ss. i. des.
+            hexploit STOP_SND.
+            { unfold STOP. right. right. left. esplits; ss. }
+            i. des. subst.
+            destruct thr_term, thr_term'; ss. subst.
+
+            hexploit lift_cont; eauto. ss.
+            instantiate (1 := [Cont.loopcont (TState.regs ts) r0
+                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]). intro TR_X. apply relax_base in TR_X.
+
+            eexists (tr3 ++ tr_x ++ tr0).
+            esplits; eauto; cycle 1.
+            { rewrite <- app_assoc. apply trace_refine_app; [| apply trace_refine_eq].
+              rewrite app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq.
+            }
+            { unfold STOP. i. des; try by destruct c_pfx; ss.
+              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              hexploit STOP_FST.
+              { unfold STOP. repeat right. esplits; ss. }
+              i. des. ss.
+            }
+            eapply Thread.rtc_step_trans; cycle 1.
+            { eapply Thread.rtc_step_trans; eauto.
+              rewrite <- (app_nil_r tr0). apply relax_base in FIRST_DONE1.
+              eapply Thread.rtc_step_trans; eauto.
+              econs 2; (try by econs; eauto); cycle 1.
+              { rewrite app_nil_l. ss. }
+              econs; [| rewrite app_nil_l]; ss. econs 13. econs; ss.
+            }
+            econs 2; cycle 2.
+            { rewrite app_nil_l. ss. }
+            { econs; eauto. }
+            move TR3 at bottom. unguard. des; ss; subst; ss.
+            ** econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 7. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 8. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss. econs; eauto.
+            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+              eapply Thread.rtc_step_trans; eauto.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 12. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 7. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 8. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss. econs; eauto.
+          ++ (* EX2: FIRST-ONGOING *)
+            symmetry in FIRST_ONGOING. rewrite <- app_nil_l in FIRST_ONGOING.
+            apply snoc_eq_snoc in FIRST_ONGOING. des. subst. cleartriv.
+            hexploit IH; [exact RTC2 | |]; eauto; ss. i. des.
+            hexploit STOP_SND.
+            { unfold STOP. right. left. esplits; ss. }
+            i. des. subst.
+
+            destruct thr_term, thr_term'; ss. subst.
+
+            hexploit lift_cont; eauto. ss.
+            instantiate (1 := [Cont.loopcont (TState.regs ts) r0
+                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]). intro TR_X. apply relax_base in TR_X.
+
+            eexists (tr3 ++ tr_x ++ []).
+            esplits; eauto; cycle 1.
+            { rewrite <- app_assoc. apply trace_refine_app; eauto; [|apply trace_refine_eq]. rewrite app_nil_r. eauto. }
+            { unfold STOP. i. des; try by destruct c_pfx; ss.
+              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              hexploit STOP_FST.
+              { unfold STOP. repeat right. esplits; ss. }
+              i. des. ss.
+            }
+            eapply Thread.rtc_step_trans; cycle 1.
+            { eapply Thread.rtc_step_trans; eauto.
+              econs 2; (try by econs; eauto); cycle 1.
+              { rewrite app_nil_l. ss. }
+              econs; [| rewrite app_nil_l]; ss. econs 13. econs; ss.
+            }
+            econs 2; cycle 2.
+            { rewrite app_nil_l. ss. }
+            { econs; eauto. }
+            move TR3 at bottom. unguard. des; ss; subst; ss.
+            ** econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 7. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 8. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss. econs; eauto.
+            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+              eapply Thread.rtc_step_trans; eauto.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 12. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 7. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 8. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss. econs; eauto.
+        -- (* EX2: LOOP-ONGOING *)
+          hexploit first_loop_iter; eauto.
+          { rewrite app_nil_l. ss. }
+          i. des; ss; cycle 1.
+          ++ (* EX2: FIRST-DONE *)
+            hexploit IH; [exact RTC2 | |]; eauto; ss. i. des.
+            hexploit STOP_SND.
+            { unfold STOP. right. right. left. esplits; ss. }
+            i. des. subst.
+            destruct thr_term, thr_term'; ss. subst.
+
+            hexploit lift_cont; eauto. ss.
+            instantiate (1 := [Cont.loopcont (TState.regs ts) r0
+                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]). intro TR_X. apply relax_base in TR_X.
+
+            eexists (tr3 ++ tr_x ++ tr0).
+            esplits; eauto; cycle 1.
+            { rewrite <- app_assoc. apply trace_refine_app; [| apply trace_refine_eq].
+              rewrite app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq.
+            }
+            { unfold STOP. i. des; try by destruct c_pfx; ss.
+              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              hexploit STOP_FST.
+              { unfold STOP. repeat right. esplits; ss. }
+              i. des. ss.
+            }
+            eapply Thread.rtc_step_trans; cycle 1.
+            { eapply Thread.rtc_step_trans; eauto.
+              apply relax_base in FIRST_DONE1. ss.
+            }
+            econs 2; cycle 2.
+            { rewrite app_nil_l. ss. }
+            { econs; eauto. }
+            move TR3 at bottom. unguard. des; ss; subst; ss.
+            ** econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 7. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 8. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss. econs; eauto.
+            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+              eapply Thread.rtc_step_trans; eauto.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 12. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 7. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 8. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss. econs; eauto.
+          ++ (* EX2: FIRST-ONGOING *)
+            hexploit IH; [exact RTC2 | |]; eauto; ss. i. des.
+            i. des. subst.
+
+            destruct thr_term, thr_term'; ss. subst.
+
+            hexploit lift_cont; eauto. ss.
+            instantiate (1 := [Cont.loopcont (TState.regs ts) r0
+                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]). intro TR_X. apply relax_base in TR_X.
+
+            eexists (tr3 ++ tr_x). eexists s_x.
+            eexists (c_x ++ [Cont.loopcont (TState.regs ts) r0 (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]).
+            eexists ts_x.
+            splits; ss; cycle 1.
+            { rewrite <- app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq. }
+            { unfold STOP. i. des; try by destruct c_pfx; ss.
+              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              hexploit STOP_FST.
+              { unfold STOP. repeat right. esplits; ss. }
+              i. des. subst. ss.
+            }
+            { unfold STOP. i. des; try by destruct c_pfx0; ss.
+              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              hexploit STOP_SND.
+              { unfold STOP. repeat right. esplits; ss. }
+              i. des. subst. ss.
+            }
+            eapply Thread.rtc_step_trans; eauto.
+            econs 2; cycle 2.
+            { rewrite app_nil_l. ss. }
+            { econs; eauto. }
+            move TR3 at bottom. unguard. des; ss; subst; ss.
+            ** econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 7. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 8. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss. econs; eauto.
+            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+              eapply Thread.rtc_step_trans; eauto.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 12. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 7. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 8. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss. econs; eauto.
+      * (* EX1: CHKPT-REPLAY *)
+        rewrite app_nil_r in *. subst.
+        hexploit lift_mmt; eauto. ss. instantiate (1 := mid). i. des.
+        specialize COMPL_EQ with (mid ++ [lab]).
+        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs)) (mid ++ [lab])).
+        { clear - NIN.
+          unfold Ensembles.In. unfold Complement. ii.
+          inv H. induction mid; inv MID; eauto.
+        }
+        symmetry in COMPL_EQ.
+        hexploit Mmts.proj_inv; eauto.
+        unfold Mmts.proj. ss. condtac; ss.
+        funtac. intro MID_MMT.
+        inv ONE; inv NORMAL_STEP0; inv STEP; inv STMT; ss; rewrite MID_MMT in MMT0; rewrite MMT in MMT0; inv MMT0; ss.
+        { lia. }
+
+        assert (TS_EQ: VRegMap.add r (Mmt.val mmt0) (TState.regs ts) =
+                       VRegMap.add r (Mmt.val mmt0) (TState.regs ts1)).
+        { move TR3 at bottom. unguard. des; ss; [rewrite LAST_FIRST1 | rewrite LAST_CONT2]; ss; rewrite VRegMap.add_add; ss. }
+
+        move RTC1 at bottom. rewrite VRegMap.add_add in *.
+        hexploit loop_cases; [| apply RTC1 | | |]; eauto.
+        { rewrite app_nil_l. ss. }
+        i. rewrite TS_EQ in *. des; ss; cycle 1.
+        -- (* EX2: LOOP-DONE *)
+          hexploit first_loop_iter; eauto.
+          { rewrite app_nil_l. ss. }
+          i. des; ss; cycle 1.
+          ++ (* EX2: FIRST-DONE *)
+            hexploit IH; [exact RTC0 | |]; eauto; ss. i. des.
+            hexploit STOP_SND.
+            { unfold STOP. right. right. left. esplits; ss. }
+            i. des. subst.
+            destruct thr_term, thr_term'; ss. subst.
+
+            hexploit lift_cont; eauto. ss.
+            instantiate (1 := [Cont.loopcont (TState.regs ts) r
+                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]). intro TR_X. apply relax_base in TR_X.
+
+            eexists (tr3 ++ tr_x ++ tr0).
+            esplits; eauto; cycle 1.
+            { rewrite <- app_assoc. apply trace_refine_app; [| apply trace_refine_eq].
+              rewrite app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq.
+            }
+            { unfold STOP. i. des; try by destruct c_pfx; ss.
+              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              hexploit STOP_FST.
+              { unfold STOP. repeat right. esplits; ss. }
+              i. des. ss.
+            }
+            eapply Thread.rtc_step_trans; cycle 1.
+            { eapply Thread.rtc_step_trans; eauto.
+              rewrite <- (app_nil_r tr0). apply relax_base in FIRST_DONE1.
+              eapply Thread.rtc_step_trans; eauto.
+              econs 2; (try by econs; eauto); cycle 1.
+              { rewrite app_nil_l. ss. }
+              econs; [| rewrite app_nil_l]; ss. econs 13. econs; ss.
+            }
+            econs 2; cycle 2.
+            { rewrite app_nil_l. ss. }
+            { econs; eauto. }
+            move TR3 at bottom. unguard. des; ss; subst; ss.
+            ** econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 9. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs; eauto. rewrite VRegMap.add_add. ss.
+            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+              eapply Thread.rtc_step_trans; eauto.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 12. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 9. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs; eauto. rewrite VRegMap.add_add. ss.
+          ++ (* EX2: FIRST-ONGOING *)
+            symmetry in FIRST_ONGOING. rewrite <- app_nil_l in FIRST_ONGOING.
+            apply snoc_eq_snoc in FIRST_ONGOING. des. subst. cleartriv.
+            hexploit IH; [exact RTC0 | |]; eauto; ss. i. des.
+            hexploit STOP_SND.
+            { unfold STOP. right. left. esplits; ss. }
+            i. des. subst.
+
+            destruct thr_term, thr_term'; ss. subst.
+
+            hexploit lift_cont; eauto. ss.
+            instantiate (1 := [Cont.loopcont (TState.regs ts) r
+                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]). intro TR_X. apply relax_base in TR_X.
+
+            eexists (tr3 ++ tr_x ++ []).
+            esplits; eauto; cycle 1.
+            { rewrite <- app_assoc. apply trace_refine_app; eauto; [|apply trace_refine_eq]. rewrite app_nil_r. eauto. }
+            { unfold STOP. i. des; try by destruct c_pfx; ss.
+              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              hexploit STOP_FST.
+              { unfold STOP. repeat right. esplits; ss. }
+              i. des. ss.
+            }
+            eapply Thread.rtc_step_trans; cycle 1.
+            { eapply Thread.rtc_step_trans; eauto.
+              econs 2; (try by econs; eauto); cycle 1.
+              { rewrite app_nil_l. ss. }
+              econs; [| rewrite app_nil_l]; ss. econs 13. econs; ss.
+            }
+            econs 2; cycle 2.
+            { rewrite app_nil_l. ss. }
+            { econs; eauto. }
+            move TR3 at bottom. unguard. des; ss; subst; ss.
+            ** econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 9. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs; eauto. rewrite VRegMap.add_add. ss.
+            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+              eapply Thread.rtc_step_trans; eauto.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 12. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 9. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs; eauto. rewrite VRegMap.add_add. ss.
+        -- (* EX2: LOOP-ONGOING *)
+          hexploit first_loop_iter; eauto.
+          { rewrite app_nil_l. ss. }
+          i. des; ss; cycle 1.
+          ++ (* EX2: FIRST-DONE *)
+            hexploit IH; [exact RTC0 | |]; eauto; ss. i. des.
+            hexploit STOP_SND.
+            { unfold STOP. right. right. left. esplits; ss. }
+            i. des. subst.
+            destruct thr_term, thr_term'; ss. subst.
+
+            hexploit lift_cont; eauto. ss.
+            instantiate (1 := [Cont.loopcont (TState.regs ts) r
+                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]). intro TR_X. apply relax_base in TR_X.
+
+            eexists (tr3 ++ tr_x ++ tr0).
+            esplits; eauto; cycle 1.
+            { rewrite <- app_assoc. apply trace_refine_app; [| apply trace_refine_eq].
+              rewrite app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq.
+            }
+            { unfold STOP. i. des; try by destruct c_pfx; ss.
+              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              hexploit STOP_FST.
+              { unfold STOP. repeat right. esplits; ss. }
+              i. des. ss.
+            }
+            eapply Thread.rtc_step_trans; cycle 1.
+            { eapply Thread.rtc_step_trans; eauto.
+              apply relax_base in FIRST_DONE1. ss.
+            }
+            econs 2; cycle 2.
+            { rewrite app_nil_l. ss. }
+            { econs; eauto. }
+            move TR3 at bottom. unguard. des; ss; subst; ss.
+            ** econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 9. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs; eauto. rewrite VRegMap.add_add. ss.
+            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+              eapply Thread.rtc_step_trans; eauto.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 12. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 9. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs; eauto. rewrite VRegMap.add_add. ss.
+          ++ (* EX2: FIRST-ONGOING *)
+            hexploit IH; [exact RTC0 | |]; eauto; ss. i. des.
+            i. des. subst.
+
+            destruct thr_term, thr_term'; ss. subst.
+
+            hexploit lift_cont; eauto. ss.
+            instantiate (1 := [Cont.loopcont (TState.regs ts) r
+                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]). intro TR_X. apply relax_base in TR_X.
+
+            eexists (tr3 ++ tr_x). eexists s_x.
+            eexists (c_x ++ [Cont.loopcont (TState.regs ts) r (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]).
+            eexists ts_x.
+            splits; ss; cycle 1.
+            { rewrite <- app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq. }
+            { unfold STOP. i. des; try by destruct c_pfx; ss.
+              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              hexploit STOP_FST.
+              { unfold STOP. repeat right. esplits; ss. }
+              i. des. subst. ss.
+            }
+            { unfold STOP. i. des; try by destruct c_pfx0; ss.
+              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              hexploit STOP_SND.
+              { unfold STOP. repeat right. esplits; ss. }
+              i. des. subst. ss.
+            }
+            eapply Thread.rtc_step_trans; eauto.
+            econs 2; cycle 2.
+            { rewrite app_nil_l. ss. }
+            { econs; eauto. }
+            move TR3 at bottom. unguard. des; ss; subst; ss.
+            ** econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 9. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs; eauto. rewrite VRegMap.add_add. ss.
+            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+              eapply Thread.rtc_step_trans; eauto.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 12. econs; eauto; ss. }
+                rewrite app_nil_r. ss.
+              }
+              ss.
+              econs 2; cycle 2.
+              { rewrite app_nil_l. ss. }
+              { econs.
+                { econs 9. econs; eauto. }
+                rewrite app_nil_r. ss.
+              }
+              econs; eauto. rewrite VRegMap.add_add. ss.
 Qed.
