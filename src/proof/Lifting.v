@@ -9,6 +9,7 @@ From Memento Require Import Utils.
 From Memento Require Import Syntax.
 From Memento Require Import Semantics.
 From Memento Require Import Common.
+From Memento Require Import Env.
 
 Set Implicit Arguments.
 
@@ -57,7 +58,7 @@ Qed.
 Lemma lift_mmt:
   (* TODO: Define mid_pfx from ts.regs *)
   forall envt env labs s mid_pfx mids tr ts mmts thr_term,
-    envt labs s ->
+    EnvType.rw_judge envt labs s ->
     mmt_id_exp mid_pfx labs = mids ->
     Thread.rtc env [] tr (Thread.mk s [] ts mmts) thr_term ->
   <<UNLIFT:
@@ -74,7 +75,28 @@ Lemma lift_mmt:
         (Thread.mk s [] ts ((mmts |₁ mids) ⊎ (mmts_a |₁ (Complement _ mids))))
         (Thread.mk thr_term.(Thread.stmt) thr_term.(Thread.cont) thr_term.(Thread.ts) ((thr_term.(Thread.mmts) |₁ mids) ⊎ (mmts_a |₁ (Complement _ mids))))>>.
 Proof.
-  admit.
+  intros envt env labs s mid_pfx mids tr ts mmts thr_term ENVT. revert mid_pfx mids tr ts mmts thr_term.
+  induction ENVT; intros mid_pfx mids tr ts mmts thr_term EXP RTC; subst; ss.
+  - inv RTC; ss.
+    { splits; ss; try by econs; eauto. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv RTC; ss.
+    { splits; ss; try by econs; eauto. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv RTC; ss.
+    { splits; ss; try by econs; eauto. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv RTC; ss.
+    { splits; ss; try by econs; eauto. }
+    (* inv ONE. inv NORMAL_STEP; inv STEP; ss. *)
+    admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
 Qed.
 
 

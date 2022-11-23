@@ -31,8 +31,7 @@ Lemma chkpt_fn_cases:
       /\ thr_term.(Thread.stmt) = [] /\ thr_term.(Thread.cont) = []
       /\ (c' = Cont.fncont rmap r [] -> thr_term.(Thread.mmts) = mmts_r)>>.
 Proof.
-  intros env tr thr thr_term c c' rmap r RTC.
-  generalize dependent rmap. generalize dependent r. generalize dependent c. generalize dependent c'.
+  intros env tr thr thr_term c c' rmap r RTC. revert rmap r c c'.
   induction RTC; i; subst.
   { left. esplits; eauto. econs; ss. }
   guardH H0.
@@ -225,8 +224,7 @@ Lemma loop_cases:
         /\ thr_term.(Thread.cont) = []
         /\ thr_term.(Thread.ts) = TState.mk rmap ts_r.(TState.time)>>.
 Proof.
-  intros env tr thr thr_term c c' rmap r s RTC.
-  generalize dependent rmap. generalize dependent r. generalize dependent s. generalize dependent c. generalize dependent c'.
+  intros env tr thr thr_term c c' rmap r s RTC. revert rmap r s c c'.
   induction RTC; i.
   { left. esplits; eauto. econs; ss. }
   guardH H0. subst.
@@ -434,8 +432,7 @@ Lemma first_loop_iter:
           (Thread.mk ((stmt_continue e) :: s1) [c'] ts1 mmts1)
           thr_term>>.
 Proof.
-  intros env tr thr thr_term c c' rmap r s RTC.
-  generalize dependent rmap. generalize dependent r. generalize dependent s. generalize dependent c.
+  intros env tr thr thr_term c c' rmap r s RTC. revert rmap r s c.
   induction RTC; i; subst.
   { left. esplits; eauto. econs; ss. }
   inversion ONE. inv NORMAL_STEP; inv STEP; destruct thr; ss; subst.
@@ -591,8 +588,7 @@ Lemma last_loop_iter:
           (Thread.mk s1 c1 ts1 mmts1)
           (Thread.mk thr_term.(Thread.stmt) c_pfx_term thr_term.(Thread.ts) thr_term.(Thread.mmts)).
 Proof.
-  intros env tr thr thr_term c_pfx c' rmap r s RTC.
-  generalize dependent rmap. generalize dependent r. generalize dependent s. generalize dependent c_pfx.
+  intros env tr thr thr_term c_pfx c' rmap r s RTC. revert rmap r s c_pfx.
   induction RTC; i; subst.
   { esplits; eauto; try by econs; eauto. rewrite app_nil_r. ss. }
   inversion ONE. inv NORMAL_STEP; inv STEP; destruct thr; ss; subst.
