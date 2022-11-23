@@ -439,7 +439,133 @@ Lemma first_loop_iter:
           thr_term
           [c']>>.
 Proof.
-  admit.
+  intros env tr thr thr_term c c' rmap r s RTC.
+  generalize dependent rmap. generalize dependent r. generalize dependent s. generalize dependent c.
+  induction RTC; i; subst.
+  { left. esplits; eauto. econs; ss. }
+  inversion ONE. inv NORMAL_STEP; inv STEP; destruct thr; ss; subst.
+  - apply app_inv_tail in BASE. subst.
+    hexploit IHRTC; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs. econs; ss.
+    + rewrite FIRST_DONE. right. esplits; eauto.
+      econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs. econs; ss.
+  - apply app_inv_tail in BASE. subst.
+    hexploit IHRTC; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; ss; cycle 1.
+      { instantiate (1 := [_]). ss. }
+      econs; [| rewrite app_nil_r]; ss. econs 2. econs; ss.
+    + rewrite FIRST_DONE. right. esplits; eauto.
+      { instantiate (1 := _ :: _). ss. }
+      econs 2; eauto; ss; cycle 1.
+      { instantiate (1 := [_]). ss. }
+      econs; [| rewrite app_nil_r]; ss. econs 2. econs; ss.
+  - apply app_inv_tail in BASE. subst.
+    hexploit IHRTC; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; ss; cycle 1.
+      { instantiate (1 := [_]). ss. }
+      econs; [| rewrite app_nil_r]; ss. econs 3. econs; ss.
+    + rewrite FIRST_DONE. right. esplits; eauto.
+      { instantiate (1 := _ :: _). ss. }
+      econs 2; eauto; ss; cycle 1.
+      { instantiate (1 := [_]). ss. }
+      econs; [| rewrite app_nil_r]; ss. econs 3. econs; ss.
+  - apply app_inv_tail in BASE. subst.
+    hexploit IHRTC; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; ss; cycle 1.
+      { instantiate (1 := [_]). ss. }
+      econs; [| rewrite app_nil_r]; ss. econs 4. econs; eauto; ss.
+    + rewrite FIRST_DONE. right. esplits; eauto.
+      { instantiate (1 := _ :: _). ss. }
+      econs 2; eauto; ss; cycle 1.
+      { instantiate (1 := [_]). ss. }
+      econs; [| rewrite app_nil_r]; ss. econs 4. econs; eauto; ss.
+  - apply app_inv_tail in BASE. subst.
+    hexploit IHRTC; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; ss; cycle 1.
+      { instantiate (1 := [_]). ss. }
+      econs; [| rewrite app_nil_r]; ss. econs 5. econs; eauto; ss.
+    + rewrite FIRST_DONE. right. esplits; eauto.
+      { instantiate (1 := _ :: _). ss. }
+      econs 2; eauto; ss; cycle 1.
+      { instantiate (1 := [_]). ss. }
+      econs; [| rewrite app_nil_r]; ss. econs 5. econs; eauto; ss.
+  - apply app_inv_tail in BASE. subst.
+    hexploit IHRTC; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 6. econs; eauto; ss.
+    + rewrite FIRST_DONE. right. esplits; eauto.
+      econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 6. econs; eauto; ss.
+  - rewrite app_comm_cons in BASE. apply app_inv_tail in BASE. subst.
+    hexploit IHRTC; try rewrite app_comm_cons; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 7. econs; eauto; ss.
+    + rewrite FIRST_DONE. right. esplits; eauto.
+      econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 7. econs; eauto; ss.
+  - rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. apply app_inv_tail in CONT. subst.
+    hexploit IHRTC; try rewrite app_comm_cons; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 8. econs; eauto; ss.
+    + rewrite FIRST_DONE. right. esplits; eauto.
+      econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 8. econs; eauto; ss.
+  - apply app_inv_tail in BASE. subst.
+    hexploit IHRTC; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 9. econs; eauto; ss.
+    + rewrite FIRST_DONE. right. esplits; eauto.
+      econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 9. econs; eauto; ss.
+  - apply app_inv_tail in BASE. subst.
+    hexploit IHRTC; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 10. econs; eauto; ss.
+    + rewrite FIRST_DONE. right. esplits; eauto.
+      econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 10. econs; eauto; ss.
+  - rewrite app_comm_cons in BASE. apply app_inv_tail in BASE. subst.
+    hexploit IHRTC; try rewrite app_comm_cons; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 11. econs; eauto; ss.
+    + rewrite FIRST_DONE. right. esplits; eauto.
+      econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 11. econs; eauto; ss.
+  - apply app_inv_tail in BASE. subst.
+    destruct c' as [| t c']; ss.
+    + subst. right. esplits; try by econs; eauto.
+      repeat rewrite app_nil_l. ss.
+    + destruct t; ss. inv CONT.
+      hexploit IHRTC; try rewrite app_comm_cons; eauto. i. des.
+      * left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
+        econs; eauto; [| rewrite app_nil_r]; ss.
+        try by econs; econs; eauto.
+      * right. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
+        econs; eauto; [| rewrite app_nil_r]; ss.
+        try by econs; econs; eauto.
+  - rewrite app_comm_cons in CONT. apply app_inv_tail in CONT. subst.
+    hexploit IHRTC; try rewrite app_comm_cons; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 13. econs; eauto; ss.
+    + rewrite FIRST_DONE. right. esplits; eauto.
+      econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 13. econs; eauto; ss.
+  - rewrite app_comm_cons in BASE. apply app_inv_tail in BASE. subst.
+    hexploit IHRTC; try rewrite app_comm_cons; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 14. econs; eauto; ss.
+    + rewrite FIRST_DONE. right. esplits; eauto.
+      econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 14. econs; eauto; ss.
+  - rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. apply app_inv_tail in CONT. subst.
+    hexploit IHRTC; try rewrite app_comm_cons; eauto. i. des.
+    + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 15. econs; eauto; ss.
+    + rewrite FIRST_DONE. right. esplits; eauto.
+      econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs 15. econs; eauto; ss.
 Qed.
 
 Lemma last_loop_iter:
