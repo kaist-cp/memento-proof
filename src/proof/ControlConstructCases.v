@@ -12,26 +12,26 @@ From Memento Require Import Common.
 Set Implicit Arguments.
 
 Lemma chkpt_fn_cases:
-  forall env c_base tr thr thr_term c c' rmap r,
-    c_base = [] ->
-    Thread.rtc env tr thr thr_term c_base ->
+  forall env tr thr thr_term c c' rmap r,
+    Thread.rtc env [] tr thr thr_term ->
     thr.(Thread.cont) = c ++ [c'] ->
     ((exists mid, c' = Cont.chkptcont rmap r [] mid) \/ c' = Cont.fncont rmap r []) ->
   <<CALL_ONGOING:
     exists c_pfx, thr_term.(Thread.cont) = c_pfx ++ [c']
-    /\ Thread.rtc env tr
+    /\ Thread.rtc env [] tr
         (Thread.mk thr.(Thread.stmt) c thr.(Thread.ts) thr.(Thread.mmts))
-        (Thread.mk thr_term.(Thread.stmt) c_pfx thr_term.(Thread.ts) thr_term.(Thread.mmts))
-        []>>
+        (Thread.mk thr_term.(Thread.stmt) c_pfx thr_term.(Thread.ts) thr_term.(Thread.mmts))>>
   \/
   <<CALL_DONE:
     exists s_r c_r ts_r mmts_r e,
-      Thread.rtc env tr (Thread.mk thr.(Thread.stmt) c thr.(Thread.ts) thr.(Thread.mmts)) (Thread.mk ((stmt_return e) :: s_r) c_r ts_r mmts_r) []
+      Thread.rtc env [] tr
+        (Thread.mk thr.(Thread.stmt) c thr.(Thread.ts) thr.(Thread.mmts))
+        (Thread.mk ((stmt_return e) :: s_r) c_r ts_r mmts_r)
       /\ Thread.step env [] (Thread.mk ((stmt_return e) :: s_r) (c_r ++ [c']) ts_r mmts_r) thr_term
       /\ thr_term.(Thread.stmt) = [] /\ thr_term.(Thread.cont) = []
       /\ (c' = Cont.fncont rmap r [] -> thr_term.(Thread.mmts) = mmts_r)>>.
 Proof.
-  intros env c_base tr thr thr_term c c' rmap r EMPTY RTC.
+  intros env tr thr thr_term c c' rmap r RTC.
   generalize dependent rmap. generalize dependent r. generalize dependent c. generalize dependent c'.
   induction RTC; i; subst.
   { left. esplits; eauto. econs; ss. }
@@ -210,24 +210,22 @@ Proof.
 Qed.
 
 Lemma loop_cases:
-  forall env c_base tr thr thr_term c c' rmap r s,
-    c_base = [] ->
-    Thread.rtc env tr thr thr_term c_base ->
+  forall env tr thr thr_term c c' rmap r s,
+    Thread.rtc env [] tr thr thr_term ->
     thr.(Thread.cont) = c ++ [c'] ->
     c' = Cont.loopcont rmap r s [] ->
-  <<LOOP_ONGOING: Thread.rtc env tr thr thr_term [c']>>
+  <<LOOP_ONGOING: Thread.rtc env [c'] tr thr thr_term>>
   \/
   <<LOOP_DONE:
       exists s_r ts_r,
-        Thread.rtc env tr
+        Thread.rtc env [c'] tr
           thr
           (Thread.mk (stmt_break :: s_r) [c'] ts_r thr_term.(Thread.mmts))
-          [c']
         /\ thr_term.(Thread.stmt) = []
         /\ thr_term.(Thread.cont) = []
         /\ thr_term.(Thread.ts) = TState.mk rmap ts_r.(TState.time)>>.
 Proof.
-  intros env c_base tr thr thr_term c c' rmap r s EMPTY RTC.
+  intros env tr thr thr_term c c' rmap r s RTC.
   generalize dependent rmap. generalize dependent r. generalize dependent s. generalize dependent c. generalize dependent c'.
   induction RTC; i.
   { left. esplits; eauto. econs; ss. }
@@ -417,27 +415,24 @@ Qed.
 
 Lemma first_loop_iter:
   forall env tr thr thr_term c c' rmap r s,
-    Thread.rtc env tr thr thr_term [c'] ->
+    Thread.rtc env [c'] tr thr thr_term ->
     thr.(Thread.cont) = c ++ [c'] ->
     c' = Cont.loopcont rmap r s [] ->
   <<FIRST_ONGOING:
       exists c_pfx, thr_term.(Thread.cont) = c_pfx ++ [c']
-        /\ Thread.rtc env tr
+        /\ Thread.rtc env [] tr
             (Thread.mk thr.(Thread.stmt) c thr.(Thread.ts) thr.(Thread.mmts))
-            (Thread.mk thr_term.(Thread.stmt) c_pfx thr_term.(Thread.ts) thr_term.(Thread.mmts))
-            []>>
+            (Thread.mk thr_term.(Thread.stmt) c_pfx thr_term.(Thread.ts) thr_term.(Thread.mmts))>>
   \/
   <<FIRST_DONE:
     exists tr1 tr2 e s1 ts1 mmts1,
       tr = tr1 ++ tr2
-      /\ Thread.rtc env tr1
+      /\ Thread.rtc env [] tr1
           (Thread.mk thr.(Thread.stmt) c thr.(Thread.ts) thr.(Thread.mmts))
           (Thread.mk ((stmt_continue e) :: s1) [] ts1 mmts1)
-          []
-      /\ Thread.rtc env tr2
+      /\ Thread.rtc env [c'] tr2
           (Thread.mk ((stmt_continue e) :: s1) [c'] ts1 mmts1)
-          thr_term
-          [c']>>.
+          thr_term>>.
 Proof.
   intros env tr thr thr_term c c' rmap r s RTC.
   generalize dependent rmap. generalize dependent r. generalize dependent s. generalize dependent c.
@@ -569,31 +564,59 @@ Proof.
 Qed.
 
 Lemma last_loop_iter:
-  forall env tr thr thr_term c c' rmap r s,
-    Thread.rtc env tr thr thr_term [c'] ->
-    thr.(Thread.cont) = c ++ [c'] ->
+  forall env tr thr thr_term c_pfx c' rmap r s,
+    Thread.rtc env [c'] tr thr thr_term ->
+    thr.(Thread.cont) = c_pfx ++ [c'] ->
     c' = Cont.loopcont rmap r s [] ->
-  exists tr1 tr2 s1 c1 ts1 mmts1 c_pfx,
+  exists tr1 tr2 s1 c1 ts1 mmts1 c_pfx_term,
     tr = tr1 ++ tr2
-    /\ __guard__(<<LAST_FIRST:
-          s1 = thr.(Thread.stmt) /\ c1 = c
+    /\ __guard__(
+        <<LAST_FIRST:
+          s1 = thr.(Thread.stmt)
+          /\ c1 = c_pfx
           /\ ts1 = thr.(Thread.ts) /\ mmts1 = thr.(Thread.mmts)
           /\ tr1 = []>>
-       \/
-       <<LAST_CONT:
+        \/
+        <<LAST_CONT:
           exists e s_r ts_r,
-            Thread.rtc env tr1
+            Thread.rtc env [c'] tr1
               thr
               (Thread.mk ((stmt_continue e) :: s_r) [c'] ts_r mmts1)
-              [c']
             /\ s1 = s
             /\ c1 = []
-            /\ ts1 = TState.mk (VRegMap.add r (sem_expr ts_r.(TState.regs) e) rmap) ts_r.(TState.time)>>)
-    /\ thr_term.(Thread.cont) = c_pfx ++ [c']
-    /\ Thread.rtc env tr2
+            /\ ts1 = TState.mk (VRegMap.add r (sem_expr ts_r.(TState.regs) e) rmap) ts_r.(TState.time)>>
+      )
+    /\ thr_term.(Thread.cont) = c_pfx_term ++ [c']
+    /\ Thread.rtc env [] tr2
           (Thread.mk s1 c1 ts1 mmts1)
-          (Thread.mk thr_term.(Thread.stmt) c_pfx thr_term.(Thread.ts) thr_term.(Thread.mmts))
-          [].
+          (Thread.mk thr_term.(Thread.stmt) c_pfx_term thr_term.(Thread.ts) thr_term.(Thread.mmts)).
 Proof.
-  admit.
+  intros env tr thr thr_term c_pfx c' rmap r s RTC.
+  generalize dependent rmap. generalize dependent r. generalize dependent s. generalize dependent c_pfx.
+  induction RTC; i; subst.
+  { esplits; eauto; try by econs; eauto. rewrite app_nil_r. ss. }
+  inversion ONE. inv NORMAL_STEP; inv STEP; ss; subst.
+  - destruct thr. ss. subst.
+    apply app_inv_tail in BASE. subst.
+    hexploit IHRTC; eauto. i. unguard. des; subst; ss.
+    + esplits; [| left | |]; ss; eauto.
+      { rewrite app_nil_l. ss. }
+      econs 2; eauto; [| rewrite app_nil_l]; ss.
+      econs; [| rewrite app_nil_r]; ss. econs. econs; ss.
+    + esplits; [| right | |]; ss; eauto. esplits; eauto.
+      econs 2; eauto.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
 Qed.

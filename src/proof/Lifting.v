@@ -13,15 +13,13 @@ From Memento Require Import Common.
 Set Implicit Arguments.
 
 Lemma lift_cont:
-  forall env tr thr thr_term c_base c,
-    c_base = [] ->
-    Thread.rtc env tr thr thr_term c_base ->
-  Thread.rtc env tr
+  forall env tr thr thr_term c,
+    Thread.rtc env [] tr thr thr_term ->
+  Thread.rtc env c tr
     (Thread.mk thr.(Thread.stmt) (thr.(Thread.cont) ++ c) thr.(Thread.ts) thr.(Thread.mmts))
-    (Thread.mk thr_term.(Thread.stmt) (thr_term.(Thread.cont) ++ c) thr_term.(Thread.ts) thr_term.(Thread.mmts))
-    c.
+    (Thread.mk thr_term.(Thread.stmt) (thr_term.(Thread.cont) ++ c) thr_term.(Thread.ts) thr_term.(Thread.mmts)).
 Proof.
-  i. induction H0; subst.
+  i. induction H; subst.
   { econs; eauto. }
   econs 2; eauto. econs; ss.
   inv ONE. rewrite app_nil_r in *. subst. inv NORMAL_STEP; inv STEP; ss.
@@ -48,8 +46,8 @@ Qed.
 
 Lemma relax_base:
   forall env tr thr thr_term c_base,
-    Thread.rtc env tr thr thr_term c_base ->
-  Thread.rtc env tr thr thr_term [].
+    Thread.rtc env c_base tr thr thr_term ->
+  Thread.rtc env [] tr thr thr_term.
 Proof.
   i. induction H.
   { econs; eauto. }
@@ -61,22 +59,20 @@ Lemma lift_mmt:
   forall envt env labs s mid_pfx mids tr ts mmts thr_term,
     envt labs s ->
     mmt_id_exp mid_pfx labs = mids ->
-    Thread.rtc env tr (Thread.mk s [] ts mmts) thr_term [] ->
+    Thread.rtc env [] tr (Thread.mk s [] ts mmts) thr_term ->
   <<UNLIFT:
-    Thread.rtc env tr
-    (Thread.mk s [] ts (mmts | mids))
-    (Thread.mk thr_term.(Thread.stmt) thr_term.(Thread.cont) thr_term.(Thread.ts) (thr_term.(Thread.mmts) | mids))
-    []>>
+    Thread.rtc env [] tr
+    (Thread.mk s [] ts (mmts |₁ mids))
+    (Thread.mk thr_term.(Thread.stmt) thr_term.(Thread.cont) thr_term.(Thread.ts) (thr_term.(Thread.mmts) |₁ mids))>>
   /\
   <<COMPL_EQ:
-    forall mid, (mmts | (Complement _ mids)) mid = (thr_term.(Thread.mmts) | (Complement _ mids)) mid>>
+    forall mid, (mmts |₁ (Complement _ mids)) mid = (thr_term.(Thread.mmts) |₁ (Complement _ mids)) mid>>
   /\
   <<LIFT:
     forall mmts_a,
-      Thread.rtc env tr
-        (Thread.mk s [] ts ((mmts | mids) ⊎ (mmts_a | (Complement _ mids))))
-        (Thread.mk thr_term.(Thread.stmt) thr_term.(Thread.cont) thr_term.(Thread.ts) ((thr_term.(Thread.mmts) | mids) ⊎ (mmts_a | (Complement _ mids))))
-        []>>.
+      Thread.rtc env [] tr
+        (Thread.mk s [] ts ((mmts |₁ mids) ⊎ (mmts_a |₁ (Complement _ mids))))
+        (Thread.mk thr_term.(Thread.stmt) thr_term.(Thread.cont) thr_term.(Thread.ts) ((thr_term.(Thread.mmts) |₁ mids) ⊎ (mmts_a |₁ (Complement _ mids))))>>.
 Proof.
   admit.
 Qed.

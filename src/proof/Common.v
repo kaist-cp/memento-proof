@@ -22,7 +22,7 @@ Definition STOP (s: list Stmt) (c: list Cont.t) :=
 Lemma stop_means_no_step :
   forall env tr thr thr_term,
     STOP thr.(Thread.stmt) thr.(Thread.cont) ->
-    Thread.rtc env tr thr thr_term [] ->
+    Thread.rtc env [] tr thr thr_term ->
   thr = thr_term /\ tr = [].
 Proof.
   i. inv H0; ss.

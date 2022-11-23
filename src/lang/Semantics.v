@@ -118,7 +118,7 @@ Module Mmts.
   Qed.
 End Mmts.
 
-Notation "mmts | mids" := (Mmts.proj mmts mids) (at level 62).
+Notation "mmts |₁ mids" := (Mmts.proj mmts mids) (at level 62).
 Notation "mmts1 ⊎ mmts2" := (Mmts.union mmts1 mmts2) (at level 64).
 
 Module Event.
@@ -470,35 +470,37 @@ Module Thread.
   .
   Hint Constructors step : semantics.
 
-  Inductive step_base_cont (env: Env.t) (tr: list Event.t) (thr1 thr2: t) (c: list Cont.t): Prop :=
+  Inductive step_base_cont (env: Env.t) (c: list Cont.t) (tr: list Event.t) (thr1 thr2: t): Prop :=
   | step_base_cont_intro
       c'
       (NORMAL_STEP: step env tr thr1 thr2)
       (BASE: thr2.(cont) = c' ++ c)
   .
 
-  Inductive rtc (env: Env.t) (tr: list Event.t) (thr thr_term: t) (c: list Cont.t): Prop :=
+  Inductive rtc (env: Env.t) (c: list Cont.t) : list Event.t -> t -> t -> Prop :=
   | rtc_refl
-      (THR: thr = thr_term)
-      (TRACE: tr = [])
+      thr
+      : rtc env c [] thr thr
   | rtc_trans
-      tr0 thr0 tr1
-      (ONE: step_base_cont env tr0 thr thr0 c)
-      (RTC: rtc env tr1 thr0 thr_term c)
+      tr tr0 tr1 thr thr0 thr_term
+      (ONE: step_base_cont env c tr0 thr thr0)
+      (RTC: rtc env c tr1 thr0 thr_term)
       (TRACE: tr = tr0 ++ tr1)
+      : rtc env c tr thr thr_term
   .
 
-  Inductive tc (env: Env.t) (tr: list Event.t) (thr thr_term: t) (c: list Cont.t): Prop :=
+  Inductive tc (env: Env.t) (c: list Cont.t) : list Event.t -> t -> t -> Prop :=
   | tc_intro
-      tr0 thr0 tr1
-      (ONE: step_base_cont env tr0 thr thr0 c)
-      (RTC: rtc env tr1 thr0 thr_term c)
+      tr tr0 tr1 thr thr0 thr_term
+      (ONE: step_base_cont env c tr0 thr thr0)
+      (RTC: rtc env c tr1 thr0 thr_term)
       (TRACE: tr = tr0 ++ tr1)
+      : tc env c tr thr thr_term
   .
 
   Lemma step_time_mon :
-    forall env tr thr thr_term c,
-      rtc env tr thr thr_term c ->
+    forall env c tr thr thr_term,
+      rtc env c tr thr thr_term ->
     thr.(ts).(TState.time) <= thr_term.(ts).(TState.time).
   Proof.
     i. induction H; subst; eauto.
@@ -508,9 +510,9 @@ Module Thread.
 
   Lemma rtc_step_trans :
     forall env tr1 thr1 thr2 c tr2 thr3,
-      rtc env tr1 thr1 thr2 c ->
-      rtc env tr2 thr2 thr3 c ->
-    rtc env (tr1 ++ tr2) thr1 thr3 c.
+      rtc env c tr1 thr1 thr2 ->
+      rtc env c tr2 thr2 thr3 ->
+    rtc env c (tr1 ++ tr2) thr1 thr3.
   Proof.
     i. generalize dependent thr3. generalize dependent tr2.
     induction H.
