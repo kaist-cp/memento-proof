@@ -514,7 +514,7 @@ Module Thread.
       rtc env c tr2 thr2 thr3 ->
     rtc env c (tr1 ++ tr2) thr1 thr3.
   Proof.
-    i. revert thr3 tr2.
+    i. revert H0. revert thr3 tr2.
     induction H.
     { subst. i. rewrite app_nil_l. ss. }
     i. subst.
