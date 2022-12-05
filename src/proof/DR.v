@@ -18,20 +18,6 @@ From Memento Require Import ControlConstructCases.
 
 Set Implicit Arguments.
 
-Lemma read_only_loop:
-  forall env envt tr s c ts' r ts mmts thr_term,
-    EnvType.ro_judge envt s ->
-    c = Cont.loopcont ts' r s [] ->
-    first_loop_iter_ind env c tr (Thread.mk s [c] ts mmts) thr_term ->
-  [] ~ tr /\ mmts = thr_term.(Thread.mmts).
-Proof.
-  i. subst. induction H1.
-  - subst. ss.
-    admit.
-  - des. splits; ss.
-    admit.
-Qed.
-
 Lemma read_only_statements:
   forall env envt s tr ts mmts thr_term,
     TypeSystem.judge env envt ->
@@ -67,12 +53,8 @@ Proof.
     hexploit loop_cases; eauto.
     { rewrite app_nil_l. ss. }
     i. des.
-    + hexploit first_loop_iter2; eauto.
-      { rewrite app_nil_l. ss. }
-      i. eapply read_only_loop; eauto.
-    + hexploit first_loop_iter2; eauto.
-      { rewrite app_nil_l. ss. }
-      intro FL. hexploit read_only_loop; eauto.
+    + admit.
+    + admit.
   - inv H; ss.
     { split; ss. apply trace_refine_eq. }
     inv ONE. inv NORMAL_STEP; inv STEP; ss.

@@ -552,37 +552,6 @@ Proof.
       econs; [| rewrite app_nil_r]; ss. econs 15. econs; eauto; ss.
 Qed.
 
-Inductive first_loop_iter_ind (env: Env.t) (c: Cont.t): list Event.t -> Thread.t -> Thread.t -> Prop :=
-| first_ongoing
-  c' c_pfx tr thr thr_term
-  (CONT: thr.(Thread.cont) = c' ++ [c])
-  (C_PFX: thr_term.(Thread.cont) = c_pfx ++ [c])
-  (RTC: Thread.rtc env [] tr
-          (Thread.mk thr.(Thread.stmt) c' thr.(Thread.ts) thr.(Thread.mmts))
-          (Thread.mk thr_term.(Thread.stmt) c_pfx thr_term.(Thread.ts) thr_term.(Thread.mmts)))
-  : first_loop_iter_ind env c tr thr thr_term
-| first_done
-  tr thr thr_term
-  tr1 tr2 c' e s1 ts1 mmts1
-  (CONT: thr.(Thread.cont) = c' ++ [c])
-  (TRACE: tr = tr1 ++ tr2)
-  (ITER: Thread.rtc env [] tr1
-          (Thread.mk thr.(Thread.stmt) c' thr.(Thread.ts) thr.(Thread.mmts))
-          (Thread.mk ((stmt_continue e) :: s1) [] ts1 mmts1))
-  (NEXT: first_loop_iter_ind env c tr2 (Thread.mk ((stmt_continue e) :: s1) [c] ts1 mmts1) thr_term)
-  : first_loop_iter_ind env c tr thr thr_term
-.
-
-Lemma first_loop_iter2:
-  forall env tr thr thr_term c c' rmap r s,
-    Thread.rtc env [c'] tr thr thr_term ->
-    thr.(Thread.cont) = c ++ [c'] ->
-    c' = Cont.loopcont rmap r s [] ->
-  first_loop_iter_ind env c' tr thr thr_term.
-Proof.
-  admit.
-Qed.
-
 Lemma last_loop_iter:
   forall env tr thr thr_term c_pfx c' rmap r s,
     Thread.rtc env [c'] tr thr thr_term ->
