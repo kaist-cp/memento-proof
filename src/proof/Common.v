@@ -13,7 +13,7 @@ From Memento Require Import Env.
 Set Implicit Arguments.
 
 Definition STOP (s: list Stmt) (c: list Cont.t) :=
-  <<EMPTY: (s = [] /\ c = [])>>
+  <<EMPTY: s = []>>
   \/ <<BREAK: (exists s_rem, s = stmt_break :: s_rem /\ c = [])>>
   \/ <<CONTINUE: (exists s_rem e, s = (stmt_continue e) :: s_rem /\ c = [])>>
   \/ <<RETURN: (exists s_rem e, s = (stmt_return e) :: s_rem /\ (Cont.Loops c))>>
