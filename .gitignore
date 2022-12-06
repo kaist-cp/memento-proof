@@ -14,3 +14,5 @@ Makefile.coq.conf
 *.v.d
 *.glob
 *.aux
+
+.vscode
