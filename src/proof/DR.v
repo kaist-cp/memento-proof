@@ -332,7 +332,7 @@ Proof.
         { rewrite app_nil_l. ss. }
         { econs; eauto. ss. rewrite app_nil_r. ss. }
         hexploit lift_cont; eauto. ss. instantiate (1 := [Cont.fncont (TState.regs ts) r0 []]). intros TR_X. apply relax_base in TR_X.
-        rewrite <- (app_nil_r tr_x). eapply Thread.rtc_step_trans; eauto.
+        rewrite <- (app_nil_r tr_x). eapply Thread.rtc_trans; eauto.
         econs 2.
         { econs; eauto. rewrite app_nil_l. ss. }
         { econs; eauto. }
@@ -511,7 +511,7 @@ Proof.
               apply trace_refine_eq.
             }
             unfold STOP. i. des; try by destruct c_pfx; ss.
-            inv RETURN. apply Cont.loops_app in RETURN0. des.
+            inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
             hexploit STOP_SND.
             { unfold STOP. repeat right. esplits; ss. }
             i. des. ss.
@@ -586,7 +586,7 @@ Proof.
               apply trace_refine_eq.
             }
             unfold STOP. i. des; try by destruct c_pfx; ss.
-            inv RETURN. apply Cont.loops_app in RETURN0. des.
+            inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
             hexploit STOP_SND.
             { unfold STOP. repeat right. esplits; ss. }
             i. des. ss.
@@ -659,15 +659,15 @@ Proof.
               rewrite app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq.
             }
             { unfold STOP. i. des; try by destruct c_pfx_term; ss.
-              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
               hexploit STOP_FST.
               { unfold STOP. repeat right. esplits; ss. }
               i. des. ss.
             }
-            eapply Thread.rtc_step_trans; cycle 1.
-            { eapply Thread.rtc_step_trans; eauto.
+            eapply Thread.rtc_trans; cycle 1.
+            { eapply Thread.rtc_trans; eauto.
               rewrite <- (app_nil_r tr2). apply relax_base in FIRST_DONE1.
-              eapply Thread.rtc_step_trans; eauto.
+              eapply Thread.rtc_trans; eauto.
               econs 2; (try by econs; eauto); cycle 1.
               { rewrite app_nil_l. ss. }
               econs; [| rewrite app_nil_l]; ss. econs 13. econs; ss.
@@ -690,7 +690,7 @@ Proof.
               }
               ss. econs; eauto.
             ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
-              eapply Thread.rtc_step_trans; eauto.
+              eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.
@@ -729,13 +729,13 @@ Proof.
             esplits; eauto; cycle 1.
             { rewrite <- app_assoc. apply trace_refine_app; eauto; [|apply trace_refine_eq]. rewrite app_nil_r. eauto. }
             { unfold STOP. i. des; try by destruct c_pfx_term; ss.
-              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
               hexploit STOP_FST.
               { unfold STOP. repeat right. esplits; ss. }
               i. des. ss.
             }
-            eapply Thread.rtc_step_trans; cycle 1.
-            { eapply Thread.rtc_step_trans; eauto.
+            eapply Thread.rtc_trans; cycle 1.
+            { eapply Thread.rtc_trans; eauto.
               econs 2; (try by econs; eauto); cycle 1.
               { rewrite app_nil_l. ss. }
               econs; [| rewrite app_nil_l]; ss. econs 13. econs; ss.
@@ -758,7 +758,7 @@ Proof.
               }
               ss. econs; eauto.
             ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
-              eapply Thread.rtc_step_trans; eauto.
+              eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.
@@ -800,13 +800,13 @@ Proof.
               rewrite app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq.
             }
             { unfold STOP. i. des; try by destruct c_pfx_term; ss.
-              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
               hexploit STOP_FST.
               { unfold STOP. repeat right. esplits; ss. }
               i. des. ss.
             }
-            eapply Thread.rtc_step_trans; cycle 1.
-            { eapply Thread.rtc_step_trans; eauto.
+            eapply Thread.rtc_trans; cycle 1.
+            { eapply Thread.rtc_trans; eauto.
               apply relax_base in FIRST_DONE1. ss.
             }
             econs 2; cycle 2.
@@ -827,7 +827,7 @@ Proof.
               }
               ss. econs; eauto.
             ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
-              eapply Thread.rtc_step_trans; eauto.
+              eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.
@@ -864,18 +864,18 @@ Proof.
             splits; ss; cycle 1.
             { rewrite <- app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq. }
             { unfold STOP. i. des; try by destruct c_pfx_term; ss.
-              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
               hexploit STOP_FST.
               { unfold STOP. repeat right. esplits; ss. }
               i. des. subst. ss.
             }
             { unfold STOP. i. des; try by destruct c_pfx; ss.
-              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
               hexploit STOP_SND.
               { unfold STOP. repeat right. esplits; ss. }
               i. des. subst. ss.
             }
-            eapply Thread.rtc_step_trans; eauto.
+            eapply Thread.rtc_trans; eauto.
             econs 2; cycle 2.
             { rewrite app_nil_l. ss. }
             { econs; eauto. }
@@ -894,7 +894,7 @@ Proof.
               }
               ss. econs; eauto.
             ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
-              eapply Thread.rtc_step_trans; eauto.
+              eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.
@@ -960,15 +960,15 @@ Proof.
               rewrite app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq.
             }
             { unfold STOP. i. des; try by destruct c_pfx_term; ss.
-              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
               hexploit STOP_FST.
               { unfold STOP. repeat right. esplits; ss. }
               i. des. ss.
             }
-            eapply Thread.rtc_step_trans; cycle 1.
-            { eapply Thread.rtc_step_trans; eauto.
+            eapply Thread.rtc_trans; cycle 1.
+            { eapply Thread.rtc_trans; eauto.
               rewrite <- (app_nil_r tr2). apply relax_base in FIRST_DONE1.
-              eapply Thread.rtc_step_trans; eauto.
+              eapply Thread.rtc_trans; eauto.
               econs 2; (try by econs; eauto); cycle 1.
               { rewrite app_nil_l. ss. }
               econs; [| rewrite app_nil_l]; ss. econs 13. econs; ss.
@@ -985,7 +985,7 @@ Proof.
               }
               ss. rewrite VRegMap.add_add. econs; eauto.
             ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
-              eapply Thread.rtc_step_trans; eauto.
+              eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.
@@ -1018,13 +1018,13 @@ Proof.
             esplits; eauto; cycle 1.
             { rewrite <- app_assoc. apply trace_refine_app; eauto; [|apply trace_refine_eq]. rewrite app_nil_r. eauto. }
             { unfold STOP. i. des; try by destruct c_pfx_term; ss.
-              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
               hexploit STOP_FST.
               { unfold STOP. repeat right. esplits; ss. }
               i. des. ss.
             }
-            eapply Thread.rtc_step_trans; cycle 1.
-            { eapply Thread.rtc_step_trans; eauto.
+            eapply Thread.rtc_trans; cycle 1.
+            { eapply Thread.rtc_trans; eauto.
               econs 2; (try by econs; eauto); cycle 1.
               { rewrite app_nil_l. ss. }
               econs; [| rewrite app_nil_l]; ss. econs 13. econs; ss.
@@ -1041,7 +1041,7 @@ Proof.
               }
               rewrite VRegMap.add_add. econs; eauto.
             ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
-              eapply Thread.rtc_step_trans; eauto.
+              eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.
@@ -1077,13 +1077,13 @@ Proof.
               rewrite app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq.
             }
             { unfold STOP. i. des; try by destruct c_pfx_term; ss.
-              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
               hexploit STOP_FST.
               { unfold STOP. repeat right. esplits; ss. }
               i. des. ss.
             }
-            eapply Thread.rtc_step_trans; cycle 1.
-            { eapply Thread.rtc_step_trans; eauto.
+            eapply Thread.rtc_trans; cycle 1.
+            { eapply Thread.rtc_trans; eauto.
               apply relax_base in FIRST_DONE1. ss.
             }
             econs 2; cycle 2.
@@ -1098,7 +1098,7 @@ Proof.
               }
               rewrite VRegMap.add_add. econs; eauto.
             ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
-              eapply Thread.rtc_step_trans; eauto.
+              eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.
@@ -1129,18 +1129,18 @@ Proof.
             splits; ss; cycle 1.
             { rewrite <- app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq. }
             { unfold STOP. i. des; try by destruct c_pfx_term; ss.
-              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
               hexploit STOP_FST.
               { unfold STOP. repeat right. esplits; ss. }
               i. des. subst. ss.
             }
             { unfold STOP. i. des; try by destruct c_pfx; ss.
-              inv RETURN. apply Cont.loops_app in RETURN0. des.
+              inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
               hexploit STOP_SND.
               { unfold STOP. repeat right. esplits; ss. }
               i. des. subst. ss.
             }
-            eapply Thread.rtc_step_trans; eauto.
+            eapply Thread.rtc_trans; eauto.
             econs 2; cycle 2.
             { rewrite app_nil_l. ss. }
             { econs; eauto. }
@@ -1153,7 +1153,7 @@ Proof.
               }
               rewrite VRegMap.add_add. econs; eauto.
             ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
-              eapply Thread.rtc_step_trans; eauto.
+              eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.

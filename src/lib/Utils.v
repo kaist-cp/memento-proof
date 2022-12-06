@@ -966,3 +966,20 @@ Proof.
   - esplits. rewrite app_nil_l. eauto.
   - eexists (a :: l'). eexists a0. eauto.
 Qed.
+
+Lemma list_cons_to_app A (l: list A) (a: A) :
+  a :: l = [a] ++ l.
+Proof.
+  ss.
+Qed.
+
+Lemma list_ne_triv A (l l': list A) :
+  l' <> [] -> l = l' ++ l -> False.
+Proof.
+  i. destruct l'; ss.
+  rewrite <- HahnList.rev_eq in H0. ss.
+  rewrite rev_app_distr in H0. rewrite <- app_assoc in H0.
+  symmetry in H0. rewrite <- app_nil_r in H0.
+  apply app_inv_head in H0.
+  rewrite <- HahnList.rev_eq in H0. ss. rewrite rev_app_distr in H0. ss.
+Qed.

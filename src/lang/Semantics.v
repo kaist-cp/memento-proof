@@ -60,7 +60,7 @@ Module Cont.
       exists rmap r s_body s_cont,
       c = loopcont rmap r s_body s_cont.
 
-  Lemma loops_app :
+  Lemma loops_app_distr :
     forall c1 c2,
       Loops (c1 ++ c2) ->
     Loops c1 /\ Loops c2.
@@ -481,7 +481,7 @@ Module Thread.
   | rtc_refl
       thr
       : rtc env c [] thr thr
-  | rtc_trans
+  | rtc_tc
       tr tr0 tr1 thr thr0 thr_term
       (ONE: step_base_cont env c tr0 thr thr0)
       (RTC: rtc env c tr1 thr0 thr_term)
@@ -490,25 +490,29 @@ Module Thread.
   .
 
   Inductive tc (env: Env.t) (c: list Cont.t) : list Event.t -> t -> t -> Prop :=
-  | tc_intro
-      tr tr0 tr1 thr thr0 thr_term
-      (ONE: step_base_cont env c tr0 thr thr0)
-      (RTC: rtc env c tr1 thr0 thr_term)
+  | tc_step
+      tr thr thr_term
+      (ONE: step_base_cont env c tr thr thr_term)
+      : tc env c tr thr thr_term
+  | tc_trans
+      tr tr0 tr1 thr thr_m thr_term
+      (TC1: tc env c tr0 thr thr_m)
+      (TC2: tc env c tr1 thr_m thr_term)
       (TRACE: tr = tr0 ++ tr1)
       : tc env c tr thr thr_term
   .
 
-  Lemma step_time_mon :
-    forall env c tr thr thr_term,
-      rtc env c tr thr thr_term ->
-    thr.(ts).(TState.time) <= thr_term.(ts).(TState.time).
-  Proof.
-    i. induction H; subst; eauto.
-    etrans; cycle 1; eauto.
-    inv ONE. inv NORMAL_STEP; inv STEP; ss; lia.
-  Qed.
+  Inductive rtc' (env: Env.t) (c: list Cont.t) : list Event.t -> t -> t -> Prop :=
+  | rtc_refl'
+      thr
+      : rtc' env c [] thr thr
+  | rtc_tc'
+      tr thr thr_term
+      (TC: tc env c tr thr thr_term)
+      : rtc' env c tr thr thr_term
+  .
 
-  Lemma rtc_step_trans :
+  Lemma rtc_trans :
     forall env tr1 thr1 thr2 c tr2 thr3,
       rtc env c tr1 thr1 thr2 ->
       rtc env c tr2 thr2 thr3 ->
@@ -520,6 +524,30 @@ Module Thread.
     i. subst.
     hexploit IHrtc; eauto. i.
     econs 2; eauto. rewrite app_assoc. ss.
+  Qed.
+
+  Lemma rtc_rtc' :
+    forall env c tr thr thr_term,
+      rtc env c tr thr thr_term <-> rtc' env c tr thr thr_term.
+  Proof.
+    i. split.
+    - i. induction H; [econs |].
+      inv IHrtc.
+      { rewrite app_nil_r. econs 2. econs. ss. }
+      econs. econs 2; eauto. econs. ss.
+    - i. inv H; [econs |].
+      induction TC.
+      { econs; eauto; [econs |]. rewrite app_nil_r. ss. }
+      subst. eapply rtc_trans; eauto.
+  Qed.
+
+  Lemma step_time_mon :
+    forall env c tr thr thr_term,
+      rtc env c tr thr thr_term ->
+    thr.(ts).(TState.time) <= thr_term.(ts).(TState.time).
+  Proof.
+    i. induction H; ss.
+    inv ONE. inv NORMAL_STEP; inv STEP; ss; lia.
   Qed.
 End Thread.
 
