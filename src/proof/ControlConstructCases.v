@@ -11,6 +11,35 @@ From Memento Require Import Common.
 
 Set Implicit Arguments.
 
+Lemma seq_cases:
+  forall env tr s_l s_r ts mmts thr_term,
+    Thread.rtc env [] tr (Thread.mk (s_l ++ s_r) [] ts mmts) thr_term ->
+  <<SEQ_LEFT_ONGOING:
+    exists s_m c_m,
+      Thread.rtc env [] tr
+        (Thread.mk s_l [] ts mmts)
+        (Thread.mk s_m c_m thr_term.(Thread.ts) thr_term.(Thread.mmts))
+    /\ (thr_term.(Thread.stmt), thr_term.(Thread.cont)) = (s_m, c_m) ++₁ s_r
+    /\ s_m <> [] /\ c_m <> []>>
+  \/
+  <<SEQ_LEFT_DONE:
+    exists ts0 mmts0 tr_l tr_r,
+      Thread.rtc env [] tr_l
+        (Thread.mk s_l [] ts mmts)
+        (Thread.mk [] [] ts0 mmts0)
+      /\ Thread.rtc env [] tr_r
+          (Thread.mk s_r [] ts0 mmts0)
+          thr_term>>.
+Proof.
+  intros env tr s_l. revert env tr. induction s_l.
+  { i. rewrite app_nil_l in H.
+    right. esplits; eauto. econs.
+  }
+  i. inv H; ss.
+  { left. esplits; try econs; eauto; ss.  }
+
+Qed.
+
 Lemma chkpt_fn_cases:
   forall env tr thr thr_term c c' rmap r,
     Thread.rtc env [] tr thr thr_term ->
