@@ -9,6 +9,7 @@ From Memento Require Import Utils.
 From Memento Require Import Syntax.
 From Memento Require Import Semantics.
 From Memento Require Import Common.
+From Memento Require Import Lifting.
 
 Set Implicit Arguments.
 
@@ -210,24 +211,25 @@ Proof.
 Qed.
 
 Lemma loop_cases:
-  forall env tr thr thr_term c c' rmap r s,
+  forall env tr thr thr_term c c' rmap r s_body s_cont,
     Thread.rtc env [] tr thr thr_term ->
     thr.(Thread.cont) = c ++ [c'] ->
-    c' = Cont.loopcont rmap r s [] ->
+    c' = Cont.loopcont rmap r s_body s_cont ->
   <<LOOP_ONGOING: Thread.rtc env [c'] tr thr thr_term>>
   \/
   <<LOOP_DONE:
-      exists s_r ts_r,
-        Thread.rtc env [c'] tr
-          thr
-          (Thread.mk (stmt_break :: s_r) [c'] ts_r thr_term.(Thread.mmts))
-        /\ thr_term.(Thread.stmt) = []
-        /\ thr_term.(Thread.cont) = []
-        /\ thr_term.(Thread.ts) = TState.mk rmap ts_r.(TState.time)>>.
+      exists tr0 tr1 s_r ts_r mmts_r,
+        tr = tr0 ++ tr1
+        /\ Thread.rtc env [c'] tr0
+            thr
+            (Thread.mk (stmt_break :: s_r) [c'] ts_r mmts_r)
+        /\ Thread.rtc env [] tr1
+            (Thread.mk s_cont [] (TState.mk rmap ts_r.(TState.time)) mmts_r)
+            thr_term>>.
 Proof.
-  intros env tr thr thr_term c c' rmap r s RTC. revert rmap r s c c'.
+  intros env tr thr thr_term c c' rmap r s_body s_cont RTC. revert rmap r s_body s_cont c c'.
   induction RTC; i.
-  { left. esplits; eauto. econs; ss. }
+  { left. econs; ss. }
   guardH H0. subst.
   inversion ONE. rewrite app_nil_r in *. subst. inv NORMAL_STEP; inv STEP; ss.
   - hexploit IHRTC; eauto. i. des.
@@ -241,9 +243,10 @@ Proof.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite H]; ss. econs 2. econs; eauto.
     + right. esplits; eauto.
-      econs 2; eauto; cycle 1.
-      { instantiate (1 := [_]). ss. }
-      econs; [| rewrite H]; ss. econs 2. econs; eauto.
+      * econs 2; eauto; cycle 1.
+        { instantiate (1 := [_]). ss. }
+        econs; [| rewrite H]; ss. econs 2. econs; eauto.
+      *
   - hexploit IHRTC; eauto. i. des.
     + left. esplits; eauto. econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
@@ -728,6 +731,21 @@ Proof.
       econs 2; eauto.
 Qed.
 
+Lemma loop_ongoing_cont_explosion:
+  forall env tr thr thr_term c c'
+         rmap r s_body s_cont
+         c0 rmap0 r0 s_cont0 c_pfx,
+    Thread.rtc env [c'] tr thr thr_term ->
+    thr.(Thread.cont) = c ++ [c'] ->
+    c' = Cont.loopcont rmap r s_body s_cont ->
+    c0 = Cont.loopcont rmap0 r0 s_body s_cont0 ->
+  Thread.rtc env [c'] tr
+    (Thread.mk thr.(Thread.stmt) (c ++ [c0]) thr.(Thread.ts) thr.(Thread.mmts))
+    (Thread.mk thr_term.(Thread.stmt) (c_pfx ++ [c0]) thr_term.(Thread.ts) thr_term.(Thread.mmts)).
+Proof.
+  admit.
+Qed.
+
 Lemma seq_cases:
   forall env tr s_l s_r ts mmts thr_term,
     Thread.rtc env [] tr (Thread.mk (s_l ++ s_r) [] ts mmts) thr_term ->
@@ -786,7 +804,33 @@ Proof.
       econs; eauto. try by econs; econs; eauto.
     + econs; eauto. econs; eauto. try by econs; econs; eauto.
   - admit.
-  - admit.
+  - hexploit loop_cases; eauto.
+    { rewrite app_nil_l. ss. }
+    i. des.
+    + left. admit.
+    + subst. hexploit IHs_l; eauto. i. des; [left | right]; esplits; eauto.
+      * eapply Thread.rtc_trans; eauto. econs.
+        { econs.
+          { econs 11. econs; eauto. ss. }
+          rewrite app_nil_r. ss.
+        }
+        all: cycle 1.
+        { rewrite app_nil_l. ss. }
+        s. rewrite <- (app_nil_r tr0).
+        apply relax_base in LOOP_DONE0.
+        eapply Thread.rtc_trans.
+        { hexploit loop_ongoing_cont_explosion; eauto. ; cycle 2.
+          i. apply relax_base in H. repeat rewrite app_nil_l in H.
+          exact H.
+        }
+
+
+        rewrite <- (app_nil_l tr0). eapply Thread.rtc_trans.
+        { econs 2. }
+
+        ; eauto. [| rewrite app_nil_l]; ss.
+        econs; [| rewrite app_nil_l];eauto. try by econs; econs; eauto.
+      * econs; eauto. econs; eauto. try by econs; econs; eauto.
   - admit.
   - destruct c_loops; ss.
 Qed.
