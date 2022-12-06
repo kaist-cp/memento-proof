@@ -60,6 +60,13 @@ Module Cont.
       exists rmap r s_body s_cont,
       c = loopcont rmap r s_body s_cont.
 
+  Definition seq (c: t) (s: list Stmt) :=
+    match c with
+    | loopcont rmap r s_body s_cont => loopcont rmap r s_body (s_cont ++ s)
+    | fncont rmap r s_cont => fncont rmap r (s_cont ++ s)
+    | chkptcont rmap r s_cont mid => chkptcont rmap r (s_cont ++ s) mid
+    end.
+
   Lemma loops_app_distr :
     forall c1 c2,
       Loops (c1 ++ c2) ->
@@ -70,6 +77,17 @@ Module Cont.
     - i. apply H. apply in_app_iff. auto.
   Qed.
 End Cont.
+
+Fixpoint seq_sc_rec (s: list Stmt) (c: list Cont.t) (s': list Stmt) :=
+  match c with
+  | [] => (s ++ s', c)
+  | [c_base] => (s, [Cont.seq c_base s'])
+  | h :: t => (s, h :: snd (seq_sc_rec s t s'))
+  end.
+
+Definition seq_sc (sc: (list Stmt * list Cont.t)) (s': list Stmt) := seq_sc_rec (fst sc) (snd sc) s'.
+
+Notation "sc ++₁ s'" := (seq_sc sc s') (at level 62).
 
 Module TState.
   Inductive t := mk {
