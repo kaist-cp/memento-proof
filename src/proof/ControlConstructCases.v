@@ -14,10 +14,10 @@ From Memento Require Import Lifting.
 Set Implicit Arguments.
 
 Lemma chkpt_fn_cases:
-  forall env tr thr thr_term c c' rmap r,
+  forall env tr thr thr_term c c' rmap r s_cont,
     Thread.rtc env [] tr thr thr_term ->
     thr.(Thread.cont) = c ++ [c'] ->
-    ((exists mid, c' = Cont.chkptcont rmap r [] mid) \/ c' = Cont.fncont rmap r []) ->
+    ((exists mid, c' = Cont.chkptcont rmap r s_cont mid) \/ c' = Cont.fncont rmap r s_cont) ->
   <<CALL_ONGOING:
     exists c_pfx, thr_term.(Thread.cont) = c_pfx ++ [c']
     /\ Thread.rtc env [] tr
@@ -25,15 +25,14 @@ Lemma chkpt_fn_cases:
         (Thread.mk thr_term.(Thread.stmt) c_pfx thr_term.(Thread.ts) thr_term.(Thread.mmts))>>
   \/
   <<CALL_DONE:
-    exists s_r c_r ts_r mmts_r e,
-      Thread.rtc env [] tr
-        (Thread.mk thr.(Thread.stmt) c thr.(Thread.ts) thr.(Thread.mmts))
-        (Thread.mk ((stmt_return e) :: s_r) c_r ts_r mmts_r)
-      /\ Thread.step env [] (Thread.mk ((stmt_return e) :: s_r) (c_r ++ [c']) ts_r mmts_r) thr_term
-      /\ thr_term.(Thread.stmt) = [] /\ thr_term.(Thread.cont) = []
-      /\ (c' = Cont.fncont rmap r [] -> thr_term.(Thread.mmts) = mmts_r)>>.
+    exists tr0 tr1 s_r c_r ts_r mmts_r e,
+      tr = tr0 ++ tr1
+      /\ Thread.rtc env [] tr0
+          (Thread.mk thr.(Thread.stmt) c thr.(Thread.ts) thr.(Thread.mmts))
+          (Thread.mk ((stmt_return e) :: s_r) c_r ts_r mmts_r)
+      /\ Thread.rtc env [] tr1 (Thread.mk ((stmt_return e) :: s_r) (c_r ++ [c']) ts_r mmts_r) thr_term>>.
 Proof.
-  intros env tr thr thr_term c c' rmap r RTC. revert rmap r c c'.
+  intros env tr thr thr_term c c' rmap r s_cont RTC. revert rmap r c c' s_cont.
   induction RTC; i; subst.
   { left. esplits; eauto. econs; ss. }
   guardH H0.
@@ -48,7 +47,8 @@ Proof.
     + left. esplits; eauto. econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite app_nil_r]; ss. econs 2. econs; eauto.
-    + right. esplits; eauto.
+    + right. subst. esplits; eauto.
+      { instantiate (1 := _ :: _). ss. }
       econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite app_nil_r]; ss. econs 2. econs; eauto.
@@ -56,7 +56,8 @@ Proof.
     + left. esplits; eauto. econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite app_nil_r]; ss. econs 3. econs; eauto.
-    + right. esplits; eauto.
+    + right. subst. esplits; eauto.
+      { instantiate (1 := _ :: _). ss. }
       econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite app_nil_r]; ss. econs 3. econs; eauto.
@@ -64,7 +65,8 @@ Proof.
     + left. esplits; eauto. econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite app_nil_r]; ss. econs 4. econs; eauto.
-    + right. esplits; eauto.
+    + right. subst. esplits; eauto.
+      { instantiate (1 := _ :: _). ss. }
       econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite app_nil_r]; ss. econs 4. econs; eauto.
@@ -72,7 +74,8 @@ Proof.
     + left. esplits; eauto. econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite app_nil_r]; ss. econs 5. econs; eauto.
-    + right. esplits; eauto.
+    + right. subst. esplits; eauto.
+      { instantiate (1 := _ :: _). ss. }
       econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite app_nil_r]; ss. econs 5. econs; eauto.
@@ -104,10 +107,9 @@ Proof.
     + right.
       rewrite snoc_eq_snoc in CONT. des. subst.
       unguard. des; ss. inv H0.
-      hexploit stop_means_no_step; eauto.
-      { econs; eauto. }
-      i. inv H. ss. inv ONE. esplits; [econs | | | |]; eauto.
-      i. ss.
+      inv ONE.
+      esplits; [| econs |]; eauto; ss.
+      econs; eauto; [| rewrite app_nil_l]; ss. econs; eauto.
     + hexploit IHRTC; eauto. i. des.
       * left. esplits; eauto.
         econs 2; eauto; [| rewrite app_nil_l]; ss.
@@ -195,11 +197,9 @@ Proof.
     + right.
       rewrite snoc_eq_snoc in CONT. des. subst.
       unguard. des; ss. inv H0.
-      hexploit stop_means_no_step; eauto.
-      { econs; eauto. }
-      i. inv H. ss. esplits; eauto.
-      { econs; eauto. }
-      inv ONE. eauto.
+      inv ONE.
+      esplits; [| econs |]; eauto; ss.
+      econs; eauto; [| rewrite app_nil_l]; ss. econs; eauto.
     + hexploit IHRTC; eauto. i. des.
       * left. esplits; eauto.
         econs 2; eauto; [| rewrite app_nil_l]; ss.
@@ -374,9 +374,6 @@ Proof.
     des; subst.
     + rewrite <- app_nil_l in CONT. rewrite snoc_eq_snoc in CONT. des. subst.
       unguard. inv H0. rewrite app_nil_l in *.
-      (* hexploit stop_means_no_step; eauto.
-      { econs; eauto. }
-      i. inv H. ss. *)
       right. esplits; eauto; [rewrite app_nil_l |]; ss.
       econs; eauto.
     + hexploit IHRTC; eauto. i. des.
