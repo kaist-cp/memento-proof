@@ -737,30 +737,104 @@ Qed.
 Lemma loop_ongoing_cont_explosion:
   forall env tr thr thr_term c c'
          rmap r s_body s_cont
-         c0 rmap0 r0 s_cont0 c_pfx,
+         c0 s_cont0 c_pfx,
     Thread.rtc env [c'] tr thr thr_term ->
     thr.(Thread.cont) = c ++ [c'] ->
     thr_term.(Thread.cont) = c_pfx ++ [c'] ->
     c' = Cont.loopcont rmap r s_body s_cont ->
-    c0 = Cont.loopcont rmap0 r0 s_body s_cont0 ->
+    c0 = Cont.loopcont rmap r s_body s_cont0 ->
   Thread.rtc env [c0] tr
     (Thread.mk thr.(Thread.stmt) (c ++ [c0]) thr.(Thread.ts) thr.(Thread.mmts))
     (Thread.mk thr_term.(Thread.stmt) (c_pfx ++ [c0]) thr_term.(Thread.ts) thr_term.(Thread.mmts)).
 Proof.
-  admit.
-Qed.
-
-Lemma base_cont_orth:
-  forall env tr thr thr_term c_top c c_pfx,
-    Thread.rtc env thr.(Thread.cont) tr thr thr_term ->
-    thr.(Thread.cont) = c_top :: c ->
-    thr_term.(Thread.cont) = c_pfx ++ thr.(Thread.cont) ->
-  exists c',
-    Thread.rtc env (c_top :: c') tr
-      (Thread.mk thr.(Thread.stmt) (c_top :: c') thr.(Thread.ts) thr.(Thread.mmts))
-      (Thread.mk thr_term.(Thread.stmt) (c_pfx ++ c_top :: c') thr_term.(Thread.ts) thr_term.(Thread.mmts)).
-Proof.
-  admit.
+  intros env tr thr thr_term c c' rmap r s_body s_cont c0 s_cont0 c_pfx RTC.
+  revert c rmap r s_body s_cont c0 s_cont0 c_pfx.
+  induction RTC; i; subst.
+  { rewrite H in H0. apply app_inv_tail in H0. subst. econs. }
+  inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - rewrite H in BASE. apply app_inv_tail in BASE. subst.
+    econs; eauto; cycle 1.
+    { rewrite app_nil_l. ss. }
+     econs; ss. try by econs; econs; eauto.
+  - rewrite H in BASE. apply app_inv_tail in BASE. subst.
+    econs; eauto; cycle 1.
+    { instantiate (1 := [_]). ss. }
+     econs; ss. try by econs; econs; eauto.
+  - rewrite H in BASE. apply app_inv_tail in BASE. subst.
+    econs; eauto; cycle 1.
+    { instantiate (1 := [_]). ss. }
+     econs; ss. try by econs; econs; eauto.
+  - rewrite H in BASE. apply app_inv_tail in BASE. subst.
+    econs; eauto; cycle 1.
+    { instantiate (1 := [_]). ss. }
+     econs; ss. try by econs; econs; eauto.
+  - rewrite H in BASE. apply app_inv_tail in BASE. subst.
+    econs; eauto; cycle 1.
+    { instantiate (1 := [_]). ss. }
+     econs; ss. try by econs; econs; eauto.
+  - rewrite H in BASE. apply app_inv_tail in BASE. subst.
+    econs; eauto; cycle 1.
+    { rewrite app_nil_l. ss. }
+    econs; ss. try by econs; econs; eauto.
+  - rewrite H in BASE. rewrite app_comm_cons in BASE. apply app_inv_tail in BASE. subst.
+    rewrite STMT. econs; cycle 2.
+    { rewrite app_nil_l. ss. }
+    { econs; try by econs; econs; eauto. ss. instantiate (1 := _ :: _). ss. }
+    ss. hexploit IHRTC; eauto.
+    { rewrite H. instantiate (1 := _ :: _). ss. }
+    i. eauto.
+  - rewrite H in CONT. rewrite BASE in CONT. rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. apply app_inv_tail in CONT. subst.
+    econs; eauto; cycle 1.
+    { rewrite app_nil_l. ss. }
+    econs; ss. rewrite STMT. econs 8. econs; eauto; ss.
+    rewrite <- app_assoc. ss.
+  - rewrite H in BASE. apply app_inv_tail in BASE. subst.
+    econs; eauto; cycle 1.
+    { rewrite app_nil_l. ss. }
+    econs; ss. try by econs; econs; eauto.
+  - rewrite H in BASE. apply app_inv_tail in BASE. subst.
+    econs; eauto; cycle 1.
+    { rewrite app_nil_l. ss. }
+    econs; ss. try by econs; econs; eauto.
+  - rewrite H in BASE. rewrite app_comm_cons in BASE. apply app_inv_tail in BASE. subst.
+    rewrite STMT. econs; cycle 2.
+    { rewrite app_nil_l. ss. }
+    { econs; try by econs; econs; eauto. ss. instantiate (1 := _ :: _). ss. }
+    ss. hexploit IHRTC; eauto.
+    { rewrite H. instantiate (1 := _ :: _). ss. }
+    i. eauto.
+  - rewrite H in BASE. apply app_inv_tail in BASE. subst.
+    rewrite H in CONT. destruct c'; ss.
+    + inv CONT.
+      rewrite STMT. econs; cycle 2.
+      { rewrite app_nil_l. ss. }
+      { econs; try by econs; econs; eauto. ss. rewrite app_nil_l. ss. }
+      ss. hexploit IHRTC; eauto.
+      { rewrite H. rewrite app_nil_l. ss. }
+      i. ss. eauto.
+    + inv CONT.
+      rewrite STMT. econs; cycle 2.
+      { rewrite app_nil_l. ss. }
+      { econs; try by econs; econs; eauto. ss. instantiate (1 := _ :: _). ss. }
+      ss. hexploit IHRTC; eauto.
+      { rewrite H. instantiate (1 := _ :: _). ss. }
+      i. ss. eauto.
+  - rewrite H in CONT. rewrite BASE in CONT. rewrite app_comm_cons in CONT. apply app_inv_tail in CONT. subst.
+    econs; eauto; cycle 1.
+    { rewrite app_nil_l. ss. }
+    econs; ss. try by econs; econs; eauto.
+  - rewrite H in BASE. rewrite app_comm_cons in BASE. apply app_inv_tail in BASE. subst.
+    rewrite STMT. econs; cycle 2.
+    { rewrite app_nil_l. ss. }
+    { econs; try by econs; econs; eauto. ss. instantiate (1 := _ :: _). ss. }
+    ss. hexploit IHRTC; eauto.
+    { rewrite H. instantiate (1 := _ :: _). ss. }
+    i. eauto.
+  - rewrite H in CONT. rewrite BASE in CONT. rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. apply app_inv_tail in CONT. subst.
+    econs; eauto; cycle 1.
+    { rewrite app_nil_l. ss. }
+    econs; ss. rewrite STMT. econs 15. econs; eauto; ss.
+    rewrite <- app_assoc. ss.
 Qed.
 
 Lemma seq_cases:
