@@ -545,7 +545,10 @@ Proof.
         { rewrite app_nil_l. ss. }
         i. rewrite TS_EQ in *. des; ss; cycle 1.
         -- (* EX2: LOOP-DONE *)
-           hexploit first_loop_iter; eauto.
+          hexploit stop_means_no_step; eauto.
+          { econs; eauto. }
+          i. des. destruct thr_term'. inv H. ss.
+          hexploit first_loop_iter; eauto.
           { rewrite app_nil_l. ss. }
           i. des; ss; cycle 1.
           ++ (* EX2: FIRST-DONE *)
@@ -564,10 +567,10 @@ Proof.
             hexploit STOP_SND.
             { unfold STOP. right. left. esplits; ss. }
             i. des. subst. inv H0.
-            destruct thr_term, thr_term'; ss. subst.
-            esplits; eauto.
+            esplits; eauto; cycle 1.
+            { rewrite app_nil_r. ss. }
             hexploit trace_refine_app; [exact H5| | ]; ss; cycle 1.
-            { rewrite app_nil_r. eauto. }
+            { repeat rewrite app_nil_r. eauto. }
             apply trace_refine_eq.
         -- (* EX2: LOOP-ONGOING *)
           hexploit first_loop_iter; eauto.
@@ -585,7 +588,7 @@ Proof.
             hexploit STOP_FST.
             { unfold STOP. right. left. esplits; ss. }
             i. des. subst.
-            destruct thr_term, thr_term'; ss. subst.
+            destruct thr_term'. ss. subst.
             esplits; eauto.
             { hexploit trace_refine_app; [exact H4| | ]; ss; cycle 1.
               { rewrite app_nil_r. eauto. }
@@ -645,6 +648,9 @@ Proof.
         { rewrite app_nil_l. ss. }
         i. rewrite TS_EQ in *. des; ss; cycle 1.
         -- (* EX2: LOOP-DONE *)
+          hexploit stop_means_no_step; eauto.
+          { econs; eauto. }
+          i. des. destruct thr_term'. inv H. ss.
           hexploit first_loop_iter; eauto.
           { rewrite app_nil_l. ss. }
           i. des; ss; cycle 1.
@@ -653,7 +659,7 @@ Proof.
             hexploit STOP_SND.
             { unfold STOP. right. right. left. esplits; ss. }
             i. des. subst.
-            destruct thr_term, thr_term'; ss. subst.
+            destruct thr_term. ss. subst.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r0
@@ -662,7 +668,7 @@ Proof.
             eexists (tr3 ++ tr_x ++ tr2).
             esplits; eauto; cycle 1.
             { rewrite <- app_assoc. apply trace_refine_app; [| apply trace_refine_eq].
-              rewrite app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq.
+              rewrite app_nil_r. rewrite app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq.
             }
             { unfold STOP. i. des; try by destruct c_pfx_term; ss.
               inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
@@ -725,7 +731,7 @@ Proof.
             { unfold STOP. right. left. esplits; ss. }
             i. des. subst.
 
-            destruct thr_term, thr_term'; ss. subst.
+            destruct thr_term. ss. subst.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r0
@@ -733,7 +739,9 @@ Proof.
 
             eexists (tr3 ++ tr_x ++ []).
             esplits; eauto; cycle 1.
-            { rewrite <- app_assoc. apply trace_refine_app; eauto; [|apply trace_refine_eq]. rewrite app_nil_r. eauto. }
+            { rewrite <- app_assoc. apply trace_refine_app; eauto; [|apply trace_refine_eq].
+              repeat rewrite app_nil_r. eauto.
+            }
             { unfold STOP. i. des; try by destruct c_pfx_term; ss.
               inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
               hexploit STOP_FST.
@@ -946,6 +954,9 @@ Proof.
         { rewrite app_nil_l. ss. }
         i. rewrite TS_EQ in *. des; ss; cycle 1.
         -- (* EX2: LOOP-DONE *)
+          hexploit stop_means_no_step; eauto.
+          { econs; eauto. }
+          i. des. destruct thr_term'. inv H. ss.
           hexploit first_loop_iter; eauto.
           { rewrite app_nil_l. ss. }
           i. des; ss; cycle 1.
@@ -954,7 +965,7 @@ Proof.
             hexploit STOP_SND.
             { unfold STOP. right. right. left. esplits; ss. }
             i. des. subst.
-            destruct thr_term, thr_term'; ss. subst.
+            destruct thr_term. ss. subst.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r
@@ -963,7 +974,7 @@ Proof.
             eexists (tr3 ++ tr_x ++ tr2).
             esplits; eauto; cycle 1.
             { rewrite <- app_assoc. apply trace_refine_app; [| apply trace_refine_eq].
-              rewrite app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq.
+              rewrite app_nil_r. rewrite app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq.
             }
             { unfold STOP. i. des; try by destruct c_pfx_term; ss.
               inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
@@ -1014,7 +1025,7 @@ Proof.
             { unfold STOP. right. left. esplits; ss. }
             i. des. subst.
 
-            destruct thr_term, thr_term'; ss. subst.
+            destruct thr_term. ss. subst.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r
@@ -1022,7 +1033,9 @@ Proof.
 
             eexists (tr3 ++ tr_x ++ []).
             esplits; eauto; cycle 1.
-            { rewrite <- app_assoc. apply trace_refine_app; eauto; [|apply trace_refine_eq]. rewrite app_nil_r. eauto. }
+            { rewrite <- app_assoc. apply trace_refine_app; eauto; [|apply trace_refine_eq].
+              repeat rewrite app_nil_r. eauto.
+            }
             { unfold STOP. i. des; try by destruct c_pfx_term; ss.
               inv RETURN. apply Cont.loops_app_distr in RETURN0. des.
               hexploit STOP_FST.
