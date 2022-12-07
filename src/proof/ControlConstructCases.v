@@ -947,5 +947,7 @@ Proof.
         { s. econs. }
         ss.
   - admit.
+    (* hexploit chkpt_fn_cases; eauto.
+    { rewrite app_nil_l. ss. } *)
   - destruct c_loops; ss.
 Qed.

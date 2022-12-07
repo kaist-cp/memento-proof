@@ -423,6 +423,9 @@ Proof.
     { rewrite app_nil_l. ss. }
     i. des; cycle 1.
     + (* EX1: LOOP-DONE *)
+      hexploit stop_means_no_step; eauto.
+      { econs; eauto. }
+      i. des. destruct thr_term. inv H. ss.
       hexploit last_loop_iter; eauto; ss.
       { rewrite app_nil_l. ss. }
       i. des. subst. rename H0 into TR3.
@@ -464,7 +467,10 @@ Proof.
         { rewrite app_nil_l. ss. }
         i. rewrite TS_EQ in *. des; ss; cycle 1.
         -- (* EX2: LOOP-DONE *)
-           hexploit first_loop_iter; eauto.
+          hexploit stop_means_no_step; eauto.
+          { econs; eauto. }
+          i. des. destruct thr_term'. inv H. ss.
+          hexploit first_loop_iter; eauto.
           { rewrite app_nil_l. ss. }
           i. des; ss; cycle 1.
           ++ (* EX2: FIRST-DONE *)
@@ -483,10 +489,10 @@ Proof.
             hexploit STOP_SND.
             { unfold STOP. right. left. esplits; ss. }
             i. des. subst. inv H0.
-            destruct thr_term, thr_term'; ss. subst.
-            esplits; eauto.
+            esplits; eauto; cycle 1.
+            { rewrite app_nil_r. ss. }
             hexploit trace_refine_app; [exact H5| | ]; ss; cycle 1.
-            { rewrite app_nil_r. eauto. }
+            { repeat rewrite app_nil_r. eauto. }
             apply trace_refine_eq.
         -- (* EX2: LOOP-ONGOING *)
           hexploit first_loop_iter; eauto.
@@ -504,7 +510,7 @@ Proof.
             hexploit STOP_FST.
             { unfold STOP. right. left. esplits; ss. }
             i. des. subst.
-            destruct thr_term, thr_term'; ss. subst.
+            destruct thr_term'; ss. subst.
             esplits; eauto.
             { hexploit trace_refine_app; [exact H4| | ]; ss; cycle 1.
               { rewrite app_nil_r. eauto. }
