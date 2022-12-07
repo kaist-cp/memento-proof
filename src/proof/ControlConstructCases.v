@@ -242,16 +242,17 @@ Proof.
     + left. esplits; eauto. econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite H]; ss. econs 2. econs; eauto.
-    + right. esplits; eauto.
-      * econs 2; eauto; cycle 1.
-        { instantiate (1 := [_]). ss. }
-        econs; [| rewrite H]; ss. econs 2. econs; eauto.
-      *
+    + right. subst. esplits; eauto.
+      { instantiate (1 := _ :: _). ss. }
+      econs 2; eauto; cycle 1.
+      { instantiate (1 := [_]). ss. }
+      econs; [| rewrite H]; ss. econs 2. econs; eauto.
   - hexploit IHRTC; eauto. i. des.
     + left. esplits; eauto. econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite H]; ss. econs 3. econs; eauto.
-    + right. esplits; eauto.
+    + right. subst. esplits; eauto.
+      { instantiate (1 := _ :: _). ss. }
       econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite H]; ss. econs 3. econs; eauto.
@@ -259,7 +260,8 @@ Proof.
     + left. esplits; eauto. econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite H]; ss. econs 4. econs; eauto.
-    + right. esplits; eauto.
+    + right. subst. esplits; eauto.
+      { instantiate (1 := _ :: _). ss. }
       econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite H]; ss. econs 4. econs; eauto.
@@ -267,7 +269,8 @@ Proof.
     + left. esplits; eauto. econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite H]; ss. econs 5. econs; eauto.
-    + right. esplits; eauto.
+    + right. subst. esplits; eauto.
+      { instantiate (1 := _ :: _). ss. }
       econs 2; eauto; cycle 1.
       { instantiate (1 := [_]). ss. }
       econs; [| rewrite H]; ss. econs 5. econs; eauto.
@@ -371,10 +374,10 @@ Proof.
     des; subst.
     + rewrite <- app_nil_l in CONT. rewrite snoc_eq_snoc in CONT. des. subst.
       unguard. inv H0. rewrite app_nil_l in *.
-      hexploit stop_means_no_step; eauto.
+      (* hexploit stop_means_no_step; eauto.
       { econs; eauto. }
-      i. inv H. ss.
-      right. esplits; eauto.
+      i. inv H. ss. *)
+      right. esplits; eauto; [rewrite app_nil_l |]; ss.
       econs; eauto.
     + hexploit IHRTC; eauto. i. des.
       * left. esplits; eauto.
@@ -737,11 +740,25 @@ Lemma loop_ongoing_cont_explosion:
          c0 rmap0 r0 s_cont0 c_pfx,
     Thread.rtc env [c'] tr thr thr_term ->
     thr.(Thread.cont) = c ++ [c'] ->
+    thr_term.(Thread.cont) = c_pfx ++ [c'] ->
     c' = Cont.loopcont rmap r s_body s_cont ->
     c0 = Cont.loopcont rmap0 r0 s_body s_cont0 ->
-  Thread.rtc env [c'] tr
+  Thread.rtc env [c0] tr
     (Thread.mk thr.(Thread.stmt) (c ++ [c0]) thr.(Thread.ts) thr.(Thread.mmts))
     (Thread.mk thr_term.(Thread.stmt) (c_pfx ++ [c0]) thr_term.(Thread.ts) thr_term.(Thread.mmts)).
+Proof.
+  admit.
+Qed.
+
+Lemma base_cont_orth:
+  forall env tr thr thr_term c_top c c_pfx,
+    Thread.rtc env thr.(Thread.cont) tr thr thr_term ->
+    thr.(Thread.cont) = c_top :: c ->
+    thr_term.(Thread.cont) = c_pfx ++ thr.(Thread.cont) ->
+  exists c',
+    Thread.rtc env (c_top :: c') tr
+      (Thread.mk thr.(Thread.stmt) (c_top :: c') thr.(Thread.ts) thr.(Thread.mmts))
+      (Thread.mk thr_term.(Thread.stmt) (c_pfx ++ c_top :: c') thr_term.(Thread.ts) thr_term.(Thread.mmts)).
 Proof.
   admit.
 Qed.
@@ -807,7 +824,21 @@ Proof.
   - hexploit loop_cases; eauto.
     { rewrite app_nil_l. ss. }
     i. des.
-    + left. admit.
+    + assert (exists c_pfx, thr_term.(Thread.cont) = c_pfx ++ [Cont.loopcont (TState.regs ts) r s_body (s_l ++ s_r)]).
+      { rewrite Thread.rtc_rtc' in LOOP_ONGOING. inv LOOP_ONGOING; ss.
+        { exists []. rewrite app_nil_l. ss. }
+        hexploit Thread.tc_last; eauto. i. des.
+        inv H1. eauto.
+      }
+      des.
+      s. left. esplits.
+      * econs; [| | rewrite app_nil_l]; ss.
+        { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
+        s. hexploit loop_ongoing_cont_explosion; eauto; [rewrite app_nil_l|]; ss.
+        intros LOOP_NEW. apply relax_base in LOOP_NEW. eauto.
+      * instantiate (1 := c_pfx). rewrite seq_sc_last. ss.
+        rewrite pair_equal_spec. ss.
+      * right. destruct c_pfx; ss.
     + subst. hexploit IHs_l; eauto. i. des; [left | right]; esplits; eauto.
       * eapply Thread.rtc_trans; eauto. econs.
         { econs.
@@ -817,20 +848,34 @@ Proof.
         all: cycle 1.
         { rewrite app_nil_l. ss. }
         s. rewrite <- (app_nil_r tr0).
-        apply relax_base in LOOP_DONE0.
         eapply Thread.rtc_trans.
-        { hexploit loop_ongoing_cont_explosion; eauto. ; cycle 2.
-          i. apply relax_base in H. repeat rewrite app_nil_l in H.
-          exact H.
+        { hexploit loop_ongoing_cont_explosion; eauto; [rewrite app_nil_l |]; ss.
+          intros LOOP_NEW. apply relax_base in LOOP_NEW. eauto.
         }
-
-
-        rewrite <- (app_nil_l tr0). eapply Thread.rtc_trans.
-        { econs 2. }
-
-        ; eauto. [| rewrite app_nil_l]; ss.
-        econs; [| rewrite app_nil_l];eauto. try by econs; econs; eauto.
-      * econs; eauto. econs; eauto. try by econs; econs; eauto.
+        econs.
+        { econs; [| rewrite app_nil_r]; ss. econs 13. econs; eauto; ss.
+          rewrite app_nil_l. ss.
+        }
+        { s. econs. }
+        ss.
+      * eapply Thread.rtc_trans; eauto. econs.
+        { econs.
+          { econs 11. econs; eauto. ss. }
+          rewrite app_nil_r. ss.
+        }
+        all: cycle 1.
+        { rewrite app_nil_l. ss. }
+        s. instantiate (1 := _ ++ []).
+        eapply Thread.rtc_trans.
+        { hexploit loop_ongoing_cont_explosion; eauto; [rewrite app_nil_l |]; ss.
+          intros LOOP_NEW. apply relax_base in LOOP_NEW. eauto.
+        }
+        econs.
+        { econs; [| rewrite app_nil_r]; ss. econs 13. econs; eauto; ss.
+          rewrite app_nil_l. ss.
+        }
+        { s. econs. }
+        ss.
   - admit.
   - destruct c_loops; ss.
 Qed.

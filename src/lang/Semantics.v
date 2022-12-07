@@ -89,6 +89,18 @@ Definition seq_sc (sc: (list Stmt * list Cont.t)) (s': list Stmt) := seq_sc_rec 
 
 Notation "sc ++₁ s'" := (seq_sc sc s') (at level 62).
 
+Lemma seq_sc_last :
+  forall s c_pfx c_base s',
+    (s, c_pfx ++ [c_base]) ++₁ s' = (s, c_pfx ++ [Cont.seq c_base s']).
+Proof.
+  i. induction c_pfx; ss.
+  unfold seq_sc in *. s. destruct (c_pfx ++ [c_base]); ss.
+  { apply pair_equal_spec in IHc_pfx. des. destruct c_pfx; ss. }
+  destruct l.
+  - apply pair_equal_spec in IHc_pfx. des. rewrite IHc_pfx0. ss.
+  - apply pair_equal_spec in IHc_pfx. des. rewrite IHc_pfx0. ss.
+Qed.
+
 Module TState.
   Inductive t := mk {
     regs: VRegMap.t;
@@ -566,6 +578,34 @@ Module Thread.
   Proof.
     i. induction H; ss.
     inv ONE. inv NORMAL_STEP; inv STEP; ss; lia.
+  Qed.
+
+  Lemma tc_last :
+    forall env c tr thr thr_term,
+      tc env c tr thr thr_term ->
+    exists thr0 tr0 tr1,
+      tr = tr0 ++ tr1
+      /\ rtc env c tr0 thr thr0
+      /\ step_base_cont env c tr1 thr0 thr_term.
+  Proof.
+    i. induction H.
+    - esplits; eauto.
+      + rewrite app_nil_l. ss.
+      + econs.
+    - des. esplits; [| | eauto].
+      + rewrite IHtc2 in TRACE. rewrite app_assoc in TRACE. eauto.
+      + eapply rtc_trans; eauto. rewrite IHtc1. eapply rtc_trans; eauto.
+        econs; eauto; [|rewrite app_nil_r]; eauto. econs.
+  Qed.
+
+  Lemma rtc_last_base_cont :
+    forall env c tr thr thr_term,
+      tc env c tr thr thr_term ->
+    exists c_pfx, thr_term.(Thread.cont) = c_pfx ++ c.
+  Proof.
+    i. induction H.
+    { inv ONE. eauto. }
+    des. eauto.
   Qed.
 End Thread.
 
