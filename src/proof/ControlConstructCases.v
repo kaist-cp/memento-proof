@@ -910,7 +910,7 @@ Proof.
         { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
         s. hexploit loop_ongoing_cont_explosion; eauto; [rewrite app_nil_l|]; ss.
         intros LOOP_NEW. apply relax_base in LOOP_NEW. eauto.
-      * instantiate (1 := c_pfx). rewrite seq_sc_last. ss.
+      * rewrite seq_sc_last. ss.
         rewrite pair_equal_spec. ss.
       * right. destruct c_pfx; ss.
     + subst. hexploit IHs_l; eauto. i. des; [left | right]; esplits; eauto.
@@ -923,13 +923,11 @@ Proof.
         { rewrite app_nil_l. ss. }
         s. rewrite <- (app_nil_r tr0).
         eapply Thread.rtc_trans.
-        { hexploit loop_ongoing_cont_explosion; eauto; [rewrite app_nil_l |]; ss.
+        { hexploit loop_ongoing_cont_explosion; eauto; try rewrite app_nil_l; ss.
           intros LOOP_NEW. apply relax_base in LOOP_NEW. eauto.
         }
         econs.
-        { econs; [| rewrite app_nil_r]; ss. econs 13. econs; eauto; ss.
-          rewrite app_nil_l. ss.
-        }
+        { econs; [| rewrite app_nil_r]; ss. econs 13. econs; eauto; ss. }
         { s. econs. }
         ss.
       * eapply Thread.rtc_trans; eauto. econs.
@@ -941,13 +939,11 @@ Proof.
         { rewrite app_nil_l. ss. }
         s. instantiate (1 := _ ++ []).
         eapply Thread.rtc_trans.
-        { hexploit loop_ongoing_cont_explosion; eauto; [rewrite app_nil_l |]; ss.
+        { hexploit loop_ongoing_cont_explosion; eauto; try rewrite app_nil_l; ss.
           intros LOOP_NEW. apply relax_base in LOOP_NEW. eauto.
         }
         econs.
-        { econs; [| rewrite app_nil_r]; ss. econs 13. econs; eauto; ss.
-          rewrite app_nil_l. ss.
-        }
+        { econs; [| rewrite app_nil_r]; ss. econs 13. econs; eauto; ss. }
         { s. econs. }
         ss.
   - admit.
