@@ -301,7 +301,7 @@ Proof.
     + (* (ONGOING, ONGOING) *)
       destruct thr_term. destruct thr_term'. ss. subst.
       hexploit IHF; eauto. ss. i. des.
-      hexploit lift_cont; eauto. ss. instantiate (1 := [Cont.fncont (TState.regs ts) r []]). intros TR_X. apply relax_base in TR_X.
+      hexploit lift_cont; eauto. ss. instantiate (1 := [Cont.fncont (TState.regs ts) r []]). intros TR_X. apply rtc_relax_base_cont in TR_X.
       esplits; [| eauto | |].
       * econs 2; eauto; cycle 1.
         { rewrite app_nil_l. ss. }
@@ -331,7 +331,7 @@ Proof.
       * econs 2; cycle 2.
         { rewrite app_nil_l. ss. }
         { econs; eauto. ss. rewrite app_nil_r. ss. }
-        hexploit lift_cont; eauto. ss. instantiate (1 := [Cont.fncont (TState.regs ts) r0 []]). intros TR_X. apply relax_base in TR_X.
+        hexploit lift_cont; eauto. ss. instantiate (1 := [Cont.fncont (TState.regs ts) r0 []]). intros TR_X. apply rtc_relax_base_cont in TR_X.
         rewrite <- (app_nil_r tr_x). eapply Thread.rtc_trans; eauto.
         econs 2.
         { econs; eauto. rewrite app_nil_l. ss. }
@@ -663,7 +663,7 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r0
-                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]). intro TR_X. apply relax_base in TR_X.
+                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]). intro TR_X. apply rtc_rtc_relax_base_cont_cont in TR_X.
 
             eexists (tr3 ++ tr_x ++ tr2).
             esplits; eauto; cycle 1.
@@ -678,7 +678,7 @@ Proof.
             }
             eapply Thread.rtc_trans; cycle 1.
             { eapply Thread.rtc_trans; eauto.
-              rewrite <- (app_nil_r tr2). apply relax_base in FIRST_DONE1.
+              rewrite <- (app_nil_r tr2). apply rtc_rtc_relax_base_cont_cont in FIRST_DONE1.
               eapply Thread.rtc_trans; eauto.
               econs 2; (try by econs; eauto); cycle 1.
               { rewrite app_nil_l. ss. }
@@ -701,7 +701,7 @@ Proof.
                 rewrite app_nil_r. ss.
               }
               ss. econs; eauto.
-            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+            ** rewrite <- (app_nil_r tr3). apply rtc_rtc_relax_base_cont_cont in LAST_CONT.
               eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
@@ -735,7 +735,7 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r0
-                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]). intro TR_X. apply relax_base in TR_X.
+                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]). intro TR_X. apply rtc_rtc_relax_base_cont_cont in TR_X.
 
             eexists (tr3 ++ tr_x ++ []).
             esplits; eauto; cycle 1.
@@ -771,7 +771,7 @@ Proof.
                 rewrite app_nil_r. ss.
               }
               ss. econs; eauto.
-            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+            ** rewrite <- (app_nil_r tr3). apply rtc_relax_base_cont in LAST_CONT.
               eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
@@ -806,7 +806,7 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r0
-                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]). intro TR_X. apply relax_base in TR_X.
+                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]). intro TR_X. apply rtc_relax_base_cont in TR_X.
 
             eexists (tr3 ++ tr_x ++ tr2).
             esplits; eauto; cycle 1.
@@ -821,7 +821,7 @@ Proof.
             }
             eapply Thread.rtc_trans; cycle 1.
             { eapply Thread.rtc_trans; eauto.
-              apply relax_base in FIRST_DONE1. ss.
+              apply rtc_relax_base_cont in FIRST_DONE1. ss.
             }
             econs 2; cycle 2.
             { rewrite app_nil_l. ss. }
@@ -840,7 +840,7 @@ Proof.
                 rewrite app_nil_r. ss.
               }
               ss. econs; eauto.
-            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+            ** rewrite <- (app_nil_r tr3). apply rtc_relax_base_cont in LAST_CONT.
               eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
@@ -870,7 +870,7 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r0
-                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]). intro TR_X. apply relax_base in TR_X.
+                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]). intro TR_X. apply rtc_relax_base_cont in TR_X.
 
             eexists (tr3 ++ tr_x). eexists s_x.
             eexists (c_x ++ [Cont.loopcont (TState.regs ts) r0 (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]).
@@ -907,7 +907,7 @@ Proof.
                 rewrite app_nil_r. ss.
               }
               ss. econs; eauto.
-            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+            ** rewrite <- (app_nil_r tr3). apply rtc_relax_base_cont in LAST_CONT.
               eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
@@ -969,7 +969,7 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r
-                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]). intro TR_X. apply relax_base in TR_X.
+                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]). intro TR_X. apply rtc_relax_base_cont in TR_X.
 
             eexists (tr3 ++ tr_x ++ tr2).
             esplits; eauto; cycle 1.
@@ -984,7 +984,7 @@ Proof.
             }
             eapply Thread.rtc_trans; cycle 1.
             { eapply Thread.rtc_trans; eauto.
-              rewrite <- (app_nil_r tr2). apply relax_base in FIRST_DONE1.
+              rewrite <- (app_nil_r tr2). apply rtc_relax_base_cont in FIRST_DONE1.
               eapply Thread.rtc_trans; eauto.
               econs 2; (try by econs; eauto); cycle 1.
               { rewrite app_nil_l. ss. }
@@ -1001,7 +1001,7 @@ Proof.
                 rewrite app_nil_r. ss.
               }
               ss. rewrite VRegMap.add_add. econs; eauto.
-            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+            ** rewrite <- (app_nil_r tr3). apply rtc_relax_base_cont in LAST_CONT.
               eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
@@ -1029,7 +1029,7 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r
-                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]). intro TR_X. apply relax_base in TR_X.
+                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]). intro TR_X. apply rtc_relax_base_cont in TR_X.
 
             eexists (tr3 ++ tr_x ++ []).
             esplits; eauto; cycle 1.
@@ -1059,7 +1059,7 @@ Proof.
                 rewrite app_nil_r. ss.
               }
               rewrite VRegMap.add_add. econs; eauto.
-            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+            ** rewrite <- (app_nil_r tr3). apply rtc_relax_base_cont in LAST_CONT.
               eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
@@ -1088,7 +1088,7 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r
-                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]). intro TR_X. apply relax_base in TR_X.
+                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]). intro TR_X. apply rtc_relax_base_cont in TR_X.
 
             eexists (tr3 ++ tr_x ++ tr2).
             esplits; eauto; cycle 1.
@@ -1103,7 +1103,7 @@ Proof.
             }
             eapply Thread.rtc_trans; cycle 1.
             { eapply Thread.rtc_trans; eauto.
-              apply relax_base in FIRST_DONE1. ss.
+              apply rtc_relax_base_cont in FIRST_DONE1. ss.
             }
             econs 2; cycle 2.
             { rewrite app_nil_l. ss. }
@@ -1116,7 +1116,7 @@ Proof.
                 rewrite app_nil_r. ss.
               }
               rewrite VRegMap.add_add. econs; eauto.
-            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+            ** rewrite <- (app_nil_r tr3). apply rtc_relax_base_cont in LAST_CONT.
               eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
@@ -1140,7 +1140,7 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r
-                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]). intro TR_X. apply relax_base in TR_X.
+                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]). intro TR_X. apply rtc_relax_base_cont in TR_X.
 
             eexists (tr3 ++ tr_x). eexists s_x.
             eexists (c_x ++ [Cont.loopcont (TState.regs ts) r (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]).
@@ -1171,7 +1171,7 @@ Proof.
                 rewrite app_nil_r. ss.
               }
               rewrite VRegMap.add_add. econs; eauto.
-            ** rewrite <- (app_nil_r tr3). apply relax_base in LAST_CONT.
+            ** rewrite <- (app_nil_r tr3). apply rtc_relax_base_cont in LAST_CONT.
               eapply Thread.rtc_trans; eauto.
               econs 2; cycle 2.
               { rewrite app_nil_l. ss. }

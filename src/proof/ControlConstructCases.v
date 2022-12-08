@@ -901,8 +901,8 @@ Proof.
     (* + left. esplits.
       * econs; [| | rewrite app_nil_l]; ss.
         { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
-        s. hexploit loop_ongoing_cont_explosion; eauto; [rewrite app_nil_l|]; ss.
-        intros LOOP_NEW. apply relax_base in LOOP_NEW. eauto.
+        s. hexploit ongoing_cont_explosion; eauto; [rewrite app_nil_l|]; ss.
+        intros LOOP_NEW. apply rtc_relax_base_cont in LOOP_NEW. eauto.
       * rewrite seq_sc_last. ss.
         rewrite pair_equal_spec. ss.
       * right. destruct c_pfx; ss. *)
@@ -926,8 +926,9 @@ Proof.
       s. left. esplits.
       * econs; [| | rewrite app_nil_l]; ss.
         { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
-        s. hexploit loop_ongoing_cont_explosion; eauto; [rewrite app_nil_l|]; ss.
-        intros LOOP_NEW. apply relax_base in LOOP_NEW. eauto.
+        s. hexploit ongoing_cont_explosion; eauto; [rewrite app_nil_l|]; ss.
+        intros LOOP_NEW. eapply rtc_relax_base_cont; eauto.
+        rewrite app_nil_r. ss.
       * rewrite seq_sc_last. ss.
         rewrite pair_equal_spec. ss.
       * right. destruct c_pfx; ss.
@@ -941,8 +942,9 @@ Proof.
         { rewrite app_nil_l. ss. }
         s. rewrite <- (app_nil_r tr0).
         eapply Thread.rtc_trans.
-        { hexploit loop_ongoing_cont_explosion; eauto; try rewrite app_nil_l; ss.
-          intros LOOP_NEW. apply relax_base in LOOP_NEW. eauto.
+        { hexploit ongoing_cont_explosion; eauto; try rewrite app_nil_l; ss.
+          intros LOOP_NEW. eapply rtc_relax_base_cont; eauto.
+          rewrite app_nil_r. ss.
         }
         econs.
         { econs; [| rewrite app_nil_r]; ss. econs 13. econs; eauto; ss. }
@@ -957,8 +959,9 @@ Proof.
         { rewrite app_nil_l. ss. }
         s. instantiate (1 := _ ++ []).
         eapply Thread.rtc_trans.
-        { hexploit loop_ongoing_cont_explosion; eauto; try rewrite app_nil_l; ss.
-          intros LOOP_NEW. apply relax_base in LOOP_NEW. eauto.
+        { hexploit ongoing_cont_explosion; eauto; try rewrite app_nil_l; ss.
+          intros LOOP_NEW. eapply rtc_relax_base_cont; eauto.
+          rewrite app_nil_r. ss.
         }
         econs.
         { econs; [| rewrite app_nil_r]; ss. econs 13. econs; eauto; ss. }

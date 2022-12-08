@@ -45,14 +45,25 @@ Proof.
     ss. rewrite CONT. rewrite <- app_assoc. ss.
 Qed.
 
-Lemma relax_base:
-  forall env tr thr thr_term c_base,
-    Thread.rtc env c_base tr thr thr_term ->
-  Thread.rtc env [] tr thr thr_term.
+Lemma relax_base_cont:
+  forall env tr thr thr_term c_base c_pfx c_sfx,
+    Thread.step_base_cont env c_base tr thr thr_term ->
+    c_base = c_pfx ++ c_sfx ->
+  Thread.step_base_cont env c_sfx tr thr thr_term.
 Proof.
-  i. induction H.
+  i. subst. inv H.
+  econs; eauto. rewrite app_assoc in BASE. eauto.
+Qed.
+
+Lemma rtc_relax_base_cont:
+  forall env tr thr thr_term c_base c_pfx c_sfx,
+    Thread.rtc env c_base tr thr thr_term ->
+    c_base = c_pfx ++ c_sfx ->
+  Thread.rtc env c_sfx tr thr thr_term.
+Proof.
+  i. subst. induction H.
   { econs; eauto. }
-  subst. inv ONE. econs 2; eauto. econs; eauto. rewrite app_nil_r. ss.
+  subst. eapply relax_base_cont in ONE; eauto. econs; eauto.
 Qed.
 
 Lemma lift_mmt:
@@ -98,20 +109,3 @@ Proof.
   - admit.
   - admit.
 Qed.
-
-
-
-(*
-  TODO: Fix conclusion.
-  Lemma unlift_not_loopcont :
-  forall env tr thr thr_term c_base rmap r s mid c c_sfx,
-    c_base = c :: c_sfx ->
-    (c = Cont.chkptcont rmap r s mid \/ c = Cont.fncont rmap r s) ->
-    Thread.rtc env tr thr thr_term c_base ->
-  Thread.rtc env tr thr thr_term [].
-Proof.
-  i. induction H1; subst; [econs |]; ss.
-  hexploit IHrtc; eauto. i. econs 2; eauto.
-  inv ONE. inversion NORMAL_STEP; inv STEP; econs; eauto; ss.
-  all: rewrite app_nil_r; eauto.
-Qed. *)
