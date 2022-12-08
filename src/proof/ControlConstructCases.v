@@ -19,14 +19,17 @@ Lemma chkpt_fn_cases:
     thr.(Thread.cont) = c ++ [c'] ->
     ((exists mid, c' = Cont.chkptcont rmap r s_cont mid) \/ c' = Cont.fncont rmap r s_cont) ->
   <<CALL_ONGOING:
-    exists c_pfx, thr_term.(Thread.cont) = c_pfx ++ [c']
-    /\ Thread.rtc env [] tr
-        (Thread.mk thr.(Thread.stmt) c thr.(Thread.ts) thr.(Thread.mmts))
-        (Thread.mk thr_term.(Thread.stmt) c_pfx thr_term.(Thread.ts) thr_term.(Thread.mmts))>>
+    exists c_pfx,
+      thr_term.(Thread.cont) = c_pfx ++ [c']
+      /\ Thread.rtc env [c'] tr thr thr_term
+      /\ Thread.rtc env [] tr
+          (Thread.mk thr.(Thread.stmt) c thr.(Thread.ts) thr.(Thread.mmts))
+          (Thread.mk thr_term.(Thread.stmt) c_pfx thr_term.(Thread.ts) thr_term.(Thread.mmts))>>
   \/
   <<CALL_DONE:
     exists tr0 tr1 s_r c_r ts_r mmts_r e,
       tr = tr0 ++ tr1
+      /\ Thread.rtc env [c'] tr thr (Thread.mk ((stmt_return e) :: s_r) (c_r ++ [c']) ts_r mmts_r)
       /\ Thread.rtc env [] tr0
           (Thread.mk thr.(Thread.stmt) c thr.(Thread.ts) thr.(Thread.mmts))
           (Thread.mk ((stmt_return e) :: s_r) c_r ts_r mmts_r)
@@ -34,11 +37,13 @@ Lemma chkpt_fn_cases:
 Proof.
   intros env tr thr thr_term c c' rmap r s_cont RTC. revert rmap r c c' s_cont.
   induction RTC; i; subst.
-  { left. esplits; eauto. econs; ss. }
+  { left. esplits; eauto; econs; ss. }
   guardH H0.
   inversion ONE. rewrite app_nil_r in *. subst. inv NORMAL_STEP; inv STEP; ss.
   - hexploit IHRTC; eauto. i. des.
-    + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
+    + left. esplits; eauto; cycle 1.
+      assert (exists P, P -> )
+      econs 2; eauto; [| rewrite app_nil_l]; ss.
       econs; [| rewrite app_nil_r]; ss. econs. econs; eauto.
     + right. esplits; eauto.
       econs 2; eauto; [| rewrite app_nil_l]; ss.
