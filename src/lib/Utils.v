@@ -983,3 +983,19 @@ Proof.
   apply app_inv_head in H0.
   rewrite <- HahnList.rev_eq in H0. ss. rewrite rev_app_distr in H0. ss.
 Qed.
+
+Lemma conj_seq (P Q: Prop) :
+  P -> (P -> Q) -> P /\ Q.
+Proof.
+  intro HP. generalize HP. intros HQ HI.
+  apply HI in HQ. splits; ss.
+Qed.
+
+Ltac seqsplit :=
+  repeat (
+    repeat (
+      match goal with
+        | |- context[_ /\ _] => apply conj_seq
+        end
+      ); i
+  ).
