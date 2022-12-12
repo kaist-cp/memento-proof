@@ -464,8 +464,6 @@ Proof.
       i. des. inv H0. rewrite app_nil_r in *.
 
       hexploit IHF; eauto. ss. i. des.
-      (* inv CALL_DONE0; inv STEP; ss; inv THR2; rewrite snoc_eq_snoc in CONT; des; ss. subst.
-      inv CALL_DONE5; inv STEP; ss; inv THR2; rewrite snoc_eq_snoc in CONT; des; ss. subst. *)
       hexploit STOP_FST.
       { unfold STOP. repeat right. esplits; ss. }
       hexploit STOP_SND.
@@ -544,7 +542,7 @@ Proof.
         { destruct c_loops; ss. }
         hexploit lift_mmt; eauto. ss. instantiate (1 := mid). i. des.
         specialize COMPL_EQ with (mid ++ [lab]).
-        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs)) (mid ++ [lab])).
+        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs')) (mid ++ [lab])).
         { clear - NIN.
           unfold Ensembles.In. unfold Complement. ii.
           inv H. induction mid; inv MID; eauto.
@@ -622,7 +620,7 @@ Proof.
       * (* EX1: CHKPT-REPLAY *)
         hexploit lift_mmt; eauto. ss. instantiate (1 := mid). i. des.
         specialize COMPL_EQ with (mid ++ [lab]).
-        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs)) (mid ++ [lab])).
+        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs')) (mid ++ [lab])).
         { clear - NIN.
           unfold Ensembles.In. unfold Complement. ii.
           inv H. induction mid; inv MID; eauto.
@@ -725,7 +723,7 @@ Proof.
         { destruct c_loops; ss. }
         hexploit lift_mmt; eauto. ss. instantiate (1 := mid). i. des.
         specialize COMPL_EQ with (mid ++ [lab]).
-        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs)) (mid ++ [lab])).
+        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs')) (mid ++ [lab])).
         { clear - NIN.
           unfold Ensembles.In. unfold Complement. ii.
           inv H. induction mid; inv MID; eauto.
@@ -1035,7 +1033,7 @@ Proof.
         rewrite app_nil_r in *. subst.
         hexploit lift_mmt; eauto. ss. instantiate (1 := mid). i. des.
         specialize COMPL_EQ with (mid ++ [lab]).
-        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs)) (mid ++ [lab])).
+        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs')) (mid ++ [lab])).
         { clear - NIN.
           unfold Ensembles.In. unfold Complement. ii.
           inv H. induction mid; inv MID; eauto.
