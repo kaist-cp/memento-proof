@@ -35,7 +35,8 @@ Lemma chkpt_fn_cases:
       /\ Thread.rtc env [c'] tr0
           thr
           (Thread.mk ((stmt_return e) :: s_r) (c_r ++ [c']) ts_r mmts_r)
-      /\ Thread.rtc env [] tr1 (Thread.mk ((stmt_return e) :: s_r) (c_r ++ [c']) ts_r mmts_r) thr_term>>.
+      /\ Thread.tc env [] tr1 (Thread.mk ((stmt_return e) :: s_r) (c_r ++ [c']) ts_r mmts_r) thr_term
+      /\ Cont.Loops c_r>>.
 Proof.
   intros env tr thr thr_term c c' rmap r s_cont RTC. revert rmap r c c' s_cont.
   induction RTC; i; subst.
@@ -132,7 +133,7 @@ Proof.
     + rewrite snoc_eq_snoc in CONT. des. subst.
       unguard. des; ss. inv H0.
       inv ONE.
-      right. eexists. eexists. eexists. eexists. eexists. eexists. eexists. seqsplit; try by econs; eauto.
+      right. eexists. eexists. eexists. eexists. eexists. eexists. eexists. seqsplit; eauto; try by econs; eauto.
       { rewrite app_nil_l. ss. }
       econs; eauto. econs; eauto.
     + hexploit IHRTC; eauto. i. des.
@@ -144,7 +145,7 @@ Proof.
       * right. eexists. eexists. eexists. eexists. eexists. eexists. eexists. seqsplit; eauto; cycle 1.
         { subst. hexploit lift_cont; eauto. }
         econs 2; eauto; [| rewrite app_nil_l]; ss.
-        econs; [| rewrite app_nil_r]; ss. econs 8. econs; eauto; ss.
+        econs; [| rewrite app_nil_r]; ss. econs 8. econs; try exact LOOPS; eauto; ss.
         rewrite <- app_inv_tail_iff. rewrite <- app_assoc. eauto.
   - hexploit IHRTC; eauto. i. des.
     + left. eexists. seqsplit; eauto; cycle 1.
@@ -243,7 +244,7 @@ Proof.
       rewrite snoc_eq_snoc in CONT. des. subst.
       unguard. des; ss. inv H0.
       inv ONE.
-      eexists. eexists. eexists. eexists. eexists. eexists. eexists. seqsplit; try by econs; eauto.
+      eexists. eexists. eexists. eexists. eexists. eexists. eexists. seqsplit; eauto; try by econs; eauto.
       { rewrite app_nil_l. ss. }
       econs; eauto. econs; eauto.
     + hexploit IHRTC; eauto. i. des.
@@ -255,7 +256,7 @@ Proof.
       * right. eexists. eexists. eexists. eexists. eexists. eexists. eexists. seqsplit; eauto; cycle 1.
         { subst. hexploit lift_cont; eauto. }
         econs 2; eauto; [| rewrite app_nil_l]; ss.
-        econs; [| rewrite app_nil_r]; ss. econs 15. econs; eauto; ss.
+        econs; [| rewrite app_nil_r]; ss. econs 15. econs; try exact LOOPS; eauto; ss.
         rewrite <- app_inv_tail_iff. rewrite <- app_assoc. eauto.
 Qed.
 
@@ -945,17 +946,70 @@ Proof.
     + econs; eauto. econs; eauto. try by econs; econs; eauto.
   - hexploit chkpt_fn_cases; [| | left |]; eauto.
     { rewrite app_nil_l. ss. }
-    i. des.
-    + admit.
-    (* + left. esplits.
+    i. des; ss.
+    + left. esplits.
       * econs; [| | rewrite app_nil_l]; ss.
         { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
         s. hexploit ongoing_cont_explosion; eauto; [rewrite app_nil_l|]; ss.
-        intros LOOP_NEW. apply rtc_relax_base_cont in LOOP_NEW. eauto.
+        intros LOOP_NEW. eapply rtc_relax_base_cont in LOOP_NEW; eauto.
+        rewrite app_nil_r. ss.
       * rewrite seq_sc_last. ss.
         rewrite pair_equal_spec. ss.
-      * right. destruct c_pfx; ss. *)
-    + admit.
+      * right. destruct c_pfx; ss.
+    + inv CALL_DONE2. inv ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT; cycle 1.
+      { exfalso. clear - CALL_DONE3 CONT.
+        rewrite app_nil_r in CONT. destruct c'0 using List.rev_ind.
+        { rewrite snoc_eq_snoc in CONT. des. ss. }
+        rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
+        rewrite CONT in CALL_DONE3. rewrite app_comm_cons' in CALL_DONE3.
+        repeat (repeat apply Cont.loops_app_distr in CALL_DONE3; des).
+        unfold Cont.Loops in *. hexploit CALL_DONE1; [apply in_eq |].
+        i. des. ss.
+      }
+      rewrite app_nil_r in *. destruct c'0 using List.rev_ind; cycle 1.
+      { exfalso. clear - CALL_DONE3 CONT.
+        rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
+        rewrite CONT in CALL_DONE3. rewrite app_comm_cons' in CALL_DONE3.
+        repeat (repeat apply Cont.loops_app_distr in CALL_DONE3; des).
+        unfold Cont.Loops in *. hexploit CALL_DONE1; [apply in_eq |].
+        i. des. ss.
+      }
+      rewrite snoc_eq_snoc in CONT. des. inv CONT0.
+      hexploit IHs_l; eauto. i. des; [left | right]; esplits; eauto.
+      * eapply Thread.rtc_trans; eauto. econs.
+        { econs; try by econs; econs; eauto.
+          rewrite app_nil_r. ss.
+        }
+        all: cycle 1.
+        { rewrite app_nil_l. ss. }
+        s. rewrite <- (app_nil_r tr0).
+        eapply Thread.rtc_trans.
+        { hexploit ongoing_cont_explosion; eauto; ss.
+          { rewrite app_nil_l. ss. }
+          intros LOOP_NEW. eapply rtc_relax_base_cont; eauto.
+          rewrite app_nil_r. ss.
+        }
+        econs.
+        { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto; ss. }
+        { s. econs. }
+        ss.
+      * eapply Thread.rtc_trans; eauto. econs.
+        { econs; try by econs; econs; eauto.
+          rewrite app_nil_r. ss.
+        }
+        all: cycle 1.
+        { rewrite app_nil_l. ss. }
+        s. instantiate (1 := _ ++ []).
+        eapply Thread.rtc_trans.
+        { hexploit ongoing_cont_explosion; eauto; ss.
+          { rewrite app_nil_l. ss. }
+          intros LOOP_NEW. eapply rtc_relax_base_cont; eauto.
+          rewrite app_nil_r. ss.
+        }
+        econs.
+        { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto; ss. }
+        { s. econs. }
+        ss.
   - destruct c_loops; ss.
   - hexploit IHs_l; eauto. i. des; [left | right]; esplits; eauto.
     + econs; eauto; [| rewrite app_nil_l]; ss.
@@ -1016,8 +1070,71 @@ Proof.
         { econs; [| rewrite app_nil_r]; ss. econs 13. econs; eauto; ss. }
         { s. econs. }
         ss.
-  - admit.
-    (* hexploit chkpt_fn_cases; eauto.
-    { rewrite app_nil_l. ss. } *)
+  - hexploit chkpt_fn_cases; [| | right |]; eauto.
+    { rewrite app_nil_l. ss. }
+    i. des; ss.
+    + left. esplits.
+      * econs; [| | rewrite app_nil_l]; ss.
+        { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
+        s. hexploit ongoing_cont_explosion; eauto; [rewrite app_nil_l|]; ss.
+        intros LOOP_NEW. eapply rtc_relax_base_cont in LOOP_NEW; eauto.
+        rewrite app_nil_r. ss.
+      * rewrite seq_sc_last. ss.
+        rewrite pair_equal_spec. ss.
+      * right. destruct c_pfx; ss.
+    + inv CALL_DONE2. inv ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
+      { exfalso. clear - CALL_DONE3 CONT.
+        rewrite app_nil_r in CONT. destruct c'0 using List.rev_ind.
+        { rewrite snoc_eq_snoc in CONT. des. ss. }
+        rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
+        rewrite CONT in CALL_DONE3. rewrite app_comm_cons' in CALL_DONE3.
+        repeat (repeat apply Cont.loops_app_distr in CALL_DONE3; des).
+        unfold Cont.Loops in *. hexploit CALL_DONE1; [apply in_eq |].
+        i. des. ss.
+      }
+      rewrite app_nil_r in *. destruct c'0 using List.rev_ind; cycle 1.
+      { exfalso. clear - CALL_DONE3 CONT.
+        rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
+        rewrite CONT in CALL_DONE3. rewrite app_comm_cons' in CALL_DONE3.
+        repeat (repeat apply Cont.loops_app_distr in CALL_DONE3; des).
+        unfold Cont.Loops in *. hexploit CALL_DONE1; [apply in_eq |].
+        i. des. ss.
+      }
+      rewrite snoc_eq_snoc in CONT. des. inv CONT0.
+      hexploit IHs_l; eauto. i. des; [left | right]; esplits; eauto.
+      * eapply Thread.rtc_trans; eauto. econs.
+        { econs; try by econs; econs; eauto.
+          rewrite app_nil_r. ss.
+        }
+        all: cycle 1.
+        { rewrite app_nil_l. ss. }
+        s. rewrite <- (app_nil_r tr0).
+        eapply Thread.rtc_trans.
+        { hexploit ongoing_cont_explosion; eauto; ss.
+          { rewrite app_nil_l. ss. }
+          intros LOOP_NEW. eapply rtc_relax_base_cont; eauto.
+          rewrite app_nil_r. ss.
+        }
+        econs.
+        { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto; ss. }
+        { s. econs. }
+        ss.
+      * eapply Thread.rtc_trans; eauto. econs.
+        { econs; try by econs; econs; eauto.
+          rewrite app_nil_r. ss.
+        }
+        all: cycle 1.
+        { rewrite app_nil_l. ss. }
+        s. instantiate (1 := _ ++ []).
+        eapply Thread.rtc_trans.
+        { hexploit ongoing_cont_explosion; eauto; ss.
+          { rewrite app_nil_l. ss. }
+          intros LOOP_NEW. eapply rtc_relax_base_cont; eauto.
+          rewrite app_nil_r. ss.
+        }
+        econs.
+        { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto; ss. }
+        { s. econs. }
+        ss.
   - destruct c_loops; ss.
 Qed.

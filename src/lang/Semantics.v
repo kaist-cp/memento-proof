@@ -520,16 +520,25 @@ Module Thread.
   .
 
   Inductive tc (env: Env.t) (c: list Cont.t) : list Event.t -> t -> t -> Prop :=
-  | tc_step
-      tr thr thr_term
-      (ONE: step_base_cont env c tr thr thr_term)
-      : tc env c tr thr thr_term
-  | tc_trans
-      tr tr0 tr1 thr thr_m thr_term
-      (TC1: tc env c tr0 thr thr_m)
-      (TC2: tc env c tr1 thr_m thr_term)
+  | tc_intro
+      tr tr0 tr1 thr thr0 thr_term
+      (ONE: step_base_cont env c tr0 thr thr0)
+      (RTC: rtc env c tr1 thr0 thr_term)
       (TRACE: tr = tr0 ++ tr1)
       : tc env c tr thr thr_term
+  .
+
+  Inductive tc' (env: Env.t) (c: list Cont.t) : list Event.t -> t -> t -> Prop :=
+  | tc_step'
+      tr thr thr_term
+      (ONE: step_base_cont env c tr thr thr_term)
+      : tc' env c tr thr thr_term
+  | tc_trans'
+      tr tr0 tr1 thr thr_m thr_term
+      (TC1: tc' env c tr0 thr thr_m)
+      (TC2: tc' env c tr1 thr_m thr_term)
+      (TRACE: tr = tr0 ++ tr1)
+      : tc' env c tr thr thr_term
   .
 
   Inductive rtc' (env: Env.t) (c: list Cont.t) : list Event.t -> t -> t -> Prop :=
@@ -538,7 +547,7 @@ Module Thread.
       : rtc' env c [] thr thr
   | rtc_tc'
       tr thr thr_term
-      (TC: tc env c tr thr thr_term)
+      (TC: tc' env c tr thr thr_term)
       : rtc' env c tr thr thr_term
   .
 
@@ -582,7 +591,7 @@ Module Thread.
 
   Lemma tc_last :
     forall env c tr thr thr_term,
-      tc env c tr thr thr_term ->
+      tc' env c tr thr thr_term ->
     exists thr0 tr0 tr1,
       tr = tr0 ++ tr1
       /\ rtc env c tr0 thr thr0
@@ -593,14 +602,14 @@ Module Thread.
       + rewrite app_nil_l. ss.
       + econs.
     - des. esplits; [| | eauto].
-      + rewrite IHtc2 in TRACE. rewrite app_assoc in TRACE. eauto.
-      + eapply rtc_trans; eauto. rewrite IHtc1. eapply rtc_trans; eauto.
+      + rewrite IHtc'2 in TRACE. rewrite app_assoc in TRACE. eauto.
+      + eapply rtc_trans; eauto. rewrite IHtc'1. eapply rtc_trans; eauto.
         econs; eauto; [|rewrite app_nil_r]; eauto. econs.
   Qed.
 
   Lemma rtc_last_base_cont :
     forall env c tr thr thr_term,
-      tc env c tr thr thr_term ->
+      tc' env c tr thr thr_term ->
     exists c_pfx, thr_term.(Thread.cont) = c_pfx ++ c.
   Proof.
     i. induction H.
