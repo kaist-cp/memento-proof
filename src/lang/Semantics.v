@@ -146,6 +146,29 @@ Module Mmts.
   Proof.
     admit.
   Qed.
+
+  Lemma proj_compl_eq:
+    forall mmts0 mmts1 mids,
+      proj mmts0 mids = proj mmts1 mids ->
+      proj mmts0 (Complement _ mids) = proj mmts1 (Complement _ mids) ->
+    mmts0 = mmts1.
+  Proof.
+    admit.
+  Qed.
+
+  Lemma proj_compl_union:
+    forall mmts mids,
+      union (proj mmts mids) (proj mmts (Complement _ mids)) = mmts.
+  Proof.
+    admit.
+  Qed.
+
+  Lemma proj_idemp:
+    forall mmts mids,
+      proj mmts mids = proj (proj mmts mids) mids.
+  Proof.
+    admit.
+  Qed.
 End Mmts.
 
 Notation "mmts |₁ mids" := (Mmts.proj mmts mids) (at level 62).

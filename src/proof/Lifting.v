@@ -78,7 +78,7 @@ Lemma lift_mmt:
     (Thread.mk thr_term.(Thread.stmt) thr_term.(Thread.cont) thr_term.(Thread.ts) (thr_term.(Thread.mmts) |₁ mids))>>
   /\
   <<COMPL_EQ:
-    forall mid, (mmts |₁ (Complement _ mids)) mid = (thr_term.(Thread.mmts) |₁ (Complement _ mids)) mid>>
+    mmts |₁ (Complement _ mids) = thr_term.(Thread.mmts) |₁ (Complement _ mids)>>
   /\
   <<LIFT:
     forall mmts_a,
@@ -109,3 +109,61 @@ Proof.
   - admit.
   - admit.
 Qed.
+
+(* Lemma lift_stmt:
+  forall env tr s ts mmts thr_term s',
+    Thread.rtc env [] tr (Thread.mk s [] ts mmts) thr_term ->
+  exists s_m c_m,
+    Thread.rtc env [] tr
+      (Thread.mk (s ++ s') [] ts mmts)
+      (Thread.mk s_m c_m thr_term.(Thread.ts) thr_term.(Thread.mmts))
+    /\ (s_m, c_m) = (thr_term.(Thread.stmt), thr_term.(Thread.cont)) ++₁ s'.
+Proof.
+  intros env tr s. revert env tr. induction s; i; ss.
+  { admit. }
+  inv H; ss.
+  { admit. }
+  inv ONE. rewrite app_nil_r in *. subst. inv NORMAL_STEP; inv STEP; ss; inv STMT.
+  - hexploit IHs; eauto. i. des.
+    esplits; eauto. econs; eauto.
+    { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
+    ss.
+  - hexploit IHs; eauto. i. des.
+    esplits; eauto. econs; eauto.
+    { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
+    ss.
+  - hexploit IHs; eauto. i. des.
+    esplits; eauto. econs; eauto.
+    { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
+    ss.
+  - hexploit IHs; eauto. i. des.
+    esplits; eauto. econs; eauto.
+    { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
+    ss.
+  - hexploit IHs; eauto. i. des.
+    esplits; eauto. econs; eauto.
+    { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
+    ss.
+  - hexploit IHs; eauto. i. des.
+    esplits; eauto. econs; eauto.
+    { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
+    ss.
+  - admit.
+    (* hexploit chkpt_fn_cases; try left; eauto.
+    hexploit IHs; eauto. i. des.
+    esplits; eauto. econs; eauto.
+    { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
+    ss. *)
+  - destruct c_loops; ss.
+  - hexploit IHs; eauto. i. des.
+    esplits; eauto. econs; eauto.
+    { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
+    ss.
+  - destruct (sem_expr (TState.regs ts) e == Val.bool true).
+    + hexploit seq_cases; eauto. i. des.
+      * esplits; eauto.
+        { econs; eauto.
+          { econs; [| rewrite app_nil_r]; ss. econs 10. econs; eauto; ss. try by econs; econs; eauto. }
+
+        }
+Qed. *)
