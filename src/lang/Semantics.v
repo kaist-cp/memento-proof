@@ -1,4 +1,5 @@
 Require Import Ensembles.
+Require Import FunctionalExtensionality.
 Require Import Lia.
 Require Import ZArith.
 Require Import EquivDec.
@@ -144,7 +145,7 @@ Module Mmts.
       proj mmts mids mid = mmt ->
     mmts mid = mmt.
   Proof.
-    admit.
+    i. revert H0. unfold proj. condtac; ss.
   Qed.
 
   Lemma proj_compl_eq:
@@ -153,21 +154,28 @@ Module Mmts.
       proj mmts0 (Complement _ mids) = proj mmts1 (Complement _ mids) ->
     mmts0 = mmts1.
   Proof.
-    admit.
+    unfold proj. i.
+    apply functional_extensionality. i.
+    eapply equal_f in H. eapply equal_f in H0. revert H H0. instantiate (1 := x). instantiate (1 := x).
+    condtac; ss. condtac; ss.
   Qed.
 
   Lemma proj_compl_union:
     forall mmts mids,
       union (proj mmts mids) (proj mmts (Complement _ mids)) = mmts.
   Proof.
-    admit.
+    i. unfold union. apply functional_extensionality. i.
+    unfold proj. condtac.
+    - destruct (mmts x); ss. condtac; ss.
+    - condtac; ss.
   Qed.
 
   Lemma proj_idemp:
     forall mmts mids,
       proj mmts mids = proj (proj mmts mids) mids.
   Proof.
-    admit.
+    i. unfold proj. apply FunctionalExtensionality.functional_extensionality. i.
+    condtac; ss.
   Qed.
 End Mmts.
 
