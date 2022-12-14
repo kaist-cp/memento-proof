@@ -15,7 +15,6 @@ From Memento Require Import Semantics.
 From Memento Require Import Env.
 From Memento Require Import Common.
 From Memento Require Import Lifting.
-From Memento Require Import ControlConstructCases.
 
 Set Implicit Arguments.
 
@@ -496,7 +495,7 @@ Proof.
       i. des. eexists tr_x. eexists s_x. eexists c_x. eexists ts_x. splits; ss.
       econs 2; eauto; [econs; eauto |]; rewrite app_nil_l; ss.
   - subst.
-    hexploit seq_cases; try exact EX2; eauto. hexploit seq_cases; try exact EX1; eauto. i. des.
+    hexploit seq_cases; try exact EX2; eauto. hexploit seq_cases; try exact EX1; eauto. i. des; subst.
     + (* seq-left-ongoing, seq-left-ongoing *)
       hexploit IHENVTJ1; eauto. unfold DR. intros X. hexploit X; try exact SEQ_LEFT_ONGOING2; eauto. i. des. ss.
       admit.
@@ -507,7 +506,7 @@ Proof.
 
       assert (MMTS_PROJ_EQ: mmts0 |₁ mmt_id_exp [] labs_l = Thread.mmts thr_term |₁ mmt_id_exp [] labs_l).
       { admit. }
-      rewrite <- MMTS_PROJ_EQ in *. hexploit IHENVTJ1; eauto. unfold DR. intros X. hexploit X; try exact UNLIFT1; eauto. i. des. ss.
+      rewrite <- MMTS_PROJ_EQ in *. hexploit IHENVTJ1; eauto. unfold DR. intros X. hexploit X; try exact UNLIFT0; eauto. i. des. ss.
       hexploit STOP_FST.
       { unfold STOP. left. ss. }
       i. des. subst.
@@ -519,10 +518,13 @@ Proof.
       hexploit lift_mmt; try exact TRACE; eauto. instantiate (1 := []). (* TODO: [] is temporary instantiation *)
       i. des. ss.
       specialize LIFT2 with mmts. repeat rewrite <- Mmts.proj_idemp in LIFT2. rewrite Mmts.proj_compl_union in LIFT2.
-      rewrite COMPL_EQ1 in LIFT2. rewrite Mmts.proj_compl_union in LIFT2.
+      rewrite COMPL_EQ0 in LIFT2. rewrite Mmts.proj_compl_union in LIFT2.
 
       destruct thr_term. ss. esplits; eauto.
-      { rewrite <- (app_nil_r tr). eapply trace_refine_app; eauto. rewrite app_nil_r. apply trace_refine_eq. }
+      { hexploit trace_refine_app; [exact H3| |]; cycle 1.
+        { rewrite app_nil_r. eauto. }
+        apply trace_refine_eq.
+      }
 
       (* STOP contradiction *)
       admit.
@@ -539,14 +541,14 @@ Proof.
       { admit. }
       admit.
     + (* seq-left-done, seq-left-done *)
-      hexploit lift_mmt; try exact SEQ_LEFT_DONE1; eauto. instantiate (1 := []). i. (* TODO: [] is temporary instantiation *)
-      hexploit lift_mmt; try exact SEQ_LEFT_DONE2; eauto. instantiate (1 := []). i.
-      hexploit lift_mmt; try exact SEQ_LEFT_DONE; eauto. instantiate (1 := []). i.
-      hexploit lift_mmt; try exact SEQ_LEFT_DONE0; eauto. instantiate (1 := []). i. des. ss.
+      hexploit lift_mmt; try exact SEQ_LEFT_DONE3; eauto. instantiate (1 := []). i. (* TODO: [] is temporary instantiation *)
+      hexploit lift_mmt; try exact SEQ_LEFT_DONE4; eauto. instantiate (1 := []). i.
+      hexploit lift_mmt; try exact SEQ_LEFT_DONE0; eauto. instantiate (1 := []). i.
+      hexploit lift_mmt; try exact SEQ_LEFT_DONE1; eauto. instantiate (1 := []). i. des. ss.
 
       assert (MMTS_PROJ_EQ: mmts1 |₁ mmt_id_exp [] labs_l = Thread.mmts thr_term |₁ mmt_id_exp [] labs_l).
       { admit. }
-      rewrite <- MMTS_PROJ_EQ in *. hexploit IHENVTJ1; eauto. unfold DR. intros X. hexploit X; try exact UNLIFT2; eauto. i. des. ss.
+      rewrite <- MMTS_PROJ_EQ in *. hexploit IHENVTJ1; eauto. unfold DR. intros X. hexploit X; try exact UNLIFT2; eauto. s. i. des. ss.
       hexploit STOP_FST.
       { unfold STOP. left. ss. }
       i. des. subst.
@@ -558,7 +560,7 @@ Proof.
       { rewrite H2 in *. ss. }
       intros MMTS_EQ. rewrite <- MMTS_EQ in *. rewrite <- MMTS_PROJ_EQ in TRACE.
 
-      hexploit IHENVTJ2; eauto. unfold DR. intros Y. hexploit Y; try exact SEQ_LEFT_DONE2; eauto. i. des. ss.
+      hexploit IHENVTJ2; eauto. unfold DR. intros Y. hexploit Y; try exact SEQ_LEFT_DONE4; eauto. i. des. ss.
 
       (* stmt lift *)
       admit.
