@@ -110,7 +110,7 @@ Proof.
   - admit.
 Qed.
 
-(* Lemma lift_stmt:
+Lemma lift_stmt:
   forall env tr s ts mmts thr_term s',
     Thread.rtc env [] tr (Thread.mk s [] ts mmts) thr_term ->
   exists s_m c_m,
@@ -159,11 +159,8 @@ Proof.
     esplits; eauto. econs; eauto.
     { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
     ss.
-  - destruct (sem_expr (TState.regs ts) e == Val.bool true).
-    + hexploit seq_cases; eauto. i. des.
-      * esplits; eauto.
-        { econs; eauto.
-          { econs; [| rewrite app_nil_r]; ss. econs 10. econs; eauto; ss. try by econs; econs; eauto. }
-
-        }
-Qed. *)
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+Qed.

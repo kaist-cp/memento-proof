@@ -1,5 +1,6 @@
 Require Import EquivDec.
 Require Import Ensembles.
+Require Import FunctionalExtensionality.
 Require Import Lia.
 Require Import List.
 Import ListNotations.
@@ -604,7 +605,7 @@ Proof.
         rewrite app_nil_r in CONT. destruct c_loops; ss; inv CONT; cycle 1.
         { destruct c_loops; ss. }
         hexploit lift_mmt; eauto. ss. instantiate (1 := mid). i. des.
-        specialize COMPL_EQ with (mid ++ [lab]).
+        eapply equal_f in COMPL_EQ. revert COMPL_EQ. instantiate (1 := (mid ++ [lab])). i.
         assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs')) (mid ++ [lab])).
         { clear - NIN.
           unfold Ensembles.In. unfold Complement. ii.
@@ -682,7 +683,7 @@ Proof.
             i. des. ss.
       * (* EX1: CHKPT-REPLAY *)
         hexploit lift_mmt; eauto. ss. instantiate (1 := mid). i. des.
-        specialize COMPL_EQ with (mid ++ [lab]).
+        eapply equal_f in COMPL_EQ. revert COMPL_EQ. instantiate (1 := (mid ++ [lab])). i.
         assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs')) (mid ++ [lab])).
         { clear - NIN.
           unfold Ensembles.In. unfold Complement. ii.
@@ -785,7 +786,7 @@ Proof.
         rewrite app_nil_r in CONT. destruct c_loops; ss; inv CONT; cycle 1.
         { destruct c_loops; ss. }
         hexploit lift_mmt; eauto. ss. instantiate (1 := mid). i. des.
-        specialize COMPL_EQ with (mid ++ [lab]).
+        eapply equal_f in COMPL_EQ. revert COMPL_EQ. instantiate (1 := (mid ++ [lab])). i.
         assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs')) (mid ++ [lab])).
         { clear - NIN.
           unfold Ensembles.In. unfold Complement. ii.
@@ -1095,7 +1096,7 @@ Proof.
       * (* EX1: CHKPT-REPLAY *)
         rewrite app_nil_r in *. subst.
         hexploit lift_mmt; eauto. ss. instantiate (1 := mid). i. des.
-        specialize COMPL_EQ with (mid ++ [lab]).
+        eapply equal_f in COMPL_EQ. revert COMPL_EQ. instantiate (1 := (mid ++ [lab])). i.
         assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs')) (mid ++ [lab])).
         { clear - NIN.
           unfold Ensembles.In. unfold Complement. ii.
