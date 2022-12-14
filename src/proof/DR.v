@@ -533,6 +533,10 @@ Proof.
       i. des. subst.
 
       (* stmt lift *)
+      hexploit lift_stmt; eauto. s. instantiate (1 := s_r). i. des.
+      unfold seq_sc in H0. ss. apply pair_equal_spec in H0. des. subst.
+      destruct thr_term'. ss. esplits; try eapply Thread.rtc_trans; eauto.
+      { admit. }
       admit.
     + (* seq-left-done, seq-left-done *)
       hexploit lift_mmt; try exact SEQ_LEFT_DONE1; eauto. instantiate (1 := []). i. (* TODO: [] is temporary instantiation *)
