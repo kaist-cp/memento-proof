@@ -534,11 +534,12 @@ Proof.
       { unfold STOP. left. ss. }
       i. des. subst.
 
-      (* stmt lift *)
       hexploit lift_stmt; eauto. s. instantiate (1 := s_r). i. des.
       unfold seq_sc in H0. ss. apply pair_equal_spec in H0. des. subst.
       destruct thr_term'. ss. esplits; try eapply Thread.rtc_trans; eauto.
-      { admit. }
+      { rewrite app_assoc. apply trace_refine_app; ss. apply trace_refine_eq. }
+
+      (* STOP contradiction *)
       admit.
     + (* seq-left-done, seq-left-done *)
       hexploit lift_mmt; try exact SEQ_LEFT_DONE3; eauto. instantiate (1 := []). i. (* TODO: [] is temporary instantiation *)
@@ -562,9 +563,12 @@ Proof.
 
       hexploit IHENVTJ2; eauto. unfold DR. intros Y. hexploit Y; try exact SEQ_LEFT_DONE4; eauto. i. des. ss.
 
-      (* stmt lift *)
-      admit.
-
+      hexploit lift_stmt; try exact SEQ_LEFT_DONE3; eauto. s. instantiate (1 := s_r). i. des.
+      unfold seq_sc in H4. ss. apply pair_equal_spec in H4. des. subst.
+      destruct thr_term'. ss. esplits; try eapply Thread.rtc_trans; eauto.
+      { rewrite <- app_assoc. apply trace_refine_app; try apply trace_refine_eq. apply trace_refine_nil_ins; ss. }
+      intros STOP. apply STOP_FST0 in STOP. des. splits; ss.
+      rewrite <- (app_nil_l []). apply trace_refine_app; ss.
   - inversion EX1; [subst|].
     { destruct thr_term'. esplits; ss; eauto; [apply trace_refine_eq |].
       i. inv H; des; ss.

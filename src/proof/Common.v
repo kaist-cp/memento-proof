@@ -81,6 +81,27 @@ Proof.
   all: eauto.
 Qed.
 
+Lemma trace_refine_nil_ins :
+  forall tr tr1 tr2 tr',
+    tr ~ tr1 ++ tr2 ->
+    [] ~ tr' ->
+  tr ~ tr1 ++ tr' ++ tr2.
+Proof.
+  intros tr tr1 tr2. revert tr tr1. induction tr2 using rev_ind; i; ss.
+  { admit. }
+  inv H.
+  - destruct tr1, tr2; ss.
+  - rewrite app_assoc in TRACE2. rewrite snoc_eq_snoc in TRACE2. des. subst.
+    econs 2; cycle 2.
+    { rewrite app_assoc. rewrite app_assoc. ss. }
+    all: ss.
+    rewrite <- app_assoc. apply IHtr2; ss.
+  - rewrite app_assoc in TRACE2. rewrite snoc_eq_snoc in TRACE2. des. subst.
+    econs 3; cycle 1.
+    { rewrite app_assoc. rewrite app_assoc. ss. }
+    rewrite <- app_assoc. apply IHtr2; ss.
+Qed.
+
 Inductive mmt_id_exp (mid_pfx: list Label) (labs: Ensemble Label) : Ensemble (list Label) :=
 | mmt_id_exp_intro
   lab mid mid_sfx
