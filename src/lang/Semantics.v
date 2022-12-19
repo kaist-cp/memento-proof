@@ -1,3 +1,4 @@
+Require Import Classical_Prop.
 Require Import Ensembles.
 Require Import FunctionalExtensionality.
 Require Import Lia.
@@ -177,8 +178,24 @@ Module Mmts.
     forall mmts mids,
       proj mmts mids = proj (proj mmts mids) mids.
   Proof.
-    i. unfold proj. apply FunctionalExtensionality.functional_extensionality. i.
+    i. unfold proj. apply functional_extensionality. i.
     condtac; ss.
+  Qed.
+
+  Lemma proj_disj_eq:
+    forall mmts0 mmts1 mids mids',
+      proj mmts0 (Complement _ mids) = proj mmts1 (Complement _ mids) ->
+      Disjoint _ mids mids' ->
+    proj mmts0 mids' = proj mmts1 mids'.
+  Proof.
+    i. apply functional_extensionality. i.
+    unfold proj. condtac; ss.
+    eapply equal_f in H. revert H. instantiate (1 := x). unfold proj. condtac; ss. i. cleartriv.
+    exfalso.
+    (* apply n. *)
+    inv H0. specialize H with x. apply H.
+    econs; ss. unfold Ensembles.In in *. unfold Complement in *. unfold Ensembles.In in *.
+    apply NNPP. ss.
   Qed.
 End Mmts.
 

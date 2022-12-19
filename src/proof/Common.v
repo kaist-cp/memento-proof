@@ -145,3 +145,11 @@ Inductive mmt_id_exp (mid_pfx: list Label) (labs: Ensemble Label) : Ensemble (li
   (MID: mid = mid_pfx ++ [lab] ++ mid_sfx)
   : Ensembles.In _ (mmt_id_exp mid_pfx labs) mid
 .
+
+Lemma exp_disj_pres:
+  forall mids0 mids1 pfx,
+    Disjoint _ mids0 mids1 ->
+  Disjoint _ (mmt_id_exp pfx mids0) (mmt_id_exp pfx mids1).
+Proof.
+  admit.
+Qed.

@@ -505,7 +505,7 @@ Proof.
       hexploit lift_mmt; try exact SEQ_LEFT_ONGOING; eauto. instantiate (1 := []). i. des. ss.
 
       assert (MMTS_PROJ_EQ: mmts0 |₁ mmt_id_exp [] labs_l = Thread.mmts thr_term |₁ mmt_id_exp [] labs_l).
-      { admit. }
+      { eapply Mmts.proj_disj_eq; eauto. apply exp_disj_pres. econs. ii. inv DISJ. eapply H0. inv H. econs; eauto. }
       rewrite <- MMTS_PROJ_EQ in *. hexploit IHENVTJ1; eauto. unfold DR. intros X. hexploit X; try exact UNLIFT0; eauto. i. des. ss.
       hexploit STOP_FST.
       { unfold STOP. left. ss. }
@@ -554,7 +554,7 @@ Proof.
       hexploit lift_mmt; try exact SEQ_LEFT_DONE1; eauto. instantiate (1 := []). i. des. ss.
 
       assert (MMTS_PROJ_EQ: mmts1 |₁ mmt_id_exp [] labs_l = Thread.mmts thr_term |₁ mmt_id_exp [] labs_l).
-      { admit. }
+      { eapply Mmts.proj_disj_eq; eauto. apply exp_disj_pres. econs. ii. inv DISJ. eapply H0. inv H. econs; eauto. }
       rewrite <- MMTS_PROJ_EQ in *. hexploit IHENVTJ1; eauto. unfold DR. intros X. hexploit X; try exact UNLIFT2; eauto. s. i. des. ss.
       hexploit STOP_FST.
       { unfold STOP. left. ss. }
