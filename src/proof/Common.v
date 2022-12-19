@@ -39,6 +39,42 @@ Proof.
     apply in_app_r. ss. left. ss.
 Qed.
 
+Lemma seq_sc_stop :
+  forall s c s' s_p c_p,
+    __guard__ (s <> [] \/ c <> []) ->
+    (STOP s c -> False) ->
+    (s, c) ++₁ s' = (s_p, c_p) ->
+    STOP s_p c_p ->
+  False.
+Proof.
+  i. apply H0. clear H0. unfold STOP in *. des; subst.
+  - destruct c using rev_ind; cycle 1.
+    { rewrite seq_sc_last in H1. rewrite pair_equal_spec in H1. des. destruct c; ss. }
+    unguard. des; ss. destruct s; ss.
+  - destruct c using rev_ind; cycle 1.
+    { rewrite seq_sc_last in H1. rewrite pair_equal_spec in H1. des. destruct c; ss. }
+    unguard. des; ss. destruct s; ss.
+    unfold seq_sc in H1. ss. rewrite pair_equal_spec in H1. des. inv H1.
+    right. left. eauto.
+  - destruct c using rev_ind; cycle 1.
+    { rewrite seq_sc_last in H1. rewrite pair_equal_spec in H1. des. destruct c; ss. }
+    unguard. des; ss. destruct s; ss.
+    unfold seq_sc in H1. ss. rewrite pair_equal_spec in H1. des. inv H1.
+    right. right. left. eauto.
+  - destruct c using rev_ind; cycle 1.
+    + rewrite seq_sc_last in H1. rewrite pair_equal_spec in H1. des. subst.
+      right. right. right. esplits; eauto.
+      apply Cont.loops_app_distr in RETURN0. des.
+      apply Cont.loops_app_distr. split; ss.
+      unfold Cont.Loops in *. destruct x; ss.
+      * i. des; ss. eauto.
+      * hexploit RETURN1; eauto. i. des. ss. ss.
+      * hexploit RETURN1; eauto. i. des. ss. ss.
+    + unguard. des; ss. destruct s; ss.
+      unfold seq_sc in H1. ss. rewrite pair_equal_spec in H1. des. inv H1.
+      right. right. right. eauto.
+Qed.
+
 Inductive trace_refine (tr1 tr2: list Event.t) : Prop :=
 | refine_empty
   (EMPTY1: tr1 = [])

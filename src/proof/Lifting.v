@@ -1033,7 +1033,7 @@ Proof.
         { rewrite snoc_eq_snoc in CONT. des. ss. }
         rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
         rewrite CONT in CALL_DONE3. rewrite app_comm_cons' in CALL_DONE3.
-        repeat (repeat apply Cont.loops_app_distr in CALL_DONE3; des).
+        repeat (repeat rewrite Cont.loops_app_distr in CALL_DONE3; des).
         unfold Cont.Loops in *. hexploit CALL_DONE1; [apply in_eq |].
         i. des. ss.
       }
@@ -1041,7 +1041,7 @@ Proof.
       { exfalso. clear - CALL_DONE3 CONT.
         rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
         rewrite CONT in CALL_DONE3. rewrite app_comm_cons' in CALL_DONE3.
-        repeat (repeat apply Cont.loops_app_distr in CALL_DONE3; des).
+        repeat (repeat rewrite Cont.loops_app_distr in CALL_DONE3; des).
         unfold Cont.Loops in *. hexploit CALL_DONE1; [apply in_eq |].
         i. des. ss.
       }
@@ -1155,7 +1155,7 @@ Proof.
         { rewrite snoc_eq_snoc in CONT. des. ss. }
         rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
         rewrite CONT in CALL_DONE3. rewrite app_comm_cons' in CALL_DONE3.
-        repeat (repeat apply Cont.loops_app_distr in CALL_DONE3; des).
+        repeat (repeat rewrite Cont.loops_app_distr in CALL_DONE3; des).
         unfold Cont.Loops in *. hexploit CALL_DONE1; [apply in_eq |].
         i. des. ss.
       }
@@ -1163,7 +1163,7 @@ Proof.
       { exfalso. clear - CALL_DONE3 CONT.
         rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
         rewrite CONT in CALL_DONE3. rewrite app_comm_cons' in CALL_DONE3.
-        repeat (repeat apply Cont.loops_app_distr in CALL_DONE3; des).
+        repeat (repeat rewrite Cont.loops_app_distr in CALL_DONE3; des).
         unfold Cont.Loops in *. hexploit CALL_DONE1; [apply in_eq |].
         i. des. ss.
       }

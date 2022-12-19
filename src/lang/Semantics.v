@@ -70,12 +70,15 @@ Module Cont.
 
   Lemma loops_app_distr :
     forall c1 c2,
-      Loops (c1 ++ c2) ->
-    Loops c1 /\ Loops c2.
+      Loops (c1 ++ c2) <-> Loops c1 /\ Loops c2.
   Proof.
     unfold Loops. i. split.
-    - i. apply H. apply in_app_iff. auto.
-    - i. apply H. apply in_app_iff. auto.
+      - split.
+        + i. apply H. apply in_app_iff. auto.
+        + i. apply H. apply in_app_iff. auto.
+      - i. des. rewrite in_app_iff in H0. des.
+        + apply H in H0. des. subst. eauto.
+        + apply H1 in H0. des. subst. eauto.
   Qed.
 End Cont.
 
