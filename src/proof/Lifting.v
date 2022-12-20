@@ -1261,9 +1261,12 @@ Lemma lift_stmt:
     /\ (s_m, c_m) = (thr_term.(Thread.stmt), thr_term.(Thread.cont)) ++₁ s'.
 Proof.
   intros env tr s. revert env tr. induction s; i; ss.
-  { admit. }
+  { hexploit stop_means_no_step; eauto.
+    { s. unfold STOP. left. split; ss. }
+    i. des. subst. s. unfold seq_sc. s. esplits; eauto. econs.
+  }
   inv H; ss.
-  { admit. }
+  { unfold seq_sc. s. esplits; eauto. econs. }
   inv ONE. rewrite app_nil_r in *. subst. inv NORMAL_STEP; inv STEP; ss; inv STMT.
   - hexploit IHs; eauto. i. des.
     esplits; eauto. econs; eauto.
@@ -1310,5 +1313,5 @@ Proof.
 
   - admit.
   - admit.
-  - admit.
+  - destruct c_loops; ss.
 Qed.
