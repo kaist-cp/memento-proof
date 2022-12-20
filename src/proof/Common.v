@@ -151,5 +151,7 @@ Lemma exp_disj_pres:
     Disjoint _ mids0 mids1 ->
   Disjoint _ (mmt_id_exp pfx mids0) (mmt_id_exp pfx mids1).
 Proof.
-  admit.
+  i. econs. ii. inv H0. inv H1. inv H2.
+  apply app_inv_head in MID. inv MID.
+  inv H. specialize H0 with lab0. apply H0. econs; ss.
 Qed.
