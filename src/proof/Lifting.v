@@ -1251,7 +1251,21 @@ Proof.
   - admit.
 Qed.
 
-Lemma lift_stmt:
+Lemma lift_stmt_cons:
+  forall env tr s c ts mmts thr_term c_pfx c_base s',
+    Thread.rtc env c tr (Thread.mk s c ts mmts) thr_term ->
+    c = c_pfx ++ [c_base] ->
+  exists c_m c_term,
+    Thread.rtc env c_m tr
+      (Thread.mk s c_m ts mmts)
+      (Thread.mk thr_term.(Thread.stmt) c_term thr_term.(Thread.ts) thr_term.(Thread.mmts))
+    /\ c_m = c_pfx ++ [Cont.seq c_base s']
+    /\ (thr_term.(Thread.stmt), c_term) = (thr_term.(Thread.stmt), thr_term.(Thread.cont)) ++₁ s'.
+Proof.
+  admit.
+Qed.
+
+Lemma lift_stmt_nil:
   forall env tr s ts mmts thr_term s',
     Thread.rtc env [] tr (Thread.mk s [] ts mmts) thr_term ->
   exists s_m c_m,
@@ -1314,4 +1328,21 @@ Proof.
   - admit.
   - admit.
   - destruct c_loops; ss.
+Qed.
+
+Lemma lift_stmt:
+  forall env tr s c ts mmts thr_term s',
+    Thread.rtc env c tr (Thread.mk s c ts mmts) thr_term ->
+  exists s0 c0 s1 c1,
+    Thread.rtc env c0 tr
+      (Thread.mk s0 c0 ts mmts)
+      (Thread.mk s1 c1 thr_term.(Thread.ts) thr_term.(Thread.mmts))
+    /\ (s0, c0) = (s, c) ++₁ s'
+    /\ (s1, c1) = (thr_term.(Thread.stmt), thr_term.(Thread.cont)) ++₁ s'.
+Proof.
+  i. destruct c using rev_ind; ss.
+  - hexploit lift_stmt_nil; eauto. i. des.
+    esplits; eauto. ss.
+  - hexploit lift_stmt_cons; eauto. i. des.
+    esplits; eauto. subst. rewrite seq_sc_last. ss.
 Qed.
