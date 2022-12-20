@@ -498,7 +498,20 @@ Proof.
     hexploit seq_cases; try exact EX2; eauto. hexploit seq_cases; try exact EX1; eauto. i. des; subst.
     + (* seq-left-ongoing, seq-left-ongoing *)
       hexploit IHENVTJ1; eauto. unfold DR. intros X. hexploit X; try exact SEQ_LEFT_ONGOING2; eauto. i. des. ss.
-      admit.
+      hexploit lift_stmt; eauto. s. instantiate (1 := s_r). i. des.
+      esplits; eauto.
+      * assert (STOP s_m0 c_m0 \/ ~ STOP s_m0 c_m0); [apply classic |]. des.
+        -- generalize H1. intros STOP. apply STOP_FST in STOP. des. subst. i.
+           rewrite <- H0 in *. rewrite pair_equal_spec in *. des. subst. split; ss.
+        -- i. exfalso.
+           symmetry in SEQ_LEFT_ONGOING3. hexploit seq_sc_stop; try exact SEQ_LEFT_ONGOING3; eauto. i.
+           apply H3 in H2. ss.
+      * assert (STOP s_m c_m \/ ~ STOP s_m c_m); [apply classic |]. des.
+        -- generalize H1. intros STOP. apply STOP_SND in STOP. des. subst. i.
+           rewrite <- H0 in *. rewrite pair_equal_spec in *. des. subst. split; ss.
+        -- i. exfalso.
+           symmetry in SEQ_LEFT_ONGOING3. hexploit seq_sc_stop; try exact SEQ_LEFT_ONGOING0; eauto. i.
+           apply H3 in H2. ss.
     + (* seq-left-done, seq-left-ongoing *)
       hexploit lift_mmt; try exact SEQ_LEFT_DONE; eauto. instantiate (1 := []). i. (* TODO: [] is temporary instantiation *)
       hexploit lift_mmt; try exact SEQ_LEFT_DONE0; eauto. instantiate (1 := []). i.
@@ -528,7 +541,7 @@ Proof.
 
       (* STOP contradiction *)
       cut (STOP s_m c_m -> False).
-      { i. unguard. hexploit seq_sc_stop; eauto. ss. }
+      { i. unguard. hexploit seq_sc_stop; eauto. intuition. }
 
       intro CONTRA. apply STOP_SND in CONTRA. des. subst. unguard. des; ss.
     + (* seq-left-ongoing, seq-left-done *)
@@ -544,7 +557,7 @@ Proof.
 
       (* STOP contradiction *)
       cut (STOP s_m c_m -> False).
-      { i. unguard. hexploit seq_sc_stop; eauto. ss. }
+      { i. unguard. hexploit seq_sc_stop; eauto. intuition. }
 
       intro CONTRA. apply STOP_FST in CONTRA. des. subst. unguard. des; ss.
     + (* seq-left-done, seq-left-done *)
