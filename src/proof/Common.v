@@ -142,7 +142,7 @@ Lemma trace_refine_nil_ins :
   tr ~ tr1 ++ tr' ++ tr2.
 Proof.
   intros tr tr1 tr2. revert tr tr1. induction tr2 using rev_ind; i; ss.
-  { admit. }
+  { rewrite app_nil_r in *. rewrite <- (app_nil_r tr). apply trace_refine_app; ss. }
   inv H.
   - destruct tr1, tr2; ss.
   - rewrite app_assoc in TRACE2. rewrite snoc_eq_snoc in TRACE2. des. subst.
