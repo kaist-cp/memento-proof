@@ -157,7 +157,7 @@ Proof.
   - destruct thr. ss. subst.
     assert (c2 = [] \/ exists c2', c2 = c2' ++ [c']).
     { clear - c2 CONT.
-      hexploit list_construct_app. instantiate (4 := c2). i. des; [left | right]; ss. subst.
+      destruct c2 using rev_ind; [left | right]; ss.
       rewrite <- rev_eq in CONT. repeat rewrite rev_app in CONT. ss.
       rewrite rev_unit in CONT. rewrite <- app_assoc in CONT. inv CONT.
       esplits. eauto.
@@ -213,7 +213,7 @@ Proof.
   - destruct thr. ss. subst.
     assert (c_rem = [] \/ exists c_rem', c_rem = c_rem' ++ [c']).
     { clear - c_rem CONT.
-      hexploit list_construct_app. instantiate (4 := c_rem). i. des; [left | right]; ss. subst.
+      destruct c_rem using rev_ind; [left | right]; ss.
       rewrite <- rev_eq in CONT. repeat rewrite rev_app in CONT. ss.
       rewrite rev_unit in CONT. inv CONT.
       esplits. eauto.
@@ -234,7 +234,7 @@ Proof.
   - destruct thr. ss. subst.
     assert (c2 = [] \/ exists c2', c2 = c2' ++ [c']).
     { clear - c2 CONT.
-      hexploit list_construct_app. instantiate (4 := c2). i. des; [left | right]; ss. subst.
+      destruct c2 using rev_ind; [left | right]; ss.
       rewrite <- rev_eq in CONT. repeat rewrite rev_app in CONT. ss.
       rewrite rev_unit in CONT. ss. inv CONT.
       esplits. eauto.
@@ -267,7 +267,7 @@ Proof.
   - destruct thr. ss. subst.
     assert (c2 = [] \/ exists c2', c2 = c2' ++ [c']).
     { clear - c2 CONT.
-      hexploit list_construct_app. instantiate (4 := c2). i. des; [left | right]; ss. subst.
+      destruct c2 using rev_ind; [left | right]; ss.
       rewrite <- rev_eq in CONT. repeat rewrite rev_app in CONT. ss.
       rewrite rev_unit in CONT. rewrite <- app_assoc in CONT. inv CONT.
       esplits. eauto.
@@ -380,7 +380,7 @@ Proof.
   - destruct thr. ss. subst.
     assert (c2 = [] \/ exists c2', c2 = c2' ++ [c']).
     { clear - c2 CONT.
-      hexploit list_construct_app. instantiate (4 := c2). i. des; [left | right]; ss. subst.
+      destruct c2 using rev_ind; [left | right]; ss.
       rewrite <- rev_eq in CONT. repeat rewrite rev_app in CONT. ss.
       rewrite rev_unit in CONT. rewrite <- app_assoc in CONT. inv CONT.
       esplits. eauto.
@@ -422,7 +422,7 @@ Proof.
   - destruct thr. ss. subst.
     assert (c_rem = [] \/ exists c_rem', c_rem = c_rem' ++ [c']).
     { clear - c_rem CONT.
-      hexploit list_construct_app. instantiate (4 := c_rem). i. des; [left | right]; ss. subst.
+      destruct c_rem using rev_ind; [left | right]; ss.
       rewrite <- rev_eq in CONT. repeat rewrite rev_app in CONT. ss.
       rewrite rev_unit in CONT. inv CONT.
       esplits. eauto.
@@ -449,7 +449,7 @@ Proof.
   - destruct thr. ss. subst.
     assert (c2 = [] \/ exists c2', c2 = c2' ++ [c']).
     { clear - c2 CONT.
-      hexploit list_construct_app. instantiate (4 := c2). i. des; [left | right]; ss. subst.
+      destruct c2 using rev_ind; [left | right]; ss.
       rewrite <- rev_eq in CONT. repeat rewrite rev_app in CONT. ss.
       rewrite rev_unit in CONT. inv CONT.
       esplits. eauto.
@@ -480,7 +480,7 @@ Proof.
   - destruct thr. ss. subst.
     assert (c2 = [] \/ exists c2', c2 = c2' ++ [c']).
     { clear - c2 CONT.
-      hexploit list_construct_app. instantiate (4 := c2). i. des; [left | right]; ss. subst.
+      destruct c2 using rev_ind; [left | right]; ss.
       rewrite <- rev_eq in CONT. repeat rewrite rev_app in CONT. ss.
       rewrite rev_unit in CONT. rewrite <- app_assoc in CONT. inv CONT.
       esplits. eauto.
