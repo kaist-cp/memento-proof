@@ -251,29 +251,18 @@ Proof.
       * destruct thr_term'. esplits; eauto.
         { hexploit trace_refine_app; [apply trace_refine_eq | apply H | rewrite app_nil_l; eauto]. }
         unfold STOP. i. des; try by destruct c_pfx; ss.
-        unfold Cont.Loops in RETURN0. exploit RETURN0.
-        { instantiate (1 := Cont.chkptcont (TState.regs ts) r0 [] (mid ++ [lab])).
-          rewrite in_app_iff. right. ss. left. ss.
-        }
-        i. des. ss.
+        rewrite Cont.loops_app_distr in *. des. inv RETURN1. ss.
       * inv CALL_DONE2. inv ONE; inv NORMAL_STEP; inv STEP; ss; inv STMT; cycle 1.
-        { exfalso. clear - CALL_DONE3 CONT.
-          rewrite app_nil_r in CONT. destruct c' using List.rev_ind.
-          { rewrite snoc_eq_snoc in CONT. des. ss. }
-          rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
-          rewrite CONT in CALL_DONE3. rewrite app_comm_cons' in CALL_DONE3.
-          repeat (repeat rewrite Cont.loops_app_distr in CALL_DONE3; des).
-          unfold Cont.Loops in *. hexploit CALL_DONE1; [apply in_eq |].
-          i. des. ss.
+        { hexploit Cont.loops_base_cont_eq; try exact CONT; eauto.
+          { ii. inv H0. ss. }
+          { ii. inv H0. ss. }
+          i. ss.
         }
-        rewrite app_nil_r in CONT. destruct c' using List.rev_ind; cycle 1.
-        { rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
-          rewrite CONT in CALL_DONE3. rewrite app_comm_cons' in CALL_DONE3.
-          repeat (repeat rewrite Cont.loops_app_distr in CALL_DONE3; des).
-          unfold Cont.Loops in *. hexploit CALL_DONE4; [apply in_eq |].
-          i. des. ss.
-        }
-        rewrite snoc_eq_snoc in CONT. des. inv CONT0.
+        hexploit Cont.loops_base_cont_eq; try exact CONT; eauto.
+        { ii. inv H0. ss. }
+        { ii. inv H0. ss. }
+        i. inv H0. rewrite app_nil_r in *. subst.
+        rewrite snoc_eq_snoc in CONT. des. subst.
         hexploit stop_means_no_step; eauto; ss.
         { unfold STOP. left. ss. }
         i. des. inv H0. rewrite app_nil_r in *.
@@ -327,37 +316,25 @@ Proof.
       * econs 2; eauto; cycle 1.
         { rewrite app_nil_l. ss. }
         econs; eauto. rewrite app_nil_r. ss.
-      * unfold STOP. unfold Cont.Loops. i. des; try by destruct c_pfx; ss.
-        hexploit RETURN0.
-        { rewrite in_app_iff. right. ss. left. ss. }
-        i. des. ss.
+      * unfold STOP. i. des; try by destruct c_pfx; ss.
+        rewrite Cont.loops_app_distr in *. des. inv RETURN1. ss.
       * unfold STOP. unfold Cont.Loops. i. des; try by destruct c_pfx0; ss.
-        hexploit RETURN0.
-        { rewrite in_app_iff. right. ss. left. ss. }
-        i. des. ss.
+        rewrite Cont.loops_app_distr in *. des. inv RETURN1. ss.
     + (* (ONGOING, DONE) *)
       hexploit CALL_DONE3; ss. i. clear CALL_DONE3.
       destruct thr_term. destruct thr_term'. ss. subst.
       hexploit IHF; eauto. ss. i. des.
       inv CALL_DONE2. inv ONE; inv NORMAL_STEP0; inv STEP; ss; inv STMT.
-      { exfalso. rename H into LOOPS_CR. clear - LOOPS_CR CONT.
-        rewrite app_nil_r in CONT. destruct c' using List.rev_ind.
-        { rewrite snoc_eq_snoc in CONT. des. ss. }
-        rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
-        rewrite CONT in LOOPS_CR. rewrite app_comm_cons' in LOOPS_CR.
-        repeat (repeat rewrite Cont.loops_app_distr in LOOPS_CR; des).
-        unfold Cont.Loops in *. hexploit LOOPS_CR1; [apply in_eq |].
-        i. des. ss.
+      { hexploit Cont.loops_base_cont_eq; try exact CONT; eauto.
+        { ii. inv H0. ss. }
+        { ii. inv H0. ss. }
+        i. ss.
       }
-      rewrite app_nil_r in CONT. destruct c' using List.rev_ind; cycle 1.
-      { rename H into LOOPS_CR.
-        rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
-        rewrite CONT in LOOPS_CR. rewrite app_comm_cons' in LOOPS_CR.
-        repeat (repeat rewrite Cont.loops_app_distr in LOOPS_CR; des).
-        unfold Cont.Loops in *. hexploit LOOPS_CR1; [apply in_eq |].
-        i. des. ss.
-      }
-      rewrite snoc_eq_snoc in CONT. des. inv CONT0.
+      hexploit Cont.loops_base_cont_eq; try exact CONT; eauto.
+      { ii. inv H0. ss. }
+      { ii. inv H0. ss. }
+      i. inv H0. rewrite app_nil_r in *. subst.
+      rewrite snoc_eq_snoc in CONT. des. subst.
       hexploit stop_means_no_step; eauto; ss.
       { unfold STOP. left. ss. }
       i. des. inv H0. rewrite app_nil_r in *.
@@ -374,35 +351,22 @@ Proof.
         econs 2; eauto; try rewrite app_nil_r; ss.
         econs; try rewrite app_nil_r; ss. try by econs; econs; eauto.
       * unfold STOP. unfold Cont.Loops. i. des; try by destruct c_pfx; ss.
-        hexploit RETURN0.
-        { instantiate (1 := Cont.fncont (TState.regs ts) r0 []).
-          rewrite in_app_iff. right. ss. left. ss.
-        }
-        i. des. ss.
+        rewrite Cont.loops_app_distr in *. des. inv RETURN1. ss.
     + (* (DONE, ONGOING) *)
       inv CALL_DONE2. inv ONE; inv NORMAL_STEP0; inv STEP; ss; inv STMT.
-      { exfalso. rename CALL_DONE3 into LOOPS_CR. clear - LOOPS_CR CONT.
-        rewrite app_nil_r in CONT. destruct c' using List.rev_ind.
-        { rewrite snoc_eq_snoc in CONT. des. ss. }
-        rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
-        rewrite CONT in LOOPS_CR. rewrite app_comm_cons' in LOOPS_CR.
-        repeat (repeat rewrite Cont.loops_app_distr in LOOPS_CR; des).
-        unfold Cont.Loops in *. hexploit LOOPS_CR1; [apply in_eq |].
-        i. des. ss.
+      { hexploit Cont.loops_base_cont_eq; try exact CONT; eauto.
+        { ii. inv H. ss. }
+        { ii. inv H. ss. }
+        i. ss.
       }
-      rewrite app_nil_r in CONT. destruct c' using List.rev_ind; cycle 1.
-      { rename CALL_DONE3 into LOOPS_CR.
-        rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
-        rewrite CONT in LOOPS_CR. rewrite app_comm_cons' in LOOPS_CR.
-        repeat (repeat rewrite Cont.loops_app_distr in LOOPS_CR; des).
-        unfold Cont.Loops in *. hexploit LOOPS_CR1; [apply in_eq |].
-        i. des. ss.
-      }
-      rewrite snoc_eq_snoc in CONT. des. inv CONT0.
+      hexploit Cont.loops_base_cont_eq; try exact CONT; eauto.
+      { ii. inv H. ss. }
+      { ii. inv H. ss. }
+      i. inv H. rewrite app_nil_r in *. subst.
+      rewrite snoc_eq_snoc in CONT. des. subst.
       hexploit stop_means_no_step; eauto; ss.
       { unfold STOP. left. ss. }
-      i. des. inv H0. rewrite app_nil_r in *.
-
+      i. des. inv H0. ss. rewrite app_nil_r in *.
       hexploit IHF; eauto. ss. i. des.
       hexploit STOP_FST.
       { unfold STOP. repeat right. esplits; ss. }
@@ -413,52 +377,34 @@ Proof.
         apply trace_refine_eq.
       * destruct thr_term'. ss. subst.
         unfold STOP. unfold Cont.Loops. i. des; try by destruct c_pfx; ss.
-        hexploit RETURN0.
-        { rewrite in_app_iff. right. ss. left. ss. }
-        i. des. ss.
+        rewrite Cont.loops_app_distr in *. des. inv RETURN1. ss.
     + (* (DONE, DONE) *)
       inv CALL_DONE7. inv ONE; inv NORMAL_STEP0; inv STEP; ss; inv STMT.
-      { exfalso. rename CALL_DONE8 into LOOPS_CR. clear - LOOPS_CR CONT.
-        rewrite app_nil_r in CONT. destruct c' using List.rev_ind.
-        { rewrite snoc_eq_snoc in CONT. des. ss. }
-        rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
-        rewrite CONT in LOOPS_CR. rewrite app_comm_cons' in LOOPS_CR.
-        repeat (repeat rewrite Cont.loops_app_distr in LOOPS_CR; des).
-        unfold Cont.Loops in *. hexploit LOOPS_CR1; [apply in_eq |].
-        i. des. ss.
+      { hexploit Cont.loops_base_cont_eq; try exact CONT; eauto.
+        { ii. inv H. ss. }
+        { ii. inv H. ss. }
+        i. ss.
       }
-      rewrite app_nil_r in CONT. destruct c' using List.rev_ind; cycle 1.
-      { rename CALL_DONE8 into LOOPS_CR.
-        rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
-        rewrite CONT in LOOPS_CR. rewrite app_comm_cons' in LOOPS_CR.
-        repeat (repeat rewrite Cont.loops_app_distr in LOOPS_CR; des).
-        unfold Cont.Loops in *. hexploit LOOPS_CR1; [apply in_eq |].
-        i. des. ss.
-      }
-      rewrite snoc_eq_snoc in CONT. des. inv CONT0.
+      hexploit Cont.loops_base_cont_eq; try exact CONT; eauto.
+      { ii. inv H. ss. }
+      { ii. inv H. ss. }
+      i. inv H. rewrite app_nil_r in *. subst.
+      rewrite snoc_eq_snoc in CONT. des. subst.
       hexploit stop_means_no_step; eauto; ss.
       { unfold STOP. left. ss. }
       i. des. inv H0. rewrite app_nil_r in *.
 
       inv CALL_DONE2. inv ONE; inv NORMAL_STEP0; inv STEP; ss; inv STMT.
-      { exfalso. rename CALL_DONE3 into LOOPS_CR. clear - LOOPS_CR CONT.
-        rewrite app_nil_r in CONT. destruct c' using List.rev_ind.
-        { rewrite snoc_eq_snoc in CONT. des. ss. }
-        rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
-        rewrite CONT in LOOPS_CR. rewrite app_comm_cons' in LOOPS_CR.
-        repeat (repeat rewrite Cont.loops_app_distr in LOOPS_CR; des).
-        unfold Cont.Loops in *. hexploit LOOPS_CR1; [apply in_eq |].
-        i. des. ss.
+      { hexploit Cont.loops_base_cont_eq; try exact CONT; eauto.
+        { ii. inv H. ss. }
+        { ii. inv H. ss. }
+        i. ss.
       }
-      rewrite app_nil_r in CONT. destruct c' using List.rev_ind; cycle 1.
-      { rename CALL_DONE3 into LOOPS_CR.
-        rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des.
-        rewrite CONT in LOOPS_CR. rewrite app_comm_cons' in LOOPS_CR.
-        repeat (repeat rewrite Cont.loops_app_distr in LOOPS_CR; des).
-        unfold Cont.Loops in *. hexploit LOOPS_CR1; [apply in_eq |].
-        i. des. ss.
-      }
-      rewrite snoc_eq_snoc in CONT. des. inv CONT0.
+      hexploit Cont.loops_base_cont_eq; try exact CONT; eauto.
+      { ii. inv H. ss. }
+      { ii. inv H. ss. }
+      i. inv H. rewrite app_nil_r in *. subst.
+      rewrite snoc_eq_snoc in CONT. des. subst.
       hexploit stop_means_no_step; eauto; ss.
       { unfold STOP. left. ss. }
       i. des. inv H0. rewrite app_nil_r in *.
@@ -499,16 +445,17 @@ Proof.
     + (* seq-left-ongoing, seq-left-ongoing *)
       hexploit IHENVTJ1; eauto. unfold DR. intros X. hexploit X; try exact SEQ_LEFT_ONGOING2; eauto. i. des. ss.
       hexploit lift_stmt; eauto. s. instantiate (1 := s_r). i. des.
+      unfold seq_sc in H0. ss. rewrite pair_equal_spec in *. des. subst.
       esplits; eauto.
       * assert (STOP s_m0 c_m0 \/ ~ STOP s_m0 c_m0); [apply classic |]. des.
-        -- generalize H1. intros STOP. apply STOP_FST in STOP. des. subst. i.
-           rewrite <- H0 in *. rewrite pair_equal_spec in *. des. subst. split; ss.
+        -- generalize H0. intros STOP. apply STOP_FST in STOP. des. subst. i.
+           rewrite <- H1 in *. rewrite pair_equal_spec in *. des. subst. split; ss.
         -- i. exfalso.
            symmetry in SEQ_LEFT_ONGOING3. hexploit seq_sc_stop; try exact SEQ_LEFT_ONGOING3; eauto. i.
            apply H3 in H2. ss.
       * assert (STOP s_m c_m \/ ~ STOP s_m c_m); [apply classic |]. des.
-        -- generalize H1. intros STOP. apply STOP_SND in STOP. des. subst. i.
-           rewrite <- H0 in *. rewrite pair_equal_spec in *. des. subst. split; ss.
+        -- generalize H0. intros STOP. apply STOP_SND in STOP. des. subst. i.
+           rewrite <- H1 in *. rewrite pair_equal_spec in *. des. subst. split; ss.
         -- i. exfalso.
            symmetry in SEQ_LEFT_ONGOING3. hexploit seq_sc_stop; try exact SEQ_LEFT_ONGOING0; eauto. i.
            apply H3 in H2. ss.
@@ -551,7 +498,7 @@ Proof.
       i. des. subst.
 
       hexploit lift_stmt; eauto. s. instantiate (1 := s_r). i. des.
-      unfold seq_sc in H0. ss. apply pair_equal_spec in H0. des. subst.
+      unfold seq_sc in *. ss. apply pair_equal_spec in H0, H1. des. subst.
       destruct thr_term'. ss. esplits; try eapply Thread.rtc_trans; eauto.
       { rewrite app_assoc. apply trace_refine_app; ss. apply trace_refine_eq. }
 
@@ -583,7 +530,7 @@ Proof.
       hexploit IHENVTJ2; eauto. unfold DR. intros Y. hexploit Y; try exact SEQ_LEFT_DONE4; eauto. i. des. ss.
 
       hexploit lift_stmt; try exact SEQ_LEFT_DONE3; eauto. s. instantiate (1 := s_r). i. des.
-      unfold seq_sc in H4. ss. apply pair_equal_spec in H4. des. subst.
+      unfold seq_sc in *. ss. apply pair_equal_spec in H4, H5. des. subst.
       destruct thr_term'. ss. esplits; try eapply Thread.rtc_trans; eauto.
       { rewrite <- app_assoc. apply trace_refine_app; try apply trace_refine_eq. apply trace_refine_nil_ins; ss. }
       intros STOP. apply STOP_FST0 in STOP. des. splits; ss.

@@ -29,14 +29,10 @@ Proof.
   destruct thr. ss. unfold STOP in H. des; subst.
   all: inv ONE.
   all: inv NORMAL_STEP; inv STEP; inv STMT; ss.
-  - rewrite app_nil_r in *. subst.
-    unfold Cont.Loops in RETURN0. hexploit RETURN0; cycle 1.
-    { instantiate (1 := Cont.chkptcont rmap r s2 mid). i. des. ss. }
-    apply in_app_r. ss. left. ss.
-  - rewrite app_nil_r in *. subst.
-    unfold Cont.Loops in RETURN0. hexploit RETURN0; cycle 1.
-    { instantiate (1 := Cont.fncont rmap r s2). i. des. ss. }
-    apply in_app_r. ss. left. ss.
+  - rewrite app_nil_r in *. subst. rewrite app_comm_cons' in *. repeat rewrite Cont.loops_app_distr in *. des.
+    inv RETURN2. ss.
+  - rewrite app_nil_r in *. subst. rewrite app_comm_cons' in *. repeat rewrite Cont.loops_app_distr in *. des.
+    inv RETURN2. ss.
 Qed.
 
 Lemma seq_sc_stop :
@@ -61,10 +57,7 @@ Proof.
         right. right. right. esplits; eauto.
         apply Cont.loops_app_distr in RETURN0. des.
         apply Cont.loops_app_distr. split; ss.
-        unfold Cont.Loops in *. destruct x; ss.
-        -- i. des; ss. eauto.
-        -- hexploit RETURN1; eauto. i. des. ss. ss.
-        -- hexploit RETURN1; eauto. i. des. ss. ss.
+        econs; ss. destruct x; ss; inv RETURN1; ss.
   - i. unfold STOP in *. des; subst; ss.
     + destruct c using rev_ind; cycle 1.
       { rewrite seq_sc_last in *. rewrite pair_equal_spec in *. des. destruct c; ss. }
@@ -84,10 +77,7 @@ Proof.
         right. right. right. esplits; eauto.
         apply Cont.loops_app_distr in RETURN0. des.
         apply Cont.loops_app_distr. split; ss.
-        unfold Cont.Loops in *. destruct x; ss.
-        -- i. des; ss. eauto.
-        -- hexploit RETURN1; eauto. i. des. ss. ss.
-        -- hexploit RETURN1; eauto. i. des. ss. ss.
+        econs; ss. destruct x; ss; inv RETURN1; ss.
       * unguard. des; ss. destruct s; ss.
         unfold seq_sc in *. ss. rewrite pair_equal_spec in *. des. inv H0.
         right. right. right. eauto.

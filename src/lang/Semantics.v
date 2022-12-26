@@ -5,6 +5,7 @@ Require Import Lia.
 Require Import ZArith.
 Require Import EquivDec.
 Require Import List.
+Require Import HahnList.
 Import ListNotations.
 
 Require Import sflib.
@@ -56,11 +57,13 @@ Module Cont.
   .
   Hint Constructors t : semantics.
 
-  Definition Loops (c_loops: list t) :=
-    forall c,
-    List.In c c_loops ->
-      exists rmap r s_body s_cont,
-      c = loopcont rmap r s_body s_cont.
+  Definition is_loop (c: t) :=
+    match c with
+    | loopcont _ _ _ _ => true
+    | _ => false
+    end.
+
+  Definition Loops (c: list t) := Forall is_loop c.
 
   Definition seq (c: t) (s: list Stmt) :=
     match c with
@@ -73,13 +76,28 @@ Module Cont.
     forall c1 c2,
       Loops (c1 ++ c2) <-> Loops c1 /\ Loops c2.
   Proof.
-    unfold Loops. i. split.
-      - split.
-        + i. apply H. apply in_app_iff. auto.
-        + i. apply H. apply in_app_iff. auto.
-      - i. des. rewrite in_app_iff in H0. des.
-        + apply H in H0. des. subst. eauto.
-        + apply H1 in H0. des. subst. eauto.
+    apply Forall_app.
+  Qed.
+
+  Lemma loops_base_cont_eq :
+    forall c_loops0 c_loops1 c0 c1 c_sfx0 c_sfx1,
+      Loops c_loops0 ->
+      Loops c_loops1 ->
+      ~ Loops [c0] ->
+      ~ Loops [c1] ->
+      c_loops0 ++ c0 :: c_sfx0 = c_loops1 ++ c1 :: c_sfx1 ->
+    c0 :: c_sfx0 = c1 :: c_sfx1.
+  Proof.
+    intros c_loops0 c_loops1 c0 c1 c_sfx0. revert c_loops0 c_loops1 c0 c1. induction c_sfx0 using List.rev_ind; i.
+    - destruct c_sfx1 using List.rev_ind.
+      { rewrite snoc_eq_snoc in *. des. subst. ss. }
+      rewrite app_comm_cons in *. rewrite app_assoc in *. rewrite snoc_eq_snoc in *. des. subst.
+      rewrite app_comm_cons' in *. repeat (repeat rewrite Cont.loops_app_distr in *; des). ss.
+    - destruct c_sfx1 using List.rev_ind.
+      + rewrite app_comm_cons in *. rewrite app_assoc in *. rewrite snoc_eq_snoc in *. des. subst.
+        rewrite app_comm_cons' in *. repeat (repeat rewrite Cont.loops_app_distr in *; des). ss.
+      + repeat rewrite app_comm_cons in *. repeat rewrite app_assoc in *. rewrite snoc_eq_snoc in *. des. subst.
+        eauto.
   Qed.
 End Cont.
 
