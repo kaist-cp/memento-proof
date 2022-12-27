@@ -44,13 +44,13 @@ Proof.
   i. split.
   - i. unfold STOP in *. des; subst; ss.
     + unguard. des; ss.
-    + unfold seq_sc in *. ss. rewrite pair_equal_spec in *. des. subst.
+    + unfold seq_sc in *. unfold seq_sc_unzip in *. ss. rewrite pair_equal_spec in *. des. subst.
       right. left. eauto.
-    + unfold seq_sc in *. ss. rewrite pair_equal_spec in *. des. subst.
+    + unfold seq_sc in *. unfold seq_sc_unzip in *. ss. rewrite pair_equal_spec in *. des. subst.
       right. right. left. eauto.
     + destruct c using rev_ind.
       * unguard. des; ss.
-        unfold seq_sc in *. ss. rewrite pair_equal_spec in *. des. subst.
+        unfold seq_sc in *. unfold seq_sc_unzip in *. ss. rewrite pair_equal_spec in *. des. subst.
         right. right. right. eauto.
       * clear IHc.
         rewrite seq_sc_last in *. rewrite pair_equal_spec in *. des. subst.
@@ -65,12 +65,12 @@ Proof.
     + destruct c using rev_ind; cycle 1.
       { rewrite seq_sc_last in *. rewrite pair_equal_spec in *. des. destruct c; ss. }
       unguard. des; ss. destruct s; ss.
-      unfold seq_sc in *. ss. rewrite pair_equal_spec in *. des. inv H0.
+      unfold seq_sc in *. unfold seq_sc_unzip in *. ss. rewrite pair_equal_spec in *. des. inv H0.
       right. left. eauto.
     + destruct c using rev_ind; cycle 1.
       { rewrite seq_sc_last in *. rewrite pair_equal_spec in *. des. destruct c; ss. }
       unguard. des; ss. destruct s; ss.
-      unfold seq_sc in *. ss. rewrite pair_equal_spec in *. des. inv H0.
+      unfold seq_sc in *. unfold seq_sc_unzip in *. ss. rewrite pair_equal_spec in *. des. inv H0.
       right. right. left. eauto.
     + destruct c using rev_ind; cycle 1.
       * rewrite seq_sc_last in *. rewrite pair_equal_spec in *. des. subst.
@@ -79,7 +79,7 @@ Proof.
         apply Cont.loops_app_distr. split; ss.
         econs; ss. destruct x; ss; inv RETURN1; ss.
       * unguard. des; ss. destruct s; ss.
-        unfold seq_sc in *. ss. rewrite pair_equal_spec in *. des. inv H0.
+        unfold seq_sc in *. unfold seq_sc_unzip in *. ss. rewrite pair_equal_spec in *. des. inv H0.
         right. right. right. eauto.
 Qed.
 

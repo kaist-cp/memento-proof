@@ -990,3 +990,5 @@ Ltac seqsplit :=
         end
       ); i
   ).
+
+Definition suffix_of {A} : relation (list A) := fun l1 l2 => exists k, l2 = k ++ l1.

@@ -65,13 +65,6 @@ Module Cont.
 
   Definition Loops (c: list t) := Forall is_loop c.
 
-  Definition seq (c: t) (s: list Stmt) :=
-    match c with
-    | loopcont rmap r s_body s_cont => loopcont rmap r s_body (s_cont ++ s)
-    | fncont rmap r s_cont => fncont rmap r (s_cont ++ s)
-    | chkptcont rmap r s_cont mid => chkptcont rmap r (s_cont ++ s) mid
-    end.
-
   Lemma loops_app_distr :
     forall c1 c2,
       Loops (c1 ++ c2) <-> Loops c1 /\ Loops c2.
@@ -99,16 +92,38 @@ Module Cont.
       + repeat rewrite app_comm_cons in *. repeat rewrite app_assoc in *. rewrite snoc_eq_snoc in *. des. subst.
         eauto.
   Qed.
+
+  Definition seq (c: t) (s: list Stmt) :=
+    match c with
+    | loopcont rmap r s_body s_cont => loopcont rmap r s_body (s_cont ++ s)
+    | fncont rmap r s_cont => fncont rmap r (s_cont ++ s)
+    | chkptcont rmap r s_cont mid => chkptcont rmap r (s_cont ++ s) mid
+    end.
+
+  Fixpoint seql (cl: list t) (s: list Stmt) :=
+    match cl with
+    | [] => []
+    | [c_base] => [seq c_base s]
+    | h :: t => h :: seql t s
+    end.
+
+  Lemma seql_last :
+  forall s c_pfx c_base,
+    seql (c_pfx ++ [c_base]) s = c_pfx ++ [Cont.seq c_base s].
+  Proof.
+    i. induction c_pfx; ss.
+    destruct (c_pfx ++ [c_base]). ss. destruct c_pfx; ss.
+    rewrite IHc_pfx. ss.
+  Qed.
 End Cont.
 
-Fixpoint seq_sc_rec (s: list Stmt) (c: list Cont.t) (s': list Stmt) :=
-  match c with
-  | [] => (s ++ s', c)
-  | [c_base] => (s, [Cont.seq c_base s'])
-  | h :: t => (s, h :: snd (seq_sc_rec s t s'))
+Definition seq_sc_unzip (s: list Stmt) (c: list Cont.t) (s': list Stmt) :=
+  match Cont.seql c s' with
+  | [] => (s ++ s', [])
+  | c' => (s, c')
   end.
 
-Definition seq_sc (sc: (list Stmt * list Cont.t)) (s': list Stmt) := seq_sc_rec (fst sc) (snd sc) s'.
+Definition seq_sc (sc: (list Stmt * list Cont.t)) (s': list Stmt) := seq_sc_unzip (fst sc) (snd sc) s'.
 
 Notation "sc ++₁ s'" := (seq_sc sc s') (at level 62).
 
@@ -120,8 +135,8 @@ Proof.
   unfold seq_sc in *. s. destruct (c_pfx ++ [c_base]); ss.
   { apply pair_equal_spec in IHc_pfx. des. destruct c_pfx; ss. }
   destruct l.
-  - apply pair_equal_spec in IHc_pfx. des. rewrite IHc_pfx0. ss.
-  - apply pair_equal_spec in IHc_pfx. des. rewrite IHc_pfx0. ss.
+  - apply pair_equal_spec in IHc_pfx. des. rewrite <- IHc_pfx0. ss.
+  - apply pair_equal_spec in IHc_pfx. des. rewrite <- IHc_pfx0. ss.
 Qed.
 
 Module TState.

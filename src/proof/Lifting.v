@@ -1239,59 +1239,392 @@ Proof.
   - admit.
 Qed.
 
-Lemma lift_stmt_cons:
-  forall env tr s c ts mmts thr_term c_pfx c_base s',
-    Thread.rtc env c tr (Thread.mk s c ts mmts) thr_term ->
-    c = c_pfx ++ [c_base] ->
-  exists c_m c_term,
-    Thread.rtc env c_m tr
-      (Thread.mk s c_m ts mmts)
+Lemma lift_stmt_cons_step:
+  forall env c tr thr thr_term c_base s',
+    Thread.step_base_cont env c tr thr thr_term ->
+    suffix_of c thr.(Thread.cont) ->
+    suffix_of [c_base] c ->
+  exists c_m c0 c_term,
+    Thread.step_base_cont env c_m tr
+      (Thread.mk thr.(Thread.stmt) c0 thr.(Thread.ts) thr.(Thread.mmts))
       (Thread.mk thr_term.(Thread.stmt) c_term thr_term.(Thread.ts) thr_term.(Thread.mmts))
-    /\ c_m = c_pfx ++ [Cont.seq c_base s']
+    /\ c_m = Cont.seql c s'
+    /\ (thr.(Thread.stmt), c0) = (thr.(Thread.stmt), thr.(Thread.cont)) ++₁ s'
     /\ (thr_term.(Thread.stmt), c_term) = (thr_term.(Thread.stmt), thr_term.(Thread.cont)) ++₁ s'.
 Proof.
-  intros env tr s. revert env tr. induction s; i; ss.
-  { inv H; ss.
-    - esplits; eauto; try econs.
-      rewrite seq_sc_last. ss.
-    - inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  i. inv H.
+  inv H1. inv H0. rewrite H. rewrite BASE. repeat rewrite app_assoc. repeat rewrite seq_sc_last.
+  inv H. inv NORMAL_STEP; inv STEP; ss; subst; rewrite STMT.
+  - esplits; eauto.
+    rewrite H1 in BASE. apply app_inv_tail in BASE. subst.
+    econs; try by econs; econs; eauto. ss.
+    rewrite Cont.seql_last. rewrite app_assoc. ss.
+  - esplits; eauto.
+    rewrite H1 in BASE. apply app_inv_tail in BASE. subst.
+    econs; try by econs; econs; eauto. ss.
+    rewrite Cont.seql_last. rewrite app_assoc. ss.
+  - esplits; eauto.
+    rewrite H1 in BASE. apply app_inv_tail in BASE. subst.
+    econs; try by econs; econs; eauto. ss.
+    rewrite Cont.seql_last. rewrite app_assoc. ss.
+  - esplits; eauto.
+    rewrite H1 in BASE. apply app_inv_tail in BASE. subst.
+    econs; try by econs; econs; eauto. ss.
+    rewrite Cont.seql_last. rewrite app_assoc. ss.
+  - esplits; eauto.
+    rewrite H1 in BASE. apply app_inv_tail in BASE. subst.
+    econs; try by econs; econs; eauto. ss.
+    rewrite Cont.seql_last. rewrite app_assoc. ss.
+  - esplits; eauto.
+    rewrite H1 in BASE. apply app_inv_tail in BASE. subst.
+    econs; try by econs; econs; eauto. ss.
+    rewrite Cont.seql_last. rewrite app_assoc. ss.
+  - esplits; eauto.
+    rewrite H1 in BASE. rewrite app_comm_cons in BASE. apply app_inv_tail in BASE. subst.
+    econs; try by econs; econs; eauto. ss.
+    rewrite Cont.seql_last. rewrite <- app_assoc. rewrite app_comm_cons. eauto.
+  - esplits; eauto.
+    rewrite H1 in CONT. rewrite app_comm_cons in CONT. rewrite (app_assoc c_loops) in CONT. apply app_inv_tail in CONT. subst.
+    repeat rewrite <- app_assoc.
+    econs; try by econs; econs; eauto. ss.
+    rewrite Cont.seql_last. eauto.
+  - esplits; eauto.
+    rewrite H1 in BASE. apply app_inv_tail in BASE. subst.
+    econs; try by econs; econs; eauto. ss.
+    rewrite Cont.seql_last. rewrite <- app_assoc. eauto.
+  - esplits; eauto.
+    rewrite H1 in BASE. apply app_inv_tail in BASE. subst.
+    econs; try by econs; econs; eauto. ss.
+    rewrite Cont.seql_last. rewrite app_assoc. ss.
+  - esplits; eauto.
+    rewrite H1 in BASE. rewrite app_comm_cons in BASE. apply app_inv_tail in BASE. subst.
+    econs; try by econs; econs; eauto. ss.
+    rewrite Cont.seql_last. rewrite <- app_assoc. rewrite app_comm_cons. eauto.
+  - esplits; eauto. rewrite Cont.seql_last.
+    rewrite H1 in BASE. apply app_inv_tail in BASE. subst.
+    rewrite H1 in CONT. destruct c'; ss; cycle 1.
+    { inv CONT. econs; try by econs; econs; eauto. ss. rewrite <- app_assoc. rewrite app_comm_cons. eauto. }
+    destruct x; ss; cycle 1.
+    { inv CONT. econs; try by econs; econs; eauto. ss. rewrite app_nil_l. ss. }
+    inv CONT. econs; try by econs; econs; eauto. ss. rewrite app_nil_l. ss.
+  - esplits; eauto.
+    rewrite H1 in CONT. rewrite app_comm_cons in CONT. apply app_inv_tail in CONT. subst.
+    repeat rewrite <- app_assoc.
+    econs; try by econs; econs; eauto. ss.
+    rewrite Cont.seql_last. eauto.
+  - esplits; eauto.
+    rewrite H1 in BASE. rewrite app_comm_cons in BASE. apply app_inv_tail in BASE. subst.
+    econs; try by econs; econs; eauto. ss.
+    rewrite Cont.seql_last. rewrite <- app_assoc. rewrite app_comm_cons. eauto.
+  - esplits; eauto.
+    rewrite H1 in CONT. rewrite app_comm_cons in CONT. rewrite (app_assoc c_loops) in CONT. apply app_inv_tail in CONT. subst.
+    repeat rewrite <- app_assoc.
+    econs; try by econs; econs; eauto. ss.
+    rewrite Cont.seql_last. eauto.
+Qed.
+
+Lemma lift_stmt_cons:
+  forall env tr c thr thr_term c_base s',
+    Thread.rtc env c tr thr thr_term ->
+    suffix_of c thr.(Thread.cont) ->
+    suffix_of [c_base] c ->
+  exists c_m c0 c_term,
+    Thread.rtc env c_m tr
+      (Thread.mk thr.(Thread.stmt) c0 thr.(Thread.ts) thr.(Thread.mmts))
+      (Thread.mk thr_term.(Thread.stmt) c_term thr_term.(Thread.ts) thr_term.(Thread.mmts))
+    /\ c_m = Cont.seql c s'
+    /\ (thr.(Thread.stmt), c0) = (thr.(Thread.stmt), thr.(Thread.cont)) ++₁ s'
+    /\ (thr_term.(Thread.stmt), c_term) = (thr_term.(Thread.stmt), thr_term.(Thread.cont)) ++₁ s'.
+Proof.
+  intros env tr c thr thr_term c_base s' RTC. revert c_base s'.
+  induction RTC.
+  { i. inv H. inv H0. rewrite H1. s. rewrite app_assoc. rewrite seq_sc_last.
+    esplits; eauto. econs.
   }
-  inv H; ss.
-  { esplits; try econs. rewrite seq_sc_last. ss. }
-  inv ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
-  - hexploit IHs; eauto. i. des.
-    esplits; eauto. econs; eauto.
-    { econs; [| rewrite app_nil_l]; ss. try by econs; econs; eauto. }
-    ss.
-  - hexploit IHs; eauto. i. des.
-    esplits; eauto. econs; eauto.
-    { econs; [| rewrite app_nil_l]; ss. try by econs; econs; eauto. }
-    ss.
-  - hexploit IHs; eauto. i. des.
-    esplits; eauto. econs; eauto.
-    { econs; [| rewrite app_nil_l]; ss. try by econs; econs; eauto. }
-    ss.
-  - hexploit IHs; eauto. i. des.
-    esplits; eauto. econs; eauto.
-    { econs; [| rewrite app_nil_l]; ss. try by econs; econs; eauto. }
-    ss.
-  - hexploit IHs; eauto. i. des.
-    esplits; eauto. econs; eauto.
-    { econs; [| rewrite app_nil_l]; ss. try by econs; econs; eauto. }
-    ss.
-  - hexploit IHs; eauto. i. des.
-    esplits; eauto. econs; eauto.
-    { econs; [| rewrite app_nil_l]; ss. try by econs; econs; eauto. }
-    ss.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
+  i. subst.
+  hexploit lift_stmt_cons_step; eauto. instantiate (1 := s'). i. des. subst.
+  hexploit IHRTC; eauto.
+  { inv ONE. rewrite BASE. econs. ss. }
+  instantiate (1 := s'). i. des. subst.
+  rewrite <- H4 in H6. rewrite pair_equal_spec in *. des. subst.
+  esplits; eauto. eapply Thread.rtc_trans; eauto. econs; eauto; try econs.
+  rewrite app_nil_r. ss.
+Qed.
+
+Lemma lift_stmt_step:
+  forall env c tr thr thr_term s',
+    Thread.step_base_cont env c tr thr thr_term ->
+    suffix_of c thr.(Thread.cont) ->
+  exists c_m s0 c0 s1 c1,
+    Thread.step_base_cont env c_m tr
+      (Thread.mk s0 c0 thr.(Thread.ts) thr.(Thread.mmts))
+      (Thread.mk s1 c1 thr_term.(Thread.ts) thr_term.(Thread.mmts))
+    /\ c_m = Cont.seql c s'
+    /\ (s0, c0) = (thr.(Thread.stmt), thr.(Thread.cont)) ++₁ s'
+    /\ (s1, c1) = (thr_term.(Thread.stmt), thr_term.(Thread.cont)) ++₁ s'.
+Proof.
+  i. inv H. inv NORMAL_STEP; inv STEP; ss; subst; rewrite STMT.
+  - destruct thr. ss. destruct cont using rev_ind.
+    + unfold seq_sc. unfold seq_sc_unzip. ss.
+      destruct c'; ss. subst.
+      esplits; eauto. econs; try by econs; econs; eauto.
+      s. rewrite app_nil_l. ss.
+    + clear IHcont. repeat rewrite seq_sc_last.
+      destruct c using rev_ind; ss.
+      * esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite app_nil_r. ss.
+      * clear IHc.
+        rewrite app_assoc in BASE. apply snoc_eq_snoc in BASE. des. subst.
+        esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite Cont.seql_last. rewrite app_assoc. eauto.
+  - destruct thr. ss. destruct cont using rev_ind.
+    + unfold seq_sc. unfold seq_sc_unzip. ss.
+      destruct c'; ss. subst.
+      esplits; eauto. econs; try by econs; econs; eauto.
+      s. rewrite app_nil_l. ss.
+    + clear IHcont. repeat rewrite seq_sc_last.
+      destruct c using rev_ind; ss.
+      * esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite app_nil_r. ss.
+      * clear IHc.
+        rewrite app_assoc in BASE. apply snoc_eq_snoc in BASE. des. subst.
+        esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite Cont.seql_last. rewrite app_assoc. eauto.
+  - destruct thr. ss. destruct cont using rev_ind.
+    + unfold seq_sc. unfold seq_sc_unzip. ss.
+      destruct c'; ss. subst.
+      esplits; eauto. econs; try by econs; econs; eauto.
+      s. rewrite app_nil_l. ss.
+    + clear IHcont. repeat rewrite seq_sc_last.
+      destruct c using rev_ind; ss.
+      * esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite app_nil_r. ss.
+      * clear IHc.
+        rewrite app_assoc in BASE. apply snoc_eq_snoc in BASE. des. subst.
+        esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite Cont.seql_last. rewrite app_assoc. eauto.
+  - destruct thr. ss. destruct cont using rev_ind.
+    + unfold seq_sc. unfold seq_sc_unzip. ss.
+      destruct c'; ss. subst.
+      esplits; eauto. econs; try by econs; econs; eauto.
+      s. rewrite app_nil_l. ss.
+    + clear IHcont. repeat rewrite seq_sc_last.
+      destruct c using rev_ind; ss.
+      * esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite app_nil_r. ss.
+      * clear IHc.
+        rewrite app_assoc in BASE. apply snoc_eq_snoc in BASE. des. subst.
+        esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite Cont.seql_last. rewrite app_assoc. eauto.
+  - destruct thr. ss. destruct cont using rev_ind.
+    + unfold seq_sc. unfold seq_sc_unzip. ss.
+      destruct c'; ss. subst.
+      esplits; eauto. econs; try by econs; econs; eauto.
+      s. rewrite app_nil_l. ss.
+    + clear IHcont. repeat rewrite seq_sc_last.
+      destruct c using rev_ind; ss.
+      * esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite app_nil_r. ss.
+      * clear IHc.
+        rewrite app_assoc in BASE. apply snoc_eq_snoc in BASE. des. subst.
+        esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite Cont.seql_last. rewrite app_assoc. eauto.
+  - destruct thr. ss. destruct cont using rev_ind.
+    + unfold seq_sc. unfold seq_sc_unzip. ss.
+      destruct c'; ss. subst.
+      esplits; eauto. econs; try by econs; econs; eauto.
+      s. rewrite app_nil_l. ss.
+    + clear IHcont. repeat rewrite seq_sc_last.
+      destruct c using rev_ind; ss.
+      * esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite app_nil_r. ss.
+      * clear IHc.
+        rewrite app_assoc in BASE. apply snoc_eq_snoc in BASE. des. subst.
+        esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite Cont.seql_last. rewrite app_assoc. eauto.
+  - destruct thr. ss. destruct cont using rev_ind.
+    + unfold seq_sc. unfold seq_sc_unzip. ss.
+      destruct c using rev_ind; ss.
+      * esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite app_nil_r. ss.
+      * clear IHc. rewrite app_assoc in BASE. rewrite <- (app_nil_l [_]) in BASE. rewrite snoc_eq_snoc in BASE. des. subst.
+        esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite Cont.seql_last. rewrite app_assoc. rewrite <- BASE. ss.
+    + clear IHcont. repeat rewrite seq_sc_last.
+      destruct c using rev_ind; ss.
+      * rewrite app_nil_r in BASE. subst.
+        esplits; eauto.
+        { econs; try by econs; econs; eauto. s. rewrite app_nil_r. ss. }
+        s. repeat rewrite app_comm_cons. rewrite seq_sc_last. ss.
+      * clear IHc.
+        rewrite app_comm_cons in BASE. rewrite app_assoc in BASE. rewrite snoc_eq_snoc in BASE. des. subst.
+        esplits; eauto.
+        { econs; try by econs; econs; eauto. s. rewrite app_comm_cons. rewrite BASE. rewrite Cont.seql_last. rewrite app_assoc. ss. }
+        s. repeat rewrite app_comm_cons. rewrite seq_sc_last. ss.
+  - rewrite CONT.
+    destruct c using rev_ind; ss.
+    + rewrite app_nil_r in *. destruct c' using rev_ind; ss.
+      * rewrite seq_sc_last. unfold seq_sc. unfold seq_sc_unzip. ss.
+        esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite app_nil_l. ss.
+      * clear IHc'. repeat rewrite seq_sc_last.
+        esplits; eauto.
+        { econs; try by econs; econs; eauto. s. rewrite app_nil_r. ss. }
+        s. rewrite STMT. repeat rewrite app_comm_cons. repeat rewrite app_assoc. rewrite seq_sc_last. ss.
+    + clear IHc.
+      repeat rewrite app_assoc. repeat rewrite seq_sc_last.
+      esplits; eauto.
+      { econs; try by econs; econs; eauto. s. rewrite Cont.seql_last. rewrite app_assoc. ss. }
+      s. rewrite STMT. repeat rewrite app_comm_cons. repeat rewrite app_assoc. rewrite seq_sc_last. ss.
+  - destruct thr. ss. destruct cont using rev_ind.
+    + unfold seq_sc. unfold seq_sc_unzip. ss.
+      destruct c'; ss. subst.
+      esplits; eauto. econs; try by econs; econs; eauto.
+      s. rewrite app_nil_l. ss.
+    + clear IHcont. repeat rewrite seq_sc_last.
+      destruct c using rev_ind; ss.
+      * esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite app_nil_r. ss.
+      * clear IHc.
+        rewrite app_assoc in BASE. apply snoc_eq_snoc in BASE. des. subst.
+        esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite Cont.seql_last. rewrite app_assoc. eauto.
+  - destruct thr. ss. destruct cont using rev_ind.
+    + unfold seq_sc. unfold seq_sc_unzip. ss.
+      destruct c'; ss. subst.
+      esplits; eauto.
+      econs; cycle 1.
+      { s. rewrite app_nil_l. ss. }
+      econs 10. econs; ss. rewrite app_assoc. ss.
+    + clear IHcont. repeat rewrite seq_sc_last.
+      destruct c using rev_ind; ss.
+      * esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite app_nil_r. ss.
+      * clear IHc.
+        rewrite app_assoc in BASE. apply snoc_eq_snoc in BASE. des. subst.
+        esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite Cont.seql_last. rewrite app_assoc. eauto.
+  - destruct thr. ss. destruct cont using rev_ind.
+    + unfold seq_sc. unfold seq_sc_unzip. ss.
+      destruct c using rev_ind; ss.
+      * esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite app_nil_r. ss.
+      * clear IHc. rewrite app_assoc in BASE. rewrite <- (app_nil_l [_]) in BASE. rewrite snoc_eq_snoc in BASE. des. subst.
+        esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite Cont.seql_last. rewrite app_assoc. rewrite <- BASE. ss.
+    + clear IHcont. repeat rewrite seq_sc_last.
+      destruct c using rev_ind; ss.
+      * rewrite app_nil_r in BASE. subst.
+        esplits; eauto.
+        { econs; try by econs; econs; eauto. s. rewrite app_nil_r. ss. }
+        s. repeat rewrite app_comm_cons. rewrite seq_sc_last. ss.
+      * clear IHc.
+        rewrite app_comm_cons in BASE. rewrite app_assoc in BASE. rewrite snoc_eq_snoc in BASE. des. subst.
+        esplits; eauto.
+        { econs; try by econs; econs; eauto. s. rewrite app_comm_cons. rewrite BASE. rewrite Cont.seql_last. rewrite app_assoc. ss. }
+        s. repeat rewrite app_comm_cons. rewrite seq_sc_last. ss.
+  - rewrite CONT.
+    destruct c_rem using rev_ind; ss.
+    + rewrite <- (app_nil_l [_]). rewrite seq_sc_last. unfold seq_sc. unfold seq_sc_unzip. ss.
+      destruct c using rev_ind; ss.
+      * esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite app_nil_r. ss.
+      * clear IHc. destruct thr. ss. destruct cont using rev_ind; ss. clear IHcont.
+        rewrite app_assoc in BASE. rewrite snoc_eq_snoc in BASE. des. subst.
+        rewrite <- app_nil_l in CONT. rewrite snoc_eq_snoc in CONT. des. subst.
+        esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite Cont.seql_last. unfold Cont.seq.
+        rewrite app_assoc. rewrite CONT. ss.
+    + clear IHc_rem.
+      repeat rewrite app_assoc. rewrite app_comm_cons. repeat rewrite seq_sc_last.
+      destruct c using rev_ind; ss.
+      * esplits; eauto.
+        econs; try by econs; econs; eauto. s. rewrite app_nil_r. ss.
+      * clear IHc. rewrite BASE in CONT. rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des. subst.
+        esplits; eauto.
+        econs; try by econs; econs; eauto. s. rewrite Cont.seql_last.
+        rewrite app_assoc. rewrite CONT. ss.
+  - rewrite CONT.
+    destruct c using rev_ind; ss.
+    + rewrite app_nil_r in *. destruct c' using rev_ind; ss.
+      * rewrite <- (app_nil_l [_]). rewrite seq_sc_last. unfold seq_sc. unfold seq_sc_unzip. ss.
+        esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite app_nil_l. ss.
+      * clear IHc'. repeat rewrite seq_sc_last.
+        esplits; eauto.
+        { econs; [| rewrite app_nil_r]; ss.
+          econs 13. econs; ss.
+        }
+        rewrite (app_comm_cons _ [x]). rewrite seq_sc_last. ss.
+    + clear IHc.
+      repeat rewrite app_assoc. rewrite app_comm_cons. repeat rewrite seq_sc_last.
+      esplits; eauto.
+      econs; try by econs; econs; eauto. s. rewrite Cont.seql_last. rewrite app_assoc. ss.
+  - destruct thr. ss. destruct cont using rev_ind.
+    + unfold seq_sc. unfold seq_sc_unzip. ss.
+      destruct c using rev_ind; ss.
+      * esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite app_nil_r. ss.
+      * clear IHc. rewrite app_assoc in BASE. rewrite <- (app_nil_l [_]) in BASE. rewrite snoc_eq_snoc in BASE. des. subst.
+        esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite Cont.seql_last. rewrite app_assoc. rewrite <- BASE. ss.
+    + clear IHcont. repeat rewrite seq_sc_last.
+      destruct c using rev_ind; ss.
+      * rewrite app_nil_r in BASE. subst.
+        esplits; eauto.
+        { econs; try by econs; econs; eauto. s. rewrite app_nil_r. ss. }
+        s. repeat rewrite app_comm_cons. rewrite seq_sc_last. ss.
+      * clear IHc.
+        rewrite app_comm_cons in BASE. rewrite app_assoc in BASE. rewrite snoc_eq_snoc in BASE. des. subst.
+        esplits; eauto.
+        { econs; try by econs; econs; eauto. s. rewrite app_comm_cons. rewrite BASE. rewrite Cont.seql_last. rewrite app_assoc. ss. }
+        s. repeat rewrite app_comm_cons. rewrite seq_sc_last. ss.
+  - rewrite CONT.
+    destruct c using rev_ind; ss.
+    + rewrite app_nil_r in *. destruct c' using rev_ind; ss.
+      * rewrite seq_sc_last. unfold seq_sc. unfold seq_sc_unzip. ss.
+        esplits; eauto. econs; try by econs; econs; eauto.
+        s. rewrite app_nil_l. ss.
+      * clear IHc'. repeat rewrite seq_sc_last.
+        esplits; eauto.
+        { econs.
+          { econs 15. econs; ss. }
+          rewrite app_nil_r. ss.
+        }
+        rewrite (app_comm_cons _ [x]). rewrite app_assoc. rewrite seq_sc_last. ss.
+    + clear IHc.
+      repeat rewrite app_assoc. repeat rewrite seq_sc_last.
+      esplits; eauto.
+      { econs; try by econs; econs; eauto. s. rewrite Cont.seql_last. rewrite app_assoc. ss. }
+      s. rewrite STMT. repeat rewrite app_comm_cons. repeat rewrite app_assoc. rewrite seq_sc_last. ss.
+Qed.
+
+Lemma lift_stmt:
+  forall env c tr thr thr_term s',
+    Thread.rtc env c tr thr thr_term ->
+    suffix_of c thr.(Thread.cont) ->
+  exists c_m s0 c0 s1 c1,
+    Thread.rtc env c_m tr
+      (Thread.mk s0 c0 thr.(Thread.ts) thr.(Thread.mmts))
+      (Thread.mk s1 c1 thr_term.(Thread.ts) thr_term.(Thread.mmts))
+    /\ c_m = Cont.seql c s'
+    /\ (s0, c0) = (thr.(Thread.stmt), thr.(Thread.cont)) ++₁ s'
+    /\ (s1, c1) = (thr_term.(Thread.stmt), thr_term.(Thread.cont)) ++₁ s'.
+Proof.
+  intros env tr c thr thr_term s' RTC. revert s'.
+  induction RTC.
+  { i. destruct thr. ss. destruct cont using rev_ind; ss.
+    { esplits; eauto; try econs. }
+    rewrite seq_sc_last. esplits; eauto; try econs.
+  }
+  i. subst.
+  hexploit lift_stmt_step; eauto. instantiate (1 := s'). i. des. subst.
+  hexploit IHRTC; eauto.
+  { inv ONE. rewrite BASE. econs. ss. }
+  instantiate (1 := s'). i. des. subst.
+  rewrite <- H3 in H5. rewrite pair_equal_spec in *. des. subst.
+  esplits; eauto. eapply Thread.rtc_trans; eauto. econs; eauto; try econs.
+  rewrite app_nil_r. ss.
 Qed.
 
 Lemma lift_stmt_nil:
