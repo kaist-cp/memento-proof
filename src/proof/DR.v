@@ -444,21 +444,21 @@ Proof.
     hexploit seq_cases; try exact EX2; eauto. hexploit seq_cases; try exact EX1; eauto. i. des; subst.
     + (* seq-left-ongoing, seq-left-ongoing *)
       hexploit IHENVTJ1; eauto. unfold DR. intros X. hexploit X; try exact SEQ_LEFT_ONGOING2; eauto. i. des. ss.
-      hexploit lift_stmt; eauto. s. instantiate (1 := s_r). i. des.
-      unfold seq_sc in H0. ss. rewrite pair_equal_spec in *. des. subst.
+      hexploit lift_stmt; eauto. s. instantiate (1 := s_r). i. des. subst.
+      unfold seq_sc, seq_sc_unzip in H1. ss. rewrite pair_equal_spec in *. des. subst.
       esplits; eauto.
       * assert (STOP s_m0 c_m0 \/ ~ STOP s_m0 c_m0); [apply classic |]. des.
         -- generalize H0. intros STOP. apply STOP_FST in STOP. des. subst. i.
-           rewrite <- H1 in *. rewrite pair_equal_spec in *. des. subst. split; ss.
+           rewrite <- H2 in *. rewrite pair_equal_spec in *. des. subst. split; ss.
         -- i. exfalso.
            symmetry in SEQ_LEFT_ONGOING3. hexploit seq_sc_stop; try exact SEQ_LEFT_ONGOING3; eauto. i.
-           apply H3 in H2. ss.
+           apply H3 in H1. ss.
       * assert (STOP s_m c_m \/ ~ STOP s_m c_m); [apply classic |]. des.
         -- generalize H0. intros STOP. apply STOP_SND in STOP. des. subst. i.
-           rewrite <- H1 in *. rewrite pair_equal_spec in *. des. subst. split; ss.
+           rewrite <- H2 in *. rewrite pair_equal_spec in *. des. subst. split; ss.
         -- i. exfalso.
            symmetry in SEQ_LEFT_ONGOING3. hexploit seq_sc_stop; try exact SEQ_LEFT_ONGOING0; eauto. i.
-           apply H3 in H2. ss.
+           apply H3 in H1. ss.
     + (* seq-left-done, seq-left-ongoing *)
       hexploit lift_mmt; try exact SEQ_LEFT_DONE; eauto. instantiate (1 := []). i. (* TODO: [] is temporary instantiation *)
       hexploit lift_mmt; try exact SEQ_LEFT_DONE0; eauto. instantiate (1 := []). i.
@@ -498,7 +498,7 @@ Proof.
       i. des. subst.
 
       hexploit lift_stmt; eauto. s. instantiate (1 := s_r). i. des.
-      unfold seq_sc in *. ss. apply pair_equal_spec in H0, H1. des. subst.
+      unfold seq_sc, seq_sc_unzip in *. ss. apply pair_equal_spec in H1, H2. des. subst.
       destruct thr_term'. ss. esplits; try eapply Thread.rtc_trans; eauto.
       { rewrite app_assoc. apply trace_refine_app; ss. apply trace_refine_eq. }
 
@@ -530,7 +530,7 @@ Proof.
       hexploit IHENVTJ2; eauto. unfold DR. intros Y. hexploit Y; try exact SEQ_LEFT_DONE4; eauto. i. des. ss.
 
       hexploit lift_stmt; try exact SEQ_LEFT_DONE3; eauto. s. instantiate (1 := s_r). i. des.
-      unfold seq_sc in *. ss. apply pair_equal_spec in H4, H5. des. subst.
+      unfold seq_sc, seq_sc_unzip in *. ss. apply pair_equal_spec in H5, H6. des. subst.
       destruct thr_term'. ss. esplits; try eapply Thread.rtc_trans; eauto.
       { rewrite <- app_assoc. apply trace_refine_app; try apply trace_refine_eq. apply trace_refine_nil_ins; ss. }
       intros STOP. apply STOP_FST0 in STOP. des. splits; ss.
