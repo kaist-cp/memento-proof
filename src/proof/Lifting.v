@@ -1245,7 +1245,11 @@ Lemma lift_stmt_cons:
     /\ (thr_term.(Thread.stmt), c_term) = (thr_term.(Thread.stmt), thr_term.(Thread.cont)) ++₁ s'.
 Proof.
   intros env tr s. revert env tr. induction s; i; ss.
-  { admit. }
+  { inv H; ss.
+    - esplits; eauto; try econs.
+      rewrite seq_sc_last. ss.
+    - inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  }
   inv H; ss.
   { esplits; try econs. rewrite seq_sc_last. ss. }
   inv ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
