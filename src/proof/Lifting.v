@@ -1,5 +1,6 @@
 Require Import Ensembles.
 Require Import EquivDec.
+Require Import FunctionalExtensionality.
 Require Import List.
 Import ListNotations.
 
@@ -7,6 +8,7 @@ Require Import HahnList.
 Require Import sflib.
 
 From Memento Require Import Utils.
+From Memento Require Import Order.
 From Memento Require Import Syntax.
 From Memento Require Import Semantics.
 From Memento Require Import Common.
@@ -50,7 +52,7 @@ Lemma chkpt_fn_cases:
   forall env tr thr thr_term c c' c_sfx rmap r s_cont,
     Thread.rtc env [] tr thr thr_term ->
     thr.(Thread.cont) = c ++ c' :: c_sfx ->
-    ((exists mid, c' = Cont.chkptcont rmap r s_cont mid) \/ c' = Cont.fncont rmap r s_cont) ->
+    ((exists mid, c' = Cont.chkptcont rmap r s_cont mid) \/ (exists mid_cont, c' = Cont.fncont rmap r s_cont mid_cont)) ->
   <<CALL_ONGOING:
     exists c_pfx,
       thr_term.(Thread.cont) = c_pfx ++ c' :: c_sfx
@@ -313,7 +315,7 @@ Lemma loop_cases:
             thr
             (Thread.mk (stmt_break :: s_r) [c'] ts_r mmts_r)
         /\ Thread.rtc env [] tr1
-            (Thread.mk s_cont [] (TState.mk rmap ts_r.(TState.time)) mmts_r)
+            (Thread.mk s_cont [] (TState.mk rmap ts_r.(TState.time) ts_r.(TState.mid)) mmts_r)
             thr_term>>.
 Proof.
   intros env tr thr thr_term c c' rmap r s_body s_cont RTC. revert rmap r s_body s_cont c c'.
@@ -674,7 +676,7 @@ Lemma last_loop_iter:
               (Thread.mk ((stmt_continue e) :: s_r) [c'] ts_r mmts1)
             /\ s1 = s
             /\ c1 = []
-            /\ ts1 = TState.mk (VRegMap.add r (sem_expr ts_r.(TState.regs) e) rmap) ts_r.(TState.time)>>
+            /\ ts1 = TState.mk (VRegMap.add r (sem_expr ts_r.(TState.regs) e) rmap) ts_r.(TState.time) ts_r.(TState.mid)>>
       )
     /\ thr_term.(Thread.cont) = c_pfx_term ++ [c']
     /\ Thread.rtc env [] tr2
@@ -835,8 +837,9 @@ Lemma ongoing_cont_explosion:
         c' = Cont.chkptcont rmap r s_cont mid
         /\ c0 = Cont.chkptcont rmap r s_cont0 mid)
      \/
-     (c' = Cont.fncont rmap r s_cont
-      /\ c0 = Cont.fncont rmap r s_cont0)
+     (exists mid_cont,
+        c' = Cont.fncont rmap r s_cont mid_cont
+        /\ c0 = Cont.fncont rmap r s_cont0 mid_cont)
     ) ->
   Thread.rtc env [c0] tr
     (Thread.mk thr.(Thread.stmt) (c ++ [c0]) thr.(Thread.ts) thr.(Thread.mmts))
@@ -1196,10 +1199,9 @@ Proof.
 Qed.
 
 Lemma lift_mmt:
-  (* TODO: Define mid_pfx from ts.regs *)
-  forall envt env labs s mid_pfx mids tr ts mmts thr_term,
+  forall envt env labs s mids tr ts mmts thr_term,
     EnvType.rw_judge envt labs s ->
-    mmt_id_exp mid_pfx labs = mids ->
+    mmt_id_exp ts.(TState.mid) labs = mids ->
     Thread.rtc env [] tr (Thread.mk s [] ts mmts) thr_term ->
   <<UNLIFT:
     Thread.rtc env [] tr
@@ -1213,10 +1215,14 @@ Lemma lift_mmt:
     forall mmts_a,
       Thread.rtc env [] tr
         (Thread.mk s [] ts ((mmts |₁ mids) ⊎ (mmts_a |₁ (Complement _ mids))))
-        (Thread.mk thr_term.(Thread.stmt) thr_term.(Thread.cont) thr_term.(Thread.ts) ((thr_term.(Thread.mmts) |₁ mids) ⊎ (mmts_a |₁ (Complement _ mids))))>>.
+        (Thread.mk
+          thr_term.(Thread.stmt)
+          thr_term.(Thread.cont)
+          thr_term.(Thread.ts)
+          ((thr_term.(Thread.mmts) |₁ mids) ⊎ (mmts_a |₁ (Complement _ mids))))>>.
 Proof.
-  intros envt env labs s mid_pfx mids tr ts mmts thr_term ENVT. revert mid_pfx mids tr ts mmts thr_term.
-  induction ENVT; intros mid_pfx mids tr ts mmts thr_term EXP RTC; subst; ss.
+  intros envt env labs s mids tr ts mmts thr_term ENVT. revert mids tr ts mmts thr_term.
+  induction ENVT; intros mids tr ts mmts thr_term EXP RTC; subst; ss.
   - inv RTC; ss.
     { splits; ss; try by econs; eauto. }
     inv ONE. inv NORMAL_STEP; inv STEP; ss.
@@ -1229,9 +1235,88 @@ Proof.
   - inv RTC; ss.
     { splits; ss; try by econs; eauto. }
     (* inv ONE. inv NORMAL_STEP; inv STEP; ss. *)
-    admit.
-  - admit.
-  - admit.
+    admit. (* contradiction *)
+  - inv RTC; ss.
+    { splits; ss; try by econs; eauto. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    hexploit stop_means_no_step; eauto; try by econs; ss. i. des. subst. ss.
+    splits; ss.
+    + econs; try by econs; econs; eauto.
+      { econs; eauto. try by econs; econs; eauto. }
+      ss.
+    + i.
+      econs; try by econs; econs; eauto.
+      { econs; eauto. try by econs; econs; eauto. }
+      ss.
+  - inv RTC; ss.
+    { splits; ss; try by econs; eauto. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
+    + hexploit stop_means_no_step; eauto; try by econs; ss. i. des. subst. ss.
+      splits; ss.
+      * econs; try by econs; econs; eauto.
+        all: cycle 1.
+        { rewrite app_nil_r. ss. }
+        econs; eauto. econs 4. econs; eauto; ss.
+        { unfold Mmts.proj. condtac; ss.
+          exfalso. apply n. econs; ss.
+        }
+        rewrite Mmts.proj_fun_add_eq; ss. econs; ss.
+      * apply functional_extensionality. i. unfold Mmts.proj. condtac; ss.
+        funtac. inversion e. subst.
+        exfalso.
+        unfold Ensembles.In in i. unfold Complement in i. apply i.
+        econs; ss.
+      * i.
+        econs; try by econs; econs; eauto.
+        all: cycle 1.
+        { rewrite app_nil_r. ss. }
+        econs; eauto. econs 4. econs; eauto; ss.
+        { unfold Mmts.union. unfold Mmts.proj. condtac.
+          { rewrite MMT. ss. }
+          exfalso. apply n. econs; ss.
+        }
+        admit.
+    + hexploit stop_means_no_step; eauto; try by econs; ss. i. des. subst. ss.
+      splits; ss.
+      * econs; try by econs; econs; eauto.
+        all: cycle 1.
+        { rewrite app_nil_r. ss. }
+        econs; eauto. econs 5. econs; eauto; ss.
+        { unfold Mmts.proj. condtac; ss.
+          exfalso. apply n. econs; ss.
+        }
+        rewrite Mmts.proj_fun_add_eq; ss. econs; ss.
+      * apply functional_extensionality. i. unfold Mmts.proj. condtac; ss.
+        funtac. inversion e. subst.
+        exfalso.
+        unfold Ensembles.In in i. unfold Complement in i. apply i.
+        econs; ss.
+      * i.
+        econs; try by econs; econs; eauto.
+        all: cycle 1.
+        { rewrite app_nil_r. ss. }
+        econs; eauto. econs 5. econs; eauto; ss.
+        { unfold Mmts.union. unfold Mmts.proj. condtac.
+          { rewrite MMT. ss. }
+          exfalso. apply n. econs; ss.
+        }
+        admit.
+    + hexploit stop_means_no_step; eauto; try by econs; ss. i. des. subst. ss.
+      splits; ss.
+      * econs; try by econs; econs; eauto.
+        { econs; eauto. econs 6. econs; eauto; ss.
+          unfold Mmts.proj. condtac; ss.
+          exfalso. apply n. econs; ss.
+        }
+        ss.
+      * i.
+        econs; try by econs; econs; eauto.
+        { econs; eauto. econs 6. econs; eauto; ss.
+          unfold Mmts.union. unfold Mmts.proj. condtac.
+          { rewrite MMT. ss. }
+          exfalso. apply n. econs; ss.
+        }
+        ss.
   - admit.
   - admit.
   - admit.
