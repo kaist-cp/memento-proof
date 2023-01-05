@@ -1275,7 +1275,11 @@ Proof.
           { rewrite MMT. ss. }
           exfalso. apply n. econs; ss.
         }
-        admit.
+        f_equal. apply functional_extensionality. i.
+        funtac.
+        -- inversion e. unfold Mmts.union. unfold Mmts.proj. condtac; funtac.
+           exfalso. apply n. econs; ss.
+        -- unfold Mmts.union. unfold Mmts.proj. condtac; funtac.
     + hexploit stop_means_no_step; eauto; try by econs; ss. i. des. subst. ss.
       splits; ss.
       * econs; try by econs; econs; eauto.
@@ -1300,7 +1304,11 @@ Proof.
           { rewrite MMT. ss. }
           exfalso. apply n. econs; ss.
         }
-        admit.
+        f_equal. apply functional_extensionality. i.
+        funtac.
+        -- inversion e. unfold Mmts.union. unfold Mmts.proj. condtac; funtac.
+           exfalso. apply n. econs; ss.
+        -- unfold Mmts.union. unfold Mmts.proj. condtac; funtac.
     + hexploit stop_means_no_step; eauto; try by econs; ss. i. des. subst. ss.
       splits; ss.
       * econs; try by econs; econs; eauto.
@@ -1317,9 +1325,35 @@ Proof.
           exfalso. apply n. econs; ss.
         }
         ss.
+  - inv RTC; ss.
+    { splits; ss; try by econs; eauto. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
+    + admit.
+    + hexploit stop_means_no_step; eauto; try by econs; ss. i. des. subst. ss.
+      splits; ss.
+      * econs; try by econs; econs; eauto.
+        { econs; eauto. econs 9. econs; eauto; ss.
+          unfold Mmts.proj. condtac; ss.
+          exfalso. apply n. econs; ss.
+        }
+        ss.
+      * i.
+        econs; try by econs; econs; eauto.
+        { econs; eauto. econs 9. econs; eauto; ss.
+          unfold Mmts.union. unfold Mmts.proj. condtac.
+          { rewrite MMT. ss. }
+          exfalso. apply n. econs; ss.
+        }
+        ss.
   - admit.
-  - admit.
-  - admit.
+  - inv RTC; ss.
+    { splits; ss; try by econs; eauto. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    rewrite app_nil_r in *. destruct (sem_expr (TState.regs ts) e0 == Val.bool true).
+    + hexploit IHENVT1; eauto. i. des. split.
+      * admit.
+      * admit.
+    + admit.
   - admit.
   - admit.
 Qed.
