@@ -85,7 +85,7 @@ Module EnvType.
     (STMT: s = [stmt_pcas r e_loc e_old e_new lab])
   | rw_chkpt
     r s_c lab
-    (CLOS: ro_judge envt s)
+    (CLOS: ro_judge envt s_c)
     (LABS: labs = Singleton _ lab)
     (STMT: s = [stmt_chkpt r s_c lab])
   | rw_call
