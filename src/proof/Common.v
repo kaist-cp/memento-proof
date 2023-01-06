@@ -163,3 +163,16 @@ Proof.
   apply app_inv_head in MID. inv MID.
   inv H. specialize H0 with lab0. apply H0. econs; ss.
 Qed.
+
+Lemma proj_union_exc_pres:
+  forall env c tr thr thr_term mmts mids mmts_term mids',
+    Thread.rtc env c tr thr thr_term ->
+    thr.(Thread.mmts) = mmts |₁ mids ->
+    thr_term.(Thread.mmts) = mmts_term |₁ mids ->
+    Ensembles.Included _ mids mids' ->
+  Thread.rtc env c tr
+    (Thread.mk thr.(Thread.stmt) thr.(Thread.cont) thr.(Thread.ts) (mmts |₁ mids'))
+    (Thread.mk thr_term.(Thread.stmt) thr_term.(Thread.cont) thr_term.(Thread.ts) (mmts_term |₁ mids')).
+Proof.
+  admit.
+Qed.

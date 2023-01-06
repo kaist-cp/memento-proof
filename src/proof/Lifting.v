@@ -1350,8 +1350,20 @@ Proof.
     { splits; ss; try by econs; eauto. }
     inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
     rewrite app_nil_r in *. destruct (sem_expr (TState.regs ts) e0 == Val.bool true).
-    + hexploit IHENVT1; eauto. i. des. split.
-      * admit.
+    + hexploit IHENVT1; eauto. i. des. splits.
+      * econs.
+        { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
+        all: cycle 1.
+        { rewrite app_nil_l. ss. }
+        condtac; ss. rewrite app_nil_r.
+        hexploit proj_union_exc_pres; eauto; ss.
+        ii. inv H. econs; eauto. econs. ss.
+      * apply functional_extensionality. i. unfold Mmts.proj. condtac; ss.
+        apply equal_f with x in COMPL_EQ. revert COMPL_EQ.
+        unfold Mmts.proj. condtac; ss.
+        exfalso. apply n.
+        generalize i. unfold Ensembles.In. unfold Complement. unfold Ensembles.In. ii. apply i0.
+        clear - H. inv H. econs; eauto. econs. ss.
       * admit.
     + admit.
   - admit.
