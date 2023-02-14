@@ -181,7 +181,7 @@ Proof.
     + destruct thr_term. ss.
       rewrite app_nil_r in *. subst.
       hexploit chkpt_fn_cases; [apply RTC | | left |]; ss; eauto.
-      { rewrite app_nil_l. eauto. }
+      { rewrite app_nil_l. instantiate (1 := []). eauto. }
       i. des; hexploit read_only_statements; eauto; i; des; subst; ss.
       * destruct thr_term'. esplits; eauto.
         { hexploit trace_refine_app; [apply trace_refine_eq | apply H | rewrite app_nil_l; eauto]. }
@@ -238,9 +238,9 @@ Proof.
     rewrite ENV_F0 in *. inv ENV_F.
     hexploit FNJ; eauto. unfold DR. intro IHF.
     hexploit chkpt_fn_cases; [apply RTC | | |]; eauto.
-    { rewrite app_nil_l. ss. }
+    { rewrite app_nil_l. instantiate (1 := []). ss. }
     hexploit chkpt_fn_cases; [apply RTC0 | | |]; eauto.
-    { rewrite app_nil_l. ss. }
+    { rewrite app_nil_l. instantiate (1 := []). ss. }
     i. des; ss.
     + (* (ONGOING, ONGOING) *)
       destruct thr_term. destruct thr_term'. ss. subst.
