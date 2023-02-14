@@ -52,7 +52,7 @@ Lemma chkpt_fn_cases:
   forall env tr thr thr_term c c' c_sfx rmap r s_cont,
     Thread.rtc env [] tr thr thr_term ->
     thr.(Thread.cont) = c ++ c' :: c_sfx ->
-    ((exists mid, c' = Cont.chkptcont rmap r s_cont mid) \/ (exists mid_cont, c' = Cont.fncont rmap r s_cont mid_cont)) ->
+    ((exists mid_cont mid, c' = Cont.chkptcont rmap r s_cont mid_cont mid) \/ (exists mid_cont, c' = Cont.fncont rmap r s_cont mid_cont)) ->
   <<CALL_ONGOING:
     exists c_pfx,
       thr_term.(Thread.cont) = c_pfx ++ c' :: c_sfx
@@ -833,9 +833,9 @@ Lemma ongoing_cont_explosion:
         c' = Cont.loopcont rmap r s_body s_cont
         /\ c0 = Cont.loopcont rmap r s_body s_cont0)
      \/
-     (exists mid,
-        c' = Cont.chkptcont rmap r s_cont mid
-        /\ c0 = Cont.chkptcont rmap r s_cont0 mid)
+     (exists mid_cont mid,
+        c' = Cont.chkptcont rmap r s_cont mid_cont mid
+        /\ c0 = Cont.chkptcont rmap r s_cont0 mid_cont mid)
      \/
      (exists mid_cont,
         c' = Cont.fncont rmap r s_cont mid_cont
@@ -1030,7 +1030,8 @@ Proof.
     + left. esplits.
       * econs; [| | rewrite app_nil_l]; ss.
         { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
-        s. hexploit ongoing_cont_explosion; eauto; [rewrite app_nil_l|]; ss.
+        s. hexploit ongoing_cont_explosion; eauto; [rewrite app_nil_l | |]; ss.
+        { right. left. eauto. }
         intros LOOP_NEW. eapply rtc_relax_base_cont in LOOP_NEW; eauto.
         rewrite app_nil_r. ss.
       * rewrite seq_sc_last. ss.
@@ -1057,6 +1058,7 @@ Proof.
         eapply Thread.rtc_trans.
         { hexploit ongoing_cont_explosion; eauto; ss.
           { rewrite app_nil_l. ss. }
+          { right. left. eauto. }
           intros LOOP_NEW. eapply rtc_relax_base_cont; eauto.
           rewrite app_nil_r. ss.
         }
@@ -1073,6 +1075,7 @@ Proof.
         s. rewrite <- (app_nil_r tr0). eapply Thread.rtc_trans.
         { hexploit ongoing_cont_explosion; eauto; ss.
           { rewrite app_nil_l. ss. }
+          { right. left. eauto. }
           intros LOOP_NEW. eapply rtc_relax_base_cont; eauto.
           rewrite app_nil_r. ss.
         }
@@ -1721,13 +1724,26 @@ Proof.
 Qed.
 
 Lemma mid_flat_eq:
-  forall env c tr thr thr_term loops loops_term,
-    Thread.rtc env c tr thr thr_term ->
-    thr.(Thread.cont) = loops ++ c ->
-    thr_term.(Thread.cont) = loops_term ++ c ->
+  forall env c tr s ts mmts thr_term c_sfx loops loops_term,
+    Thread.rtc env c tr (Thread.mk s c ts mmts) thr_term ->
+    c = loops ++ c_sfx ->
+    thr_term.(Thread.cont) = loops_term ++ c_sfx ->
     Cont.Loops loops ->
     Cont.Loops loops_term ->
-  thr.(Thread.ts).(TState.mid) = thr_term.(Thread.ts).(TState.mid).
+  ts.(TState.mid) = thr_term.(Thread.ts).(TState.mid).
 Proof.
-  admit.
+  intros env c tr s. revert env c tr.
+  induction s; i; subst.
+  { admit. }
+  inv H; ss.
+  inversion ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
+  all: try by hexploit IHs; try exact RTC; try exact H1; ss.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
 Qed.

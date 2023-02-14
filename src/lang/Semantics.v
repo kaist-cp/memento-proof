@@ -53,7 +53,7 @@ Module Cont.
   Inductive t :=
   | loopcont (rmap: VRegMap.t) (r: VReg) (s_body: list Stmt) (s_cont: list Stmt)
   | fncont (rmap: VRegMap.t) (r: VReg) (s_cont: list Stmt) (mid_cont: list Label)
-  | chkptcont (rmap: VRegMap.t) (r: VReg) (s_cont: list Stmt) (mid: list Label)
+  | chkptcont (rmap: VRegMap.t) (r: VReg) (s_cont: list Stmt) (mid_cont: list Label) (mid: list Label)
   .
   Hint Constructors t : semantics.
 
@@ -97,7 +97,7 @@ Module Cont.
     match c with
     | loopcont rmap r s_body s_cont => loopcont rmap r s_body (s_cont ++ s)
     | fncont rmap r s_cont mid_cont => fncont rmap r (s_cont ++ s) mid_cont
-    | chkptcont rmap r s_cont mid => chkptcont rmap r (s_cont ++ s) mid
+    | chkptcont rmap r s_cont mid_cont mid => chkptcont rmap r (s_cont ++ s) mid_cont mid
     end.
 
   Fixpoint seql (cl: list t) (s: list Stmt) :=
@@ -400,7 +400,7 @@ Module Thread.
       (MID: mid = (thr1.(ts).(TState.mid) ++ [lab]))
       (MMT: thr1.(mmts) mid = Some mmt)
       (LOCAL_TIME: mmt.(Mmt.time) <= thr1.(ts).(TState.time))
-      (CONT: c2 = (Cont.chkptcont thr1.(ts).(TState.regs) r s mid) :: thr1.(cont))
+      (CONT: c2 = (Cont.chkptcont thr1.(ts).(TState.regs) r s thr1.(ts).(TState.mid) mid) :: thr1.(cont))
       (THR2: thr2 =
               mk
                 s_c
@@ -413,11 +413,11 @@ Module Thread.
 
   Inductive chkpt_return (tr: list Event.t) (thr1 thr2: t): Prop :=
   | chkpt_return_intro
-      e s_rem r s2 mid
+      e s_rem r s2 mid2 mid
       c_loops c2 t v rmap rmap2 mmts2
       (STMT: thr1.(stmt) = (stmt_return e) :: s_rem)
       (TRACE: tr = [])
-      (CONT: thr1.(cont) = c_loops ++ [Cont.chkptcont rmap r s2 mid] ++ c2)
+      (CONT: thr1.(cont) = c_loops ++ [Cont.chkptcont rmap r s2 mid2 mid] ++ c2)
       (LOOPS: Cont.Loops(c_loops))
       (NEW_TIME: thr1.(ts).(TState.time) < t)
       (RET: sem_expr thr1.(ts).(TState.regs) e = v)
@@ -427,7 +427,7 @@ Module Thread.
               mk
                 s2
                 c2
-                (TState.mk rmap2 t thr1.(ts).(TState.mid))
+                (TState.mk rmap2 t mid2)
                 mmts2
       )
   .

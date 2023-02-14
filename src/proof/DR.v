@@ -214,9 +214,7 @@ Proof.
         inv MMT0. ss.
         esplits; eauto.
         { rewrite app_nil_r. apply trace_refine_eq. }
-        { i. splits; ss. apply trace_refine_eq. }
-        replace (TState.mid ts) with (TState.mid ts_r); ss.
-        hexploit mid_flat_eq; try exact CALL_DONE1; ss. ss.
+        i. splits; ss. apply trace_refine_eq.
     + inv RTC; ss; cycle 1.
       { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
       inv ONE0. inv NORMAL_STEP; inv STEP; inv STMT; ss; rewrite MMT in MMT0; inv MMT0; try lia.
@@ -402,9 +400,7 @@ Proof.
       hexploit lift_mmt; try exact SEQ_LEFT_ONGOING; eauto. i.
       des. ss.
 
-      assert (MID_FLAT_EQ: TState.mid ts0 = TState.mid ts).
-      { hexploit mid_flat_eq; try exact SEQ_LEFT_DONE0; ss; ss. }
-      rewrite MID_FLAT_EQ in *.
+      hexploit mid_flat_eq; try exact SEQ_LEFT_DONE0; ss; ss. intro MID_FLAT_EQ. rewrite <- MID_FLAT_EQ in *.
 
       assert (MMTS_PROJ_EQ: mmts0 |₁ mmt_id_exp (TState.mid ts) labs_l = Thread.mmts thr_term |₁ mmt_id_exp (TState.mid ts) labs_l).
       { eapply Mmts.proj_disj_eq; eauto. apply exp_disj_pres. econs. ii. inv DISJ. eapply H0. inv H. econs; eauto. }
@@ -456,9 +452,7 @@ Proof.
       hexploit lift_mmt; try exact SEQ_LEFT_DONE1; eauto.
       i. des. ss.
 
-      assert (MID_FLAT_EQ: TState.mid ts1 = TState.mid ts).
-      { hexploit mid_flat_eq; try exact SEQ_LEFT_DONE3; ss; ss. }
-      rewrite MID_FLAT_EQ in *.
+      hexploit mid_flat_eq; try exact SEQ_LEFT_DONE3; ss; ss. intro MID_FLAT_EQ. rewrite <- MID_FLAT_EQ in *.
 
       assert (MMTS_PROJ_EQ: mmts1 |₁ mmt_id_exp (TState.mid ts) labs_l = Thread.mmts thr_term |₁ mmt_id_exp (TState.mid ts) labs_l).
       { eapply Mmts.proj_disj_eq; eauto. apply exp_disj_pres. econs. ii. inv DISJ. eapply H0. inv H. econs; eauto. }
@@ -525,8 +519,8 @@ Proof.
         hexploit mid_flat_eq; try exact LAST_CONT; ss; ss.
       }
 
-      des. subst. rewrite H3 in *. inv H2; try inv THR.
-      inv ONE0. inv NORMAL_STEP0; inv STEP; ss; inv STMT.
+      des. subst. rewrite H3 in *.
+      inv H2; try inv THR. inv ONE0. inv NORMAL_STEP0; inv STEP; ss; inv STMT.
       * (* EX1: CHKPT-CALL *)
         inv RTC0; try inv THR.
 
