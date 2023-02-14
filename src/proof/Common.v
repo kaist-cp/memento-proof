@@ -1,4 +1,5 @@
 Require Import Ensembles.
+Require Import FunctionalExtensionality.
 Require Import List.
 Import ListNotations.
 
@@ -6,6 +7,7 @@ Require Import sflib.
 Require Import HahnList.
 
 From Memento Require Import Utils.
+From Memento Require Import Order.
 From Memento Require Import Syntax.
 From Memento Require Import Semantics.
 From Memento Require Import Env.
@@ -165,14 +167,59 @@ Proof.
 Qed.
 
 Lemma proj_union_exc_pres:
-  forall env c tr thr thr_term mmts mids mmts_term mids',
-    Thread.rtc env c tr thr thr_term ->
-    thr.(Thread.mmts) = mmts |₁ mids ->
+  forall envt labs s mids ts env tr mmts thr_term mmts_term mids',
+    EnvType.rw_judge envt labs s ->
+    mmt_id_exp ts.(TState.mid) labs = mids ->
+    Thread.rtc env [] tr (Thread.mk s [] ts (mmts |₁ mids)) thr_term ->
     thr_term.(Thread.mmts) = mmts_term |₁ mids ->
     Ensembles.Included _ mids mids' ->
-  Thread.rtc env c tr
-    (Thread.mk thr.(Thread.stmt) thr.(Thread.cont) thr.(Thread.ts) (mmts |₁ mids'))
+  Thread.rtc env [] tr
+    (Thread.mk s [] ts (mmts |₁ mids'))
     (Thread.mk thr_term.(Thread.stmt) thr_term.(Thread.cont) thr_term.(Thread.ts) (mmts_term |₁ mids')).
 Proof.
   admit.
+  (* intros envt labs s mids ts env tr mmts thr_term mmts_term mids' RWJ. revert mids ts env tr mmts thr_term mmts_term mids'.
+  induction RWJ; i; subst.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - inv H0.
+    { ss. apply equal_f in H1. unfold Mmts.proj in *.
+    }
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+
+
+
+
+  { admit. }
+  subst. inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - hexploit IHRTC; eauto. i. rewrite <- (app_nil_l tr1). eapply Thread.rtc_trans; eauto.
+    econs; try by econs; econs; eauto.
+    { econs; eauto. try by econs; econs; eauto. }
+    ss.
+  - hexploit IHRTC; eauto. i. rewrite <- (app_nil_l tr1). rewrite app_comm_cons. eapply Thread.rtc_trans; eauto.
+    econs; try by econs; econs; eauto.
+    { econs; eauto. try by econs; econs; eauto. }
+    ss.
+  - hexploit IHRTC; eauto. i. rewrite <- (app_nil_l tr1). rewrite app_comm_cons. eapply Thread.rtc_trans; eauto.
+    econs; try by econs; econs; eauto.
+    { econs; eauto. try by econs; econs; eauto. }
+    ss.
+  - hexploit IHRTC; eauto.
+    { admit. }
+    i. rewrite <- (app_nil_l tr1). rewrite app_comm_cons. eapply Thread.rtc_trans; eauto.
+    econs; (try by econs; econs; eauto); [| rewrite app_nil_r]; ss.
+    econs; eauto. econs 4. econs; eauto; ss; cycle 1.
+    { rewrite Mmts.proj_fun_add_eq; ss. unfold Included in H1. apply H1.  }
+    { rewrite H in MMT. unfold Included in H1. unfold Mmts.proj. condtac. }
+  - hexploit IHRTC; eauto. i. rewrite <- (app_nil_l tr1). rewrite app_comm_cons. eapply Thread.rtc_trans; eauto.
+    econs; try by econs; econs; eauto.
+    { econs; eauto. try by econs; econs; eauto. }
+    ss. *)
 Qed.

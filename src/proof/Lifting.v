@@ -1087,7 +1087,8 @@ Proof.
     + econs; eauto.
       { econs; eauto. try by econs; econs; eauto. }
       ss.
-  - admit.
+  - (* TODO: if cases lemma 만들고 하면 될 것 같음. *)
+    admit.
   - hexploit loop_cases; eauto.
     { rewrite app_nil_l. ss. }
     i. des.
@@ -1198,6 +1199,73 @@ Proof.
   - destruct c_loops; ss.
 Qed.
 
+Lemma read_only_statements:
+  forall env envt s tr ts mmts thr_term,
+    EnvType.ro_judge envt s ->
+    Thread.rtc env [] tr (Thread.mk s [] ts mmts) thr_term ->
+  [] ~ tr /\ mmts = thr_term.(Thread.mmts).
+Proof.
+  intros env envt s tr ts mmts thr_term ROJ. generalize tr ts mmts thr_term. induction ROJ; subst; i.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inv RTC; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inv RTC; ss; cycle 1.
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+    split; ss. eapply refine_read; [apply trace_refine_eq |]; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inv RTC; ss; cycle 1.
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+    split; ss. eapply refine_read; [apply trace_refine_eq |]; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    hexploit loop_cases; eauto.
+    { rewrite app_nil_l. ss. }
+    i. des.
+    + admit. (* TODO: induction이 안 됨. rtc [] 대신 rtc c를 해볼까? *)
+    + admit.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inv RTC; ss.
+    { split; ss. apply trace_refine_eq. }
+    admit. (* TODO: RO 함수 호출하는 상황. DR_RW에서 쓰인 전제랑 비슷한 상황인 것 같음 *)
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss; destruct c_loops; inv CONT.
+  - hexploit seq_cases; eauto. i. des.
+    { apply IHROJ1 in SEQ_LEFT_ONGOING. ss. }
+    subst. apply IHROJ1 in SEQ_LEFT_DONE0. apply IHROJ2 in SEQ_LEFT_DONE1. des. subst. split; ss.
+    rewrite <- (app_nil_l []). apply trace_refine_app; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inversion RTC; ss; subst.
+    { split; ss. apply trace_refine_eq. }
+    rewrite app_nil_r in *.
+    destruct (EquivDec.equiv_dec (sem_expr (TState.regs ts0) e0) (Val.bool true)).
+    + eapply IHROJ1; eauto.
+    + eapply IHROJ2; eauto.
+Qed.
+
+(* TODO: admit 정리 *)
 Lemma lift_mmt:
   forall envt env labs s mids tr ts mmts thr_term,
     EnvType.rw_judge envt labs s ->
@@ -1234,8 +1302,7 @@ Proof.
     inv ONE. inv NORMAL_STEP; inv STEP; ss.
   - inv RTC; ss.
     { splits; ss; try by econs; eauto. }
-    (* inv ONE. inv NORMAL_STEP; inv STEP; ss. *)
-    admit. (* contradiction *)
+    inv ONE. inv NORMAL_STEP; inv STEP; ss; destruct c_loops; ss.
   - inv RTC; ss.
     { splits; ss; try by econs; eauto. }
     inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
@@ -1328,7 +1395,10 @@ Proof.
   - inv RTC; ss.
     { splits; ss; try by econs; eauto. }
     inv ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
-    + admit.
+    + hexploit chkpt_fn_cases; try exact RTC0; try left; eauto; [rewrite app_nil_l |]; ss. i. des.
+      * hexploit read_only_statements; try exact CALL_ONGOING0; eauto. s. i. des. rewrite <- H0 in *.
+        admit.
+      * admit.
     + hexploit stop_means_no_step; eauto; try by econs; ss. i. des. subst. ss.
       splits; ss.
       * econs; try by econs; econs; eauto.
@@ -1356,8 +1426,9 @@ Proof.
         all: cycle 1.
         { rewrite app_nil_l. ss. }
         condtac; ss. rewrite app_nil_r.
-        hexploit proj_union_exc_pres; eauto; ss.
-        ii. inv H. econs; eauto. econs. ss.
+        admit.
+        (* hexploit proj_union_exc_pres; eauto; ss.
+        ii. inv H. econs; eauto. econs. ss. *)
       * apply functional_extensionality. i. unfold Mmts.proj. condtac; ss.
         apply equal_f with x in COMPL_EQ. revert COMPL_EQ.
         unfold Mmts.proj. condtac; ss.
@@ -1647,4 +1718,16 @@ Proof.
   rewrite <- H2 in H4. rewrite pair_equal_spec in *. des. subst.
   esplits; eauto. eapply Thread.rtc_trans; eauto. econs; eauto; try econs.
   rewrite app_nil_r. ss.
+Qed.
+
+Lemma mid_flat_eq:
+  forall env c tr thr thr_term loops loops_term,
+    Thread.rtc env c tr thr thr_term ->
+    thr.(Thread.cont) = loops ++ c ->
+    thr_term.(Thread.cont) = loops_term ++ c ->
+    Cont.Loops loops ->
+    Cont.Loops loops_term ->
+  thr.(Thread.ts).(TState.mid) = thr_term.(Thread.ts).(TState.mid).
+Proof.
+  admit.
 Qed.
