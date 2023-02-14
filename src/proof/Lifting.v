@@ -1734,16 +1734,30 @@ Lemma mid_flat_eq:
 Proof.
   intros env c tr s. revert env c tr.
   induction s; i; subst.
-  { admit. }
+  { inv H; ss. inv ONE; inv NORMAL_STEP; inv STEP; ss. }
   inv H; ss.
   inversion ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
   all: try by hexploit IHs; try exact RTC; try exact H1; ss.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
+  - (* CHKPT-CALL *)
+    admit.
+  - (* CHKPT-RET *)
+    rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. hexploit app_inv_tail.
+    { rewrite app_nil_l. eauto. }
+    i. destruct c_loops; ss.
+  - (* IF *)
+    admit.
+  - (* LOOP *)
+    admit.
+  - (* CONTINUE *)
+    admit.
+  - (* BREAK *)
+    rewrite app_comm_cons in CONT. hexploit app_inv_tail.
+    { rewrite app_nil_l. eauto. }
+    ss.
+  - (* FN-CALL *)
+    admit.
+  - (* FN-RET *)
+    rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. hexploit app_inv_tail.
+    { rewrite app_nil_l. eauto. }
+    i. destruct c_loops; ss.
 Qed.
