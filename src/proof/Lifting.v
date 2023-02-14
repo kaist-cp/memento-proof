@@ -1746,11 +1746,9 @@ Proof.
 Qed.
 
 Lemma mid_flat_eq:
-  forall env c tr s ts mmts thr_term c_sfx loops loops_term,
+  forall env c tr s ts mmts thr_term loops_term,
     Thread.rtc env c tr (Thread.mk s c ts mmts) thr_term ->
-    c = loops ++ c_sfx ->
-    thr_term.(Thread.cont) = loops_term ++ c_sfx ->
-    Cont.Loops loops ->
+    thr_term.(Thread.cont) = loops_term ++ c ->
     Cont.Loops loops_term ->
   ts.(TState.mid) = thr_term.(Thread.ts).(TState.mid).
 Proof.
@@ -1759,15 +1757,15 @@ Proof.
   { inv H; ss. inv ONE; inv NORMAL_STEP; inv STEP; ss. }
   inv H; ss.
   inversion ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
-  all: try by hexploit IHs; try exact RTC; try exact H1; ss.
+  all: try by hexploit IHs; try exact RTC; try exact H0; ss.
   - (* CHKPT-CALL *)
     hexploit chkpt_fn_cases; try exact RTC; try left; eauto.
     { rewrite app_nil_l. s. instantiate (1 := []). ss. }
     s. i. des.
     { (* CALL-ONGOING *)
-      clear - CALL_ONGOING H1 H3.
-      rewrite H1 in CALL_ONGOING. rewrite app_comm_cons in CALL_ONGOING. rewrite app_assoc in CALL_ONGOING. apply app_inv_tail in CALL_ONGOING. subst.
-      apply Cont.loops_app_distr in H3. des. inv H0. ss.
+      clear - CALL_ONGOING H0 H1.
+      rewrite H0 in CALL_ONGOING. rewrite app_comm_cons' in CALL_ONGOING. apply app_inv_tail in CALL_ONGOING. subst.
+      apply Cont.loops_app_distr in H1. des. inv H2. ss.
     }
     (* CALL-DONE *)
     subst. inv CALL_DONE2. inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT; cycle 1.
@@ -1782,7 +1780,7 @@ Proof.
     intro CONT_EQ. inv CONT_EQ.
 
     hexploit app_inv_tail.
-    { rewrite app_nil_l. exact H8. }
+    { rewrite app_nil_l. exact H7. }
     i. subst. rewrite app_nil_l in *. cleartriv.
     hexploit IHs; eauto.
   - (* CHKPT-RET *)
@@ -1804,9 +1802,9 @@ Proof.
     { rewrite app_nil_l. s. instantiate (1 := []). ss. }
     s. i. des.
     { (* CALL-ONGOING *)
-      clear - CALL_ONGOING H1 H3.
-      rewrite H1 in CALL_ONGOING. rewrite app_comm_cons in CALL_ONGOING. rewrite app_assoc in CALL_ONGOING. apply app_inv_tail in CALL_ONGOING. subst.
-      apply Cont.loops_app_distr in H3. des. inv H0. ss.
+      clear - CALL_ONGOING H0 H1.
+      rewrite H0 in CALL_ONGOING. rewrite app_comm_cons' in CALL_ONGOING. apply app_inv_tail in CALL_ONGOING. subst.
+      apply Cont.loops_app_distr in H1. des. inv H2. ss.
     }
     (* CALL-DONE *)
     subst. inv CALL_DONE2. inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT.
@@ -1821,7 +1819,7 @@ Proof.
     intro CONT_EQ. inv CONT_EQ.
 
     hexploit app_inv_tail.
-    { rewrite app_nil_l. exact H7. }
+    { rewrite app_nil_l. exact H6. }
     i. subst. rewrite app_nil_l in *. cleartriv.
     hexploit IHs; eauto.
   - (* FN-RET *)
