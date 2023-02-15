@@ -1772,11 +1772,29 @@ Proof.
   rewrite app_nil_r. ss.
 Qed.
 
-Lemma mid_flat_eq:
-  forall env c tr s ts mmts thr_term loops_term,
+
+(* Lemma mid_flat_eq:
+  forall env c tr s ts mmts thr_term,
+    c = thr_term.(Thread.cont) ->
     Thread.rtc env c tr (Thread.mk s c ts mmts) thr_term ->
-    thr_term.(Thread.cont) = loops_term ++ c ->
-    Cont.Loops loops_term ->
+    (* Cont.Loops loops_term -> *)
+  ts.(TState.mid) = thr_term.(Thread.ts).(TState.mid).
+Proof.
+  intros env c tr s ts mmts thr_term CONT_EQ RTC. revert env tr ts mmts RTC.
+  induction s; i; subst.
+  { inv RTC; ss. inv ONE; inv NORMAL_STEP; inv STEP; ss. }
+  inv RTC; ss.
+  inversion ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
+  all: try by hexploit IHs; try exact RTC0; ss.
+
+Qed. *)
+
+(* TODO: c_sfx 주고 rtc induction으로 바꾸기 *)
+Lemma mid_flat_eq:
+  forall env c tr s ts mmts thr_term,
+    Thread.rtc env c tr (Thread.mk s c ts mmts) thr_term ->
+    thr_term.(Thread.cont) = c ->
+    (* Cont.Loops loops_term -> *)
   ts.(TState.mid) = thr_term.(Thread.ts).(TState.mid).
 Proof.
   intros env c tr s. revert env c tr.
@@ -1790,9 +1808,9 @@ Proof.
     { rewrite app_nil_l. ss. }
     s. i. des.
     { (* CALL-ONGOING *)
-      clear - CALL_ONGOING H0 H1.
-      rewrite H0 in CALL_ONGOING. rewrite app_comm_cons' in CALL_ONGOING. apply app_inv_tail in CALL_ONGOING. subst.
-      apply Cont.loops_app_distr in H1. des. inv H2. ss.
+      rewrite app_comm_cons' in CALL_ONGOING. hexploit app_inv_tail.
+      { rewrite app_nil_l. exact CALL_ONGOING. }
+      i. destruct c_pfx; ss.
     }
     (* CALL-DONE *)
     subst. inv CALL_DONE2. inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT; cycle 1.
@@ -1807,7 +1825,7 @@ Proof.
     intro CONT_EQ. inv CONT_EQ.
 
     hexploit app_inv_tail.
-    { rewrite app_nil_l. exact H7. }
+    { rewrite app_nil_l. exact H5. }
     i. subst. rewrite app_nil_l in *. cleartriv.
     hexploit IHs; eauto.
   - (* CHKPT-RET *)
@@ -1817,9 +1835,25 @@ Proof.
   - (* IF *)
     admit.
   - (* LOOP *)
-    admit.
+    hexploit loop_cases; eauto.
+    { rewrite app_nil_l. ss. }
+    i. des.
+    + (* LOOP-ONGOING *)
+      apply Thread.rtc_rtc' in LOOP_ONGOING. inv LOOP_ONGOING; ss.
+      hexploit Thread.tc_last; eauto. i. des.
+      inv H1. rewrite app_comm_cons' in BASE0. hexploit app_inv_tail.
+      { rewrite app_nil_l. exact BASE0. }
+      i. destruct c'0; ss.
+    + (* LOOP-DONE *)
+      admit.
+      (* break 하면서 예전 mid 가져오는 방법 없음.. break semantics를 수정? *)
   - (* CONTINUE *)
-    admit.
+    rewrite CONT in *. eapply rtc_relax_base_cont in RTC; cycle 1.
+    { instantiate (1 := c_rem). rewrite <- (app_nil_l _). rewrite app_comm_cons'. eauto. }
+    hexploit loop_cases; eauto.
+    i. des.
+    + admit.
+    + admit.
   - (* BREAK *)
     rewrite app_comm_cons in CONT. hexploit app_inv_tail.
     { rewrite app_nil_l. eauto. }
@@ -1829,9 +1863,9 @@ Proof.
     { rewrite app_nil_l. ss. }
     s. i. des.
     { (* CALL-ONGOING *)
-      clear - CALL_ONGOING H0 H1.
-      rewrite H0 in CALL_ONGOING. rewrite app_comm_cons' in CALL_ONGOING. apply app_inv_tail in CALL_ONGOING. subst.
-      apply Cont.loops_app_distr in H1. des. inv H2. ss.
+      rewrite app_comm_cons' in CALL_ONGOING. hexploit app_inv_tail.
+      { rewrite app_nil_l. exact CALL_ONGOING. }
+      i. destruct c_pfx; ss.
     }
     (* CALL-DONE *)
     subst. inv CALL_DONE2. inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT.
@@ -1846,7 +1880,7 @@ Proof.
     intro CONT_EQ. inv CONT_EQ.
 
     hexploit app_inv_tail.
-    { rewrite app_nil_l. exact H6. }
+    { rewrite app_nil_l. exact H4. }
     i. subst. rewrite app_nil_l in *. cleartriv.
     hexploit IHs; eauto.
   - (* FN-RET *)
