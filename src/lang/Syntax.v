@@ -55,10 +55,10 @@ Inductive Stmt :=
   | stmt_loop (r: VReg) (e: Expr) (s: list Stmt)
   | stmt_continue (e: Expr)
   | stmt_break
-  | stmt_call (r: VReg) (f: FnId) (e: list Expr)
+  | stmt_call (r: VReg) (f: FnId) (e: list Expr) (lab: option Label)
   | stmt_return (e: Expr)
-  | stmt_chkpt (r: VReg) (s: list Stmt) (mid: list Label)
-  | stmt_pcas (r: VReg) (e_loc e_old e_new: Expr) (mid: list Label)
+  | stmt_chkpt (r: VReg) (s: list Stmt) (lab: Label)
+  | stmt_pcas (r: VReg) (e_loc e_old e_new: Expr) (lab: Label)
   .
   Hint Constructors Stmt : syntax.
 

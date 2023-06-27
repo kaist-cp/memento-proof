@@ -18,71 +18,6 @@ From Memento Require Import Lifting.
 
 Set Implicit Arguments.
 
-Lemma read_only_statements:
-  forall env envt s tr ts mmts thr_term,
-    TypeSystem.judge env envt ->
-    EnvType.ro_judge envt s ->
-    Thread.rtc env [] tr (Thread.mk s [] ts mmts) thr_term ->
-  [] ~ tr /\ mmts = thr_term.(Thread.mmts).
-Proof.
-  intros env envt s tr ts mmts thr_term TYPEJ ROJ. generalize tr ts mmts thr_term. induction ROJ; subst; i.
-  - inv H; ss.
-    { split; ss. apply trace_refine_eq. }
-    inv ONE. inv NORMAL_STEP; inv STEP; ss.
-  - inv H; ss.
-    { split; ss. apply trace_refine_eq. }
-    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
-    inv RTC; ss.
-    { split; ss. apply trace_refine_eq. }
-    inv ONE. inv NORMAL_STEP; inv STEP; ss.
-  - inv H; ss.
-    { split; ss. apply trace_refine_eq. }
-    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
-    inv RTC; ss; cycle 1.
-    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
-    split; ss. eapply refine_read; [apply trace_refine_eq |]; ss.
-  - inv H; ss.
-    { split; ss. apply trace_refine_eq. }
-    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
-    inv RTC; ss; cycle 1.
-    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
-    split; ss. eapply refine_read; [apply trace_refine_eq |]; ss.
-  - inv H; ss.
-    { split; ss. apply trace_refine_eq. }
-    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
-    hexploit loop_cases; eauto.
-    { rewrite app_nil_l. ss. }
-    i. des.
-    + admit.
-    + admit.
-  - inv H; ss.
-    { split; ss. apply trace_refine_eq. }
-    inv ONE. inv NORMAL_STEP; inv STEP; ss.
-  - inv H; ss.
-    { split; ss. apply trace_refine_eq. }
-    inv ONE. inv NORMAL_STEP; inv STEP; ss.
-  - inv H; ss.
-    { split; ss. apply trace_refine_eq. }
-    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
-    inv RTC; ss.
-    { split; ss. apply trace_refine_eq. }
-    admit.
-  - inv H; ss.
-    { split; ss. apply trace_refine_eq. }
-    inv ONE. inv NORMAL_STEP; inv STEP; ss; destruct c_loops; inv CONT.
-  - inv H; ss.
-    { split; ss. apply trace_refine_eq. }
-    admit.
-  - inv H; ss.
-    { split; ss. apply trace_refine_eq. }
-    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
-    inversion RTC; ss; subst.
-    { split; ss. apply trace_refine_eq. }
-    rewrite app_nil_r in *.
-    destruct (EquivDec.equiv_dec (sem_expr (TState.regs ts0) e0) (Val.bool true)).
-    + eapply IHROJ1; eauto.
-    + eapply IHROJ2; eauto.
-Qed.
 
 Definition DR (env: Env.t) (s: list Stmt) :=
   forall tr tr' thr_term thr_term' ts mmts,
@@ -184,12 +119,12 @@ Proof.
       { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
       inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT.
       { rewrite fun_add_spec in MMT0.
-        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+        destruct (TState.mid ts ++ [lab] == TState.mid ts ++ [lab]); cycle 1.
         { exfalso. apply c. ss. }
         inv MMT0. ss. lia.
       }
       { rewrite fun_add_spec in MMT0.
-        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+        destruct (TState.mid ts ++ [lab] == TState.mid ts ++ [lab]); cycle 1.
         { exfalso. apply c. ss. }
         inv MMT0. ss. lia.
       }
@@ -199,19 +134,19 @@ Proof.
       { apply trace_refine_eq. }
       { i. splits; ss. apply refine_empty; ss. }
       i. splits; ss. rewrite fun_add_spec in MMT0.
-      destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+      destruct (TState.mid ts ++ [lab] == TState.mid ts ++ [lab]); cycle 1.
       { exfalso. apply c. ss. }
       inv MMT0. ss.
     + inv RTC; ss; cycle 1.
       { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
       inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT.
       { rewrite fun_add_spec in MMT0.
-        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+        destruct (TState.mid ts ++ [lab] == TState.mid ts ++ [lab]); cycle 1.
         { exfalso. apply c. ss. }
         inv MMT0. ss. lia.
       }
       { rewrite fun_add_spec in MMT0.
-        destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+        destruct (TState.mid ts ++ [lab] == TState.mid ts ++ [lab]); cycle 1.
         { exfalso. apply c. ss. }
         inv MMT0. ss. lia.
       }
@@ -221,7 +156,7 @@ Proof.
       { apply trace_refine_eq. }
       { i. splits; ss. apply refine_empty; ss. }
       i. splits; ss. rewrite fun_add_spec in MMT0.
-      destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+      destruct (TState.mid ts ++ [lab] == TState.mid ts ++ [lab]); cycle 1.
       { exfalso. apply c. ss. }
       inv MMT0. ss.
     + inv RTC; ss; cycle 1.
@@ -246,7 +181,7 @@ Proof.
     + destruct thr_term. ss.
       rewrite app_nil_r in *. subst.
       hexploit chkpt_fn_cases; [apply RTC | | left |]; ss; eauto.
-      { rewrite app_nil_l. eauto. }
+      { rewrite app_nil_l. ss. }
       i. des; hexploit read_only_statements; eauto; i; des; subst; ss.
       * destruct thr_term'. esplits; eauto.
         { hexploit trace_refine_app; [apply trace_refine_eq | apply H | rewrite app_nil_l; eauto]. }
@@ -267,14 +202,14 @@ Proof.
         { unfold STOP. left. ss. }
         i. des. inv H0. rewrite app_nil_r in *.
         inv ONE0. inv NORMAL_STEP; inv STEP; inv STMT; ss.
-        { hexploit Thread.step_time_mon; eauto. i. ss.
-          rewrite fun_add_spec in *. destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+        { hexploit Thread.step_time_mon; try exact CALL_DONE0; eauto. i. ss.
+          rewrite fun_add_spec in *. destruct (TState.mid ts ++ [lab] == TState.mid ts ++ [lab]); cycle 1.
           { exfalso. apply c. ss. }
           inv MMT0. ss. lia.
         }
         inv RTC0; ss; cycle 1.
         { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
-        rewrite fun_add_spec in *. destruct (EquivDec.equiv_dec (mid ++ [lab]) (mid ++ [lab])); cycle 1.
+        rewrite fun_add_spec in *. destruct (TState.mid ts ++ [lab] == TState.mid ts ++ [lab]); cycle 1.
         { exfalso. apply c. ss. }
         inv MMT0. ss.
         esplits; eauto.
@@ -460,13 +395,17 @@ Proof.
            symmetry in SEQ_LEFT_ONGOING3. hexploit seq_sc_stop; try exact SEQ_LEFT_ONGOING0; eauto. i.
            apply H3 in H1. ss.
     + (* seq-left-done, seq-left-ongoing *)
-      hexploit lift_mmt; try exact SEQ_LEFT_DONE; eauto. instantiate (1 := []). i. (* TODO: [] is temporary instantiation *)
-      hexploit lift_mmt; try exact SEQ_LEFT_DONE0; eauto. instantiate (1 := []). i.
-      hexploit lift_mmt; try exact SEQ_LEFT_ONGOING; eauto. instantiate (1 := []). i. des. ss.
+      hexploit lift_mmt; try exact SEQ_LEFT_DONE0; eauto. i.
+      hexploit lift_mmt; try exact SEQ_LEFT_DONE1; eauto. i.
+      hexploit lift_mmt; try exact SEQ_LEFT_ONGOING; eauto. i.
+      des. ss.
 
-      assert (MMTS_PROJ_EQ: mmts0 |₁ mmt_id_exp [] labs_l = Thread.mmts thr_term |₁ mmt_id_exp [] labs_l).
+      hexploit mid_flat_eq; try exact SEQ_LEFT_DONE0; ss; ss. intro MID_FLAT_EQ. rewrite <- MID_FLAT_EQ in *.
+
+      assert (MMTS_PROJ_EQ: mmts0 |₁ mmt_id_exp (TState.mid ts) labs_l = Thread.mmts thr_term |₁ mmt_id_exp (TState.mid ts) labs_l).
       { eapply Mmts.proj_disj_eq; eauto. apply exp_disj_pres. econs. ii. inv DISJ. eapply H0. inv H. econs; eauto. }
-      rewrite <- MMTS_PROJ_EQ in *. hexploit IHENVTJ1; eauto. unfold DR. intros X. hexploit X; try exact UNLIFT0; eauto. i. des. ss.
+
+      rewrite <- MMTS_PROJ_EQ in *. hexploit IHENVTJ1; eauto. unfold DR. intros X. hexploit X; try exact UNLIFT1; eauto. i. des. ss.
       hexploit STOP_FST.
       { unfold STOP. left. ss. }
       i. des. subst.
@@ -475,10 +414,9 @@ Proof.
       { rewrite H2 in *. ss. }
       intros MMTS_EQ. rewrite <- MMTS_EQ in *. rewrite <- MMTS_PROJ_EQ in TRACE.
 
-      hexploit lift_mmt; try exact TRACE; eauto. instantiate (1 := []). (* TODO: [] is temporary instantiation *)
-      i. des. ss.
+      hexploit lift_mmt; try exact TRACE; eauto. i. des. ss.
       specialize LIFT2 with mmts. repeat rewrite <- Mmts.proj_idemp in LIFT2. rewrite Mmts.proj_compl_union in LIFT2.
-      rewrite COMPL_EQ0 in LIFT2. rewrite Mmts.proj_compl_union in LIFT2.
+      rewrite COMPL_EQ1 in LIFT2. rewrite Mmts.proj_compl_union in LIFT2.
 
       destruct thr_term. ss. esplits; eauto.
       { hexploit trace_refine_app; [exact H3| |]; cycle 1.
@@ -508,12 +446,15 @@ Proof.
 
       intro CONTRA. apply STOP_FST in CONTRA. des. subst. unguard. des; ss.
     + (* seq-left-done, seq-left-done *)
-      hexploit lift_mmt; try exact SEQ_LEFT_DONE3; eauto. instantiate (1 := []). i. (* TODO: [] is temporary instantiation *)
-      hexploit lift_mmt; try exact SEQ_LEFT_DONE4; eauto. instantiate (1 := []). i.
-      hexploit lift_mmt; try exact SEQ_LEFT_DONE0; eauto. instantiate (1 := []). i.
-      hexploit lift_mmt; try exact SEQ_LEFT_DONE1; eauto. instantiate (1 := []). i. des. ss.
+      hexploit lift_mmt; try exact SEQ_LEFT_DONE3; eauto.
+      hexploit lift_mmt; try exact SEQ_LEFT_DONE4; eauto.
+      hexploit lift_mmt; try exact SEQ_LEFT_DONE0; eauto.
+      hexploit lift_mmt; try exact SEQ_LEFT_DONE1; eauto.
+      i. des. ss.
 
-      assert (MMTS_PROJ_EQ: mmts1 |₁ mmt_id_exp [] labs_l = Thread.mmts thr_term |₁ mmt_id_exp [] labs_l).
+      hexploit mid_flat_eq; try exact SEQ_LEFT_DONE3; ss; ss. intro MID_FLAT_EQ. rewrite <- MID_FLAT_EQ in *.
+
+      assert (MMTS_PROJ_EQ: mmts1 |₁ mmt_id_exp (TState.mid ts) labs_l = Thread.mmts thr_term |₁ mmt_id_exp (TState.mid ts) labs_l).
       { eapply Mmts.proj_disj_eq; eauto. apply exp_disj_pres. econs. ii. inv DISJ. eapply H0. inv H. econs; eauto. }
       rewrite <- MMTS_PROJ_EQ in *. hexploit IHENVTJ1; eauto. unfold DR. intros X. hexploit X; try exact UNLIFT2; eauto. s. i. des. ss.
       hexploit STOP_FST.
@@ -523,7 +464,7 @@ Proof.
       { unfold STOP. left. ss. }
       i. des. subst.
 
-      hexploit Mmts.proj_compl_eq; [| exact COMPL_EQ0 |]; eauto.
+      hexploit Mmts.proj_compl_eq; [| exact COMPL_EQ1 |]; eauto.
       { rewrite H2 in *. ss. }
       intros MMTS_EQ. rewrite <- MMTS_EQ in *. rewrite <- MMTS_PROJ_EQ in TRACE.
 
@@ -567,30 +508,43 @@ Proof.
       i. des. subst. rename H0 into TR3.
       symmetry in H1. rewrite <- app_nil_l in H1. apply snoc_eq_snoc in H1. des. subst. cleartriv.
 
-      assert (s1 = stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s_body /\ c1 = [] /\ ts.(TState.time) <= ts1.(TState.time)).
+      assert (
+        s1 = stmt_chkpt r [stmt_return r] lab :: s_body
+        /\ c1 = []
+        /\ ts.(TState.time) <= ts1.(TState.time)
+        /\ ts.(TState.mid) = ts1.(TState.mid)
+      ).
       { unguard. des; splits; subst; ss.
-        hexploit Thread.step_time_mon; [exact LAST_CONT |]; eauto.
+        { hexploit Thread.step_time_mon; [exact LAST_CONT |]; eauto. }
+        hexploit mid_flat_eq; try exact LAST_CONT; ss; ss.
       }
 
-      des. subst. inv H2; try inv THR.
-      inv ONE0. inv NORMAL_STEP0; inv STEP; ss; inv STMT.
+      des. subst. rewrite H3 in *.
+      inv H2; try inv THR. inv ONE0. inv NORMAL_STEP0; inv STEP; ss; inv STMT.
       * (* EX1: CHKPT-CALL *)
         inv RTC0; try inv THR.
+
+        (* EX1: chkpt return *)
         inv ONE0. inv NORMAL_STEP0; inv STEP; ss; inv STMT; ss; cycle 1.
         { rewrite app_nil_r in CONT. destruct c_loops; ss. inv CONT. destruct c_loops; ss. }
         rewrite app_nil_r in CONT. destruct c_loops; ss; inv CONT; cycle 1.
         { destruct c_loops; ss. }
-        hexploit lift_mmt; eauto. ss. instantiate (1 := mid). i. des.
-        eapply equal_f in COMPL_EQ. revert COMPL_EQ. instantiate (1 := (mid ++ [lab])). i.
-        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs')) (mid ++ [lab])).
+
+        hexploit lift_mmt; eauto. ss. i. des.
+        eapply equal_f in COMPL_EQ. revert COMPL_EQ. instantiate (1 := TState.mid ts1 ++ [lab0]). i.
+
+        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp (TState.mid ts1) labs')) (TState.mid ts1 ++ [lab0])).
         { clear - NIN.
           unfold Ensembles.In. unfold Complement. ii.
-          inv H. induction mid; inv MID; eauto.
+          inv H. apply app_inv_head in MID. inv MID. ss.
         }
+
         symmetry in COMPL_EQ.
         hexploit Mmts.proj_inv; eauto.
         unfold Mmts.proj. ss. condtac; ss.
         funtac. intro MID_MMT.
+
+        (* EX2: chkpt replay *)
         inv ONE; inv NORMAL_STEP0; inv STEP; inv STMT; ss; rewrite MID_MMT in MMT0; inv MMT0; ss.
         { lia. }
 
@@ -627,7 +581,7 @@ Proof.
             i. des. subst. inv H0.
             esplits; eauto; cycle 1.
             { rewrite app_nil_r. ss. }
-            hexploit trace_refine_app; [exact H5| | ]; ss; cycle 1.
+            hexploit trace_refine_app; [exact H6| | ]; ss; cycle 1.
             { repeat rewrite app_nil_r. eauto. }
             apply trace_refine_eq.
         -- (* EX2: LOOP-ONGOING *)
@@ -648,7 +602,7 @@ Proof.
             i. des. subst.
             destruct thr_term'; ss. subst.
             esplits; eauto.
-            { hexploit trace_refine_app; [exact H4| | ]; ss; cycle 1.
+            { hexploit trace_refine_app; [exact H5| | ]; ss; cycle 1.
               { rewrite app_nil_r. eauto. }
               apply trace_refine_eq.
             }
@@ -658,17 +612,18 @@ Proof.
             { unfold STOP. repeat right. esplits; ss. }
             i. des. ss.
       * (* EX1: CHKPT-REPLAY *)
-        hexploit lift_mmt; eauto. ss. instantiate (1 := mid). i. des.
-        eapply equal_f in COMPL_EQ. revert COMPL_EQ. instantiate (1 := (mid ++ [lab])). i.
-        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs')) (mid ++ [lab])).
+        hexploit lift_mmt; eauto. ss. i. des.
+        eapply equal_f in COMPL_EQ. revert COMPL_EQ. instantiate (1 := TState.mid ts1 ++ [lab0]). i.
+        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp (TState.mid ts1) labs')) (TState.mid ts1 ++ [lab0])).
         { clear - NIN.
           unfold Ensembles.In. unfold Complement. ii.
-          inv H. induction mid; inv MID; eauto.
+          inv H. apply app_inv_head in MID. inv MID. ss.
         }
         symmetry in COMPL_EQ.
         hexploit Mmts.proj_inv; eauto.
         unfold Mmts.proj. ss. condtac; ss.
         funtac. intro MID_MMT.
+
         inv ONE; inv NORMAL_STEP0; inv STEP; inv STMT; ss; rewrite MID_MMT in MMT0; rewrite MMT in MMT0; inv MMT0; ss.
         { lia. }
 
@@ -705,7 +660,7 @@ Proof.
             i. des. subst. inv H0.
             esplits; eauto; cycle 1.
             { rewrite app_nil_r. ss. }
-            hexploit trace_refine_app; [exact H5| | ]; ss; cycle 1.
+            hexploit trace_refine_app; [exact H6| | ]; ss; cycle 1.
             { repeat rewrite app_nil_r. eauto. }
             apply trace_refine_eq.
         -- (* EX2: LOOP-ONGOING *)
@@ -726,7 +681,7 @@ Proof.
             i. des. subst.
             destruct thr_term'. ss. subst.
             esplits; eauto.
-            { hexploit trace_refine_app; [exact H4| | ]; ss; cycle 1.
+            { hexploit trace_refine_app; [exact H5| | ]; ss; cycle 1.
               { rewrite app_nil_r. eauto. }
               apply trace_refine_eq.
             }
@@ -740,11 +695,17 @@ Proof.
       { rewrite app_nil_l. ss. }
       i. des. rename H0 into TR3.
 
-      assert (s1 = stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s_body /\ c1 = [] /\ ts.(TState.time) <= ts1.(TState.time)).
+      assert (
+        s1 = stmt_chkpt r [stmt_return r] lab :: s_body
+        /\ c1 = []
+        /\ ts.(TState.time) <= ts1.(TState.time)
+        /\ ts.(TState.mid) = ts1.(TState.mid)
+      ).
       { unguard. des; splits; subst; ss.
-        hexploit Thread.step_time_mon; [exact LAST_CONT |]; eauto.
+        { hexploit Thread.step_time_mon; [exact LAST_CONT |]; eauto. }
+        hexploit mid_flat_eq; try exact LAST_CONT; ss; ss.
       }
-      des. subst.
+      des. subst. rewrite H5 in *.
 
       inv H2.
       { (* LAST SECOND ITER *)
@@ -761,17 +722,19 @@ Proof.
         { rewrite app_nil_r in CONT. destruct c_loops; ss. inv CONT. destruct c_loops; ss. }
         rewrite app_nil_r in CONT. destruct c_loops; ss; inv CONT; cycle 1.
         { destruct c_loops; ss. }
-        hexploit lift_mmt; eauto. ss. instantiate (1 := mid). i. des.
-        eapply equal_f in COMPL_EQ. revert COMPL_EQ. instantiate (1 := (mid ++ [lab])). i.
-        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs')) (mid ++ [lab])).
+        hexploit lift_mmt; eauto. ss. i. des.
+        eapply equal_f in COMPL_EQ. revert COMPL_EQ. instantiate (1 := (TState.mid ts1 ++ [lab0])). i.
+
+        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp (TState.mid ts1) labs')) (TState.mid ts1 ++ [lab0])).
         { clear - NIN.
           unfold Ensembles.In. unfold Complement. ii.
-          inv H. induction mid; inv MID; eauto.
+          inv H. apply app_inv_head in MID. inv MID. ss.
         }
         symmetry in COMPL_EQ.
-        hexploit Mmts.proj_inv; eauto.
+        hexploit Mmts.proj_inv; eauto. ss.
         unfold Mmts.proj. ss. condtac; ss.
         funtac. intro MID_MMT.
+
         inv ONE; inv NORMAL_STEP0; inv STEP; inv STMT; ss; rewrite MID_MMT in MMT0; inv MMT0; ss.
         { lia. }
 
@@ -799,7 +762,7 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r0
-                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]).
+                   (stmt_chkpt r0 [stmt_return r0] lab :: s) []]).
             intro TR_X. eapply rtc_relax_base_cont in TR_X; eauto.
 
             eexists (tr3 ++ tr_x ++ tr2).
@@ -824,7 +787,7 @@ Proof.
             econs 2; cycle 2.
             { rewrite app_nil_l. ss. }
             { econs; eauto. }
-            move TR3 at bottom. unguard. des; ss; subst; ss.
+            move TR3 at bottom. unguard. des; try rewrite LAST_FIRST1 in *; ss; subst; ss.
             ** econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.
@@ -872,7 +835,7 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r0
-                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]).
+                   (stmt_chkpt r0 [stmt_return r0] lab :: s) []]).
             intro TR_X. eapply rtc_relax_base_cont in TR_X; eauto.
 
             eexists (tr3 ++ tr_x ++ []).
@@ -895,7 +858,7 @@ Proof.
             econs 2; cycle 2.
             { rewrite app_nil_l. ss. }
             { econs; eauto. }
-            move TR3 at bottom. unguard. des; ss; subst; ss.
+            move TR3 at bottom. unguard. des; try rewrite LAST_FIRST1 in *; ss; subst; ss.
             ** econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.
@@ -944,7 +907,7 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r0
-                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]).
+                   (stmt_chkpt r0 [stmt_return r0] lab :: s) []]).
             intro TR_X. eapply rtc_relax_base_cont in TR_X; eauto.
 
             eexists (tr3 ++ tr_x ++ tr2).
@@ -965,7 +928,7 @@ Proof.
             econs 2; cycle 2.
             { rewrite app_nil_l. ss. }
             { econs; eauto. }
-            move TR3 at bottom. unguard. des; ss; subst; ss.
+            move TR3 at bottom. unguard. des; try rewrite LAST_FIRST1 in *; ss; subst; ss.
             ** econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.
@@ -1009,11 +972,11 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r0
-                   (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]).
+                   (stmt_chkpt r0 [stmt_return r0] lab :: s) []]).
             intro TR_X. eapply rtc_relax_base_cont in TR_X; eauto.
 
             eexists (tr3 ++ tr_x). eexists s_x.
-            eexists (c_x ++ [Cont.loopcont (TState.regs ts) r0 (stmt_chkpt r0 [stmt_return r0] (mid ++ [lab]) :: s) []]).
+            eexists (c_x ++ [Cont.loopcont (TState.regs ts) r0 (stmt_chkpt r0 [stmt_return r0] lab :: s) []]).
             eexists ts_x.
             splits; ss; cycle 1.
             { rewrite <- app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq. }
@@ -1033,7 +996,7 @@ Proof.
             econs 2; cycle 2.
             { rewrite app_nil_l. ss. }
             { econs; eauto. }
-            move TR3 at bottom. unguard. des; ss; subst; ss.
+            move TR3 at bottom. unguard. des; try rewrite LAST_FIRST1 in *; ss; subst; ss.
             ** econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.
@@ -1071,12 +1034,12 @@ Proof.
               ss. econs; eauto.
       * (* EX1: CHKPT-REPLAY *)
         rewrite app_nil_r in *. subst.
-        hexploit lift_mmt; eauto. ss. instantiate (1 := mid). i. des.
-        eapply equal_f in COMPL_EQ. revert COMPL_EQ. instantiate (1 := (mid ++ [lab])). i.
-        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp mid labs')) (mid ++ [lab])).
+        hexploit lift_mmt; eauto. ss. i. des.
+        eapply equal_f in COMPL_EQ. revert COMPL_EQ. instantiate (1 := TState.mid ts1 ++ [lab0]). i.
+        assert (COMPL_IN: Ensembles.In (list Label) (Complement (list Label) (mmt_id_exp (TState.mid ts1) labs')) (TState.mid ts1 ++ [lab0])).
         { clear - NIN.
           unfold Ensembles.In. unfold Complement. ii.
-          inv H. induction mid; inv MID; eauto.
+          inv H. apply app_inv_head in MID. inv MID. ss.
         }
         symmetry in COMPL_EQ.
         hexploit Mmts.proj_inv; eauto.
@@ -1109,7 +1072,7 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r
-                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]).
+                   (stmt_chkpt r [stmt_return r] lab :: s0) []]).
             intro TR_X. eapply rtc_relax_base_cont in TR_X; eauto.
 
             eexists (tr3 ++ tr_x ++ tr2).
@@ -1134,7 +1097,7 @@ Proof.
             econs 2; cycle 2.
             { rewrite app_nil_l. ss. }
             { econs; eauto. }
-            move TR3 at bottom. unguard. des; ss; subst; ss.
+            move TR3 at bottom. unguard. des; try rewrite LAST_FIRST1 in *; ss; subst; ss.
             ** econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.
@@ -1170,7 +1133,7 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r
-                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]).
+                   (stmt_chkpt r [stmt_return r] lab :: s0) []]).
             intro TR_X. eapply rtc_relax_base_cont in TR_X; eauto.
 
             eexists (tr3 ++ tr_x ++ []).
@@ -1193,7 +1156,7 @@ Proof.
             econs 2; cycle 2.
             { rewrite app_nil_l. ss. }
             { econs; eauto. }
-            move TR3 at bottom. unguard. des; ss; subst; ss.
+            move TR3 at bottom. unguard. des; try rewrite LAST_FIRST1 in *; ss; subst; ss.
             ** econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.
@@ -1230,7 +1193,7 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r
-                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]).
+                   (stmt_chkpt r [stmt_return r] lab :: s0) []]).
             intro TR_X. eapply rtc_relax_base_cont in TR_X; eauto.
 
             eexists (tr3 ++ tr_x ++ tr2).
@@ -1251,7 +1214,7 @@ Proof.
             econs 2; cycle 2.
             { rewrite app_nil_l. ss. }
             { econs; eauto. }
-            move TR3 at bottom. unguard. des; ss; subst; ss.
+            move TR3 at bottom. unguard. des; try rewrite LAST_FIRST1 in *; ss; subst; ss.
             ** econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.
@@ -1283,11 +1246,11 @@ Proof.
 
             hexploit lift_cont; eauto. ss.
             instantiate (1 := [Cont.loopcont (TState.regs ts) r
-                   (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]).
+                   (stmt_chkpt r [stmt_return r] lab :: s0) []]).
             intro TR_X. eapply rtc_relax_base_cont in TR_X; eauto.
 
             eexists (tr3 ++ tr_x). eexists s_x.
-            eexists (c_x ++ [Cont.loopcont (TState.regs ts) r (stmt_chkpt r [stmt_return r] (mid ++ [lab]) :: s0) []]).
+            eexists (c_x ++ [Cont.loopcont (TState.regs ts) r (stmt_chkpt r [stmt_return r] lab :: s0) []]).
             eexists ts_x.
             splits; ss; cycle 1.
             { rewrite <- app_assoc. apply trace_refine_app; eauto. apply trace_refine_eq. }
@@ -1307,7 +1270,7 @@ Proof.
             econs 2; cycle 2.
             { rewrite app_nil_l. ss. }
             { econs; eauto. }
-            move TR3 at bottom. unguard. des; ss; subst; ss.
+            move TR3 at bottom. unguard. des; try rewrite LAST_FIRST1 in *; ss; subst; ss.
             ** econs 2; cycle 2.
               { rewrite app_nil_l. ss. }
               { econs.

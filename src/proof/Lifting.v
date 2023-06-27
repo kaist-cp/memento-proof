@@ -1,5 +1,6 @@
 Require Import Ensembles.
 Require Import EquivDec.
+Require Import FunctionalExtensionality.
 Require Import List.
 Import ListNotations.
 
@@ -7,6 +8,7 @@ Require Import HahnList.
 Require Import sflib.
 
 From Memento Require Import Utils.
+From Memento Require Import Order.
 From Memento Require Import Syntax.
 From Memento Require Import Semantics.
 From Memento Require Import Common.
@@ -46,18 +48,19 @@ Proof.
     ss. rewrite CONT. rewrite <- app_assoc. ss.
 Qed.
 
+(* TODO: Drop c_base *)
 Lemma chkpt_fn_cases:
-  forall env tr thr thr_term c c' c_sfx rmap r s_cont,
-    Thread.rtc env [] tr thr thr_term ->
-    thr.(Thread.cont) = c ++ c' :: c_sfx ->
-    ((exists mid, c' = Cont.chkptcont rmap r s_cont mid) \/ c' = Cont.fncont rmap r s_cont) ->
+  forall env c_base tr thr thr_term c c' rmap r s_cont,
+    Thread.rtc env c_base tr thr thr_term ->
+    thr.(Thread.cont) = c ++ c' :: c_base ->
+    ((exists mid_cont mid, c' = Cont.chkptcont rmap r s_cont mid_cont mid) \/ (exists mid_cont, c' = Cont.fncont rmap r s_cont mid_cont)) ->
   <<CALL_ONGOING:
     exists c_pfx,
-      thr_term.(Thread.cont) = c_pfx ++ c' :: c_sfx
+      thr_term.(Thread.cont) = c_pfx ++ c' :: c_base
       /\ Thread.rtc env [] tr
           (Thread.mk thr.(Thread.stmt) c thr.(Thread.ts) thr.(Thread.mmts))
           (Thread.mk thr_term.(Thread.stmt) c_pfx thr_term.(Thread.ts) thr_term.(Thread.mmts))
-      /\ Thread.rtc env (c' :: c_sfx) tr thr thr_term>>
+      /\ Thread.rtc env (c' :: c_base) tr thr thr_term>>
   \/
   <<CALL_DONE:
     exists tr0 tr1 s_r c_r ts_r mmts_r e,
@@ -65,17 +68,17 @@ Lemma chkpt_fn_cases:
       /\ Thread.rtc env [] tr0
           (Thread.mk thr.(Thread.stmt) c thr.(Thread.ts) thr.(Thread.mmts))
           (Thread.mk ((stmt_return e) :: s_r) c_r ts_r mmts_r)
-      /\ Thread.rtc env (c' :: c_sfx) tr0
+      /\ Thread.rtc env (c' :: c_base) tr0
           thr
-          (Thread.mk ((stmt_return e) :: s_r) (c_r ++ c' :: c_sfx) ts_r mmts_r)
-      /\ Thread.tc env [] tr1 (Thread.mk ((stmt_return e) :: s_r) (c_r ++ c' :: c_sfx) ts_r mmts_r) thr_term
+          (Thread.mk ((stmt_return e) :: s_r) (c_r ++ c' :: c_base) ts_r mmts_r)
+      /\ Thread.tc env c_base tr1 (Thread.mk ((stmt_return e) :: s_r) (c_r ++ c' :: c_base) ts_r mmts_r) thr_term
       /\ Cont.Loops c_r>>.
 Proof.
-  intros env tr thr thr_term c c' c_sfx rmap r s_cont RTC. revert rmap r c c' c_sfx s_cont.
+  intros env c_base tr thr thr_term c c' rmap r s_cont RTC. revert rmap r c c' s_cont.
   induction RTC; i; subst.
   { left. esplits; eauto; econs; ss. }
   guardH H0.
-  inversion ONE. rewrite app_nil_r in *. subst. inv NORMAL_STEP; inv STEP; ss.
+  inversion ONE. inv NORMAL_STEP; inv STEP; ss.
   - hexploit IHRTC; eauto. i. des.
     + left. eexists. seqsplit; eauto; cycle 1.
       { destruct thr, thr_term. ss. subst. hexploit lift_cont; eauto. }
@@ -155,9 +158,14 @@ Proof.
       econs 2; eauto; [| rewrite app_nil_l]; ss.
       econs; [| rewrite app_nil_r]; ss. econs 7. econs; eauto. ss.
   - destruct thr. ss. subst.
-    assert (c2 = c_sfx \/ exists c2', c2 = c2' ++ c' :: c_sfx).
-    { clear - c2 CONT H0 LOOPS.
-      rewrite app_comm_cons' in CONT. rewrite (app_comm_cons' _ _ c2) in CONT. apply app_eq_app in CONT. des.
+
+    hexploit app_inv_tail. instantiate (1 := c_base).
+    { repeat rewrite app_comm_cons in CONT. repeat rewrite app_assoc in CONT. rewrite app_comm_cons' in CONT. exact CONT. }
+    rename CONT into CONT2. intro CONT.
+
+    assert (c'0 = [] \/ exists c2', c'0 = c2' ++ [c']).
+    { clear - c'0 CONT H0 LOOPS.
+      rewrite app_comm_cons' in CONT. rewrite (app_comm_cons' _ _ c'0) in CONT. apply app_eq_app in CONT. des.
       - destruct l using rev_ind; [left | right]; ss.
         rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des. subst.
         rewrite <- app_assoc. eauto.
@@ -167,14 +175,15 @@ Proof.
         unguard. des; subst; ss.
     }
     des; subst.
-    + rewrite app_comm_cons' in CONT. rewrite (app_comm_cons' _ _ c_sfx) in CONT. apply app_inv_tail in CONT.
-      rewrite snoc_eq_snoc in CONT. des. subst.
+    + rewrite snoc_eq_snoc in CONT. des. subst.
       unguard. des; ss. inv H0.
       inv ONE.
       right. eexists. eexists. eexists. eexists. eexists. eexists. eexists. seqsplit; eauto; try by econs; eauto.
       { rewrite app_nil_l. ss. }
       econs; eauto. econs; eauto.
-    + hexploit IHRTC; eauto. i. des.
+    + hexploit IHRTC; eauto.
+      { rewrite <- app_assoc. rewrite <- app_comm_cons. ss. }
+      i. des.
       * left. eexists. seqsplit; eauto; cycle 1.
         { destruct thr_term. ss. subst. hexploit lift_cont; eauto. }
         econs 2; eauto; [| rewrite app_nil_l]; ss.
@@ -216,10 +225,10 @@ Proof.
       econs 2; eauto; [| rewrite app_nil_l]; ss.
       econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto.
   - destruct thr. ss. subst.
-    assert (c_rem = c_sfx \/ exists c_rem', c_rem = c_rem' ++ c' :: c_sfx).
+    assert (c_rem = c_base \/ exists c_rem', c_rem = c_rem' ++ c' :: c_base).
     { destruct c; ss; inv CONT; eauto. }
     des; subst.
-    { rewrite app_comm_cons' in CONT. rewrite <- app_nil_l in CONT. rewrite (app_comm_cons' _ _ c_sfx) in CONT.
+    { rewrite app_comm_cons' in CONT. rewrite <- app_nil_l in CONT. rewrite (app_comm_cons' _ _ c_base) in CONT.
       apply app_inv_tail in CONT. rewrite snoc_eq_snoc in CONT. des. subst.
       unguard. des; ss.
     }
@@ -235,14 +244,20 @@ Proof.
       econs; [| rewrite app_nil_r]; ss. econs 12. econs; eauto; ss.
       rewrite <- app_inv_tail_iff. eauto.
   - destruct thr. ss. subst.
-    assert (c2 = c_sfx \/ exists c2', c2 = c2' ++ c' :: c_sfx).
+
+    hexploit app_inv_tail. instantiate (1 := c_base).
+    { repeat rewrite app_comm_cons in CONT. repeat rewrite app_assoc in CONT. rewrite app_comm_cons' in CONT. exact CONT. }
+    rename CONT into CONT2. intro CONT.
+
+    assert (c'0 = [] \/ exists c2', c'0 = c2' ++ [c']).
     { destruct c; ss; inv CONT; eauto. }
     des; subst.
-    { rewrite app_comm_cons' in CONT. rewrite <- app_nil_l in CONT. rewrite (app_comm_cons' _ _ c_sfx) in CONT.
-      apply app_inv_tail in CONT. rewrite snoc_eq_snoc in CONT. des. subst.
+    { rewrite <- app_nil_l in CONT. rewrite snoc_eq_snoc in CONT. des. subst.
       unguard. des; ss.
     }
-    hexploit IHRTC; eauto. i. des.
+    hexploit IHRTC; eauto.
+    { rewrite <- app_assoc. rewrite <- app_comm_cons. ss. }
+    i. des.
     + left. eexists. seqsplit; eauto; cycle 1.
       { destruct thr_term. ss. subst. hexploit lift_cont; eauto. }
       econs 2; eauto; [| rewrite app_nil_l]; ss.
@@ -266,9 +281,13 @@ Proof.
       econs 2; eauto; [| rewrite app_nil_l]; ss.
       econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto.
   - destruct thr. ss. subst.
-    assert (c2 = c_sfx \/ exists c2', c2 = c2' ++ c' :: c_sfx).
-    { clear - c2 CONT H0 LOOPS.
-      rewrite app_comm_cons' in CONT. rewrite (app_comm_cons' _ _ c2) in CONT. apply app_eq_app in CONT. des.
+    hexploit app_inv_tail. instantiate (1 := c_base).
+    { repeat rewrite app_comm_cons in CONT. repeat rewrite app_assoc in CONT. rewrite app_comm_cons' in CONT. exact CONT. }
+    rename CONT into CONT2. intro CONT.
+
+    assert (c'0 = [] \/ exists c2', c'0 = c2' ++ [c']).
+    { clear - c'0 CONT H0 LOOPS.
+      rewrite app_comm_cons' in CONT. rewrite (app_comm_cons' _ _ c'0) in CONT. apply app_eq_app in CONT. des.
       - destruct l using rev_ind; [left | right]; ss.
         rewrite app_assoc in CONT. rewrite snoc_eq_snoc in CONT. des. subst.
         rewrite <- app_assoc. eauto.
@@ -279,14 +298,15 @@ Proof.
     }
     des; subst.
     + right.
-      rewrite app_comm_cons' in CONT. rewrite (app_comm_cons' _ _ c_sfx) in CONT. apply app_inv_tail in CONT.
       rewrite snoc_eq_snoc in CONT. des. subst.
       unguard. des; ss. inv H0.
       inv ONE.
       eexists. eexists. eexists. eexists. eexists. eexists. eexists. seqsplit; eauto; try by econs; eauto.
       { rewrite app_nil_l. ss. }
       econs; eauto. econs; eauto.
-    + hexploit IHRTC; eauto. i. des.
+    + hexploit IHRTC; eauto.
+      { rewrite <- app_assoc. rewrite <- app_comm_cons. ss. }
+      i. des.
       * left. eexists. seqsplit; eauto; cycle 1.
         { destruct thr_term. ss. subst. hexploit lift_cont; eauto. }
         econs 2; eauto; [| rewrite app_nil_l]; ss.
@@ -300,27 +320,27 @@ Proof.
 Qed.
 
 Lemma loop_cases:
-  forall env tr thr thr_term c c' rmap r s_body s_cont,
-    Thread.rtc env [] tr thr thr_term ->
-    thr.(Thread.cont) = c ++ [c'] ->
+  forall env c_base tr thr thr_term c c' rmap r s_body s_cont,
+    Thread.rtc env c_base tr thr thr_term ->
+    thr.(Thread.cont) = c ++ [c'] ++ c_base ->
     c' = Cont.loopcont rmap r s_body s_cont ->
-  <<LOOP_ONGOING: Thread.rtc env [c'] tr thr thr_term>>
+  <<LOOP_ONGOING: Thread.rtc env ([c'] ++ c_base) tr thr thr_term>>
   \/
   <<LOOP_DONE:
       exists tr0 tr1 s_r ts_r mmts_r,
         tr = tr0 ++ tr1
-        /\ Thread.rtc env [c'] tr0
+        /\ Thread.rtc env ([c'] ++ c_base) tr0
             thr
-            (Thread.mk (stmt_break :: s_r) [c'] ts_r mmts_r)
-        /\ Thread.rtc env [] tr1
-            (Thread.mk s_cont [] (TState.mk rmap ts_r.(TState.time)) mmts_r)
+            (Thread.mk (stmt_break :: s_r) ([c'] ++ c_base) ts_r mmts_r)
+        /\ Thread.rtc env c_base tr1
+            (Thread.mk s_cont c_base (TState.mk rmap ts_r.(TState.time) ts_r.(TState.mid)) mmts_r)
             thr_term>>.
 Proof.
-  intros env tr thr thr_term c c' rmap r s_body s_cont RTC. revert rmap r s_body s_cont c c'.
+  intros env c_base tr thr thr_term c c' rmap r s_body s_cont RTC. revert rmap r s_body s_cont c c'.
   induction RTC; i.
   { left. econs; ss. }
   guardH H0. subst.
-  inversion ONE. rewrite app_nil_r in *. subst. inv NORMAL_STEP; inv STEP; ss.
+  inversion ONE. inv NORMAL_STEP; inv STEP; ss.
   - hexploit IHRTC; eauto. i. des.
     + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
       econs; [| rewrite H]; ss. econs. econs; eauto.
@@ -384,9 +404,14 @@ Proof.
       { econs 7. econs; eauto. ss. }
       instantiate (1 := _ :: _). ss.
   - destruct thr. ss. subst.
-    assert (c2 = [] \/ exists c2', c2 = c2' ++ [c']).
-    { clear - c2 CONT.
-      destruct c2 using rev_ind; [left | right]; ss.
+
+    hexploit app_inv_tail. instantiate (1 := c_base).
+    { repeat rewrite app_comm_cons in CONT. repeat rewrite app_assoc in CONT. rewrite app_comm_cons' in CONT. exact CONT. }
+    rename CONT into CONT2. intro CONT.
+
+    assert (c'0 = [] \/ exists c2', c'0 = c2' ++ [c']).
+    { clear - c'0 CONT.
+      destruct c'0 using rev_ind; [left | right]; ss.
       rewrite <- rev_eq in CONT. repeat rewrite rev_app in CONT. ss.
       rewrite rev_unit in CONT. rewrite <- app_assoc in CONT. inv CONT.
       esplits. eauto.
@@ -395,13 +420,19 @@ Proof.
     + right.
       rewrite snoc_eq_snoc in CONT. des. subst.
       unguard. ss.
-    + hexploit IHRTC; eauto. i. des.
+    + hexploit IHRTC; eauto.
+      { rewrite <- app_assoc. rewrite <- app_comm_cons. ss. }
+      i. des.
       * left. esplits; eauto.
         econs 2; eauto; [| rewrite app_nil_l]; ss.
-        econs; ss. econs 8. econs; eauto; ss.
+        econs; ss.
+        { econs 8. econs; eauto; ss. }
+        rewrite <- app_assoc. rewrite <- app_comm_cons. ss.
       * right. esplits; eauto.
         econs 2; eauto; [| rewrite app_nil_l]; ss.
-        econs; ss. econs 8. econs; eauto; ss.
+        econs; ss.
+        { econs 8. econs; eauto; ss. }
+        rewrite <- app_assoc. rewrite <- app_comm_cons. ss.
   - hexploit IHRTC; eauto. i. des.
     + left. esplits; eauto. econs 2; eauto; [| rewrite app_nil_l]; ss.
       econs; [| rewrite H]; ss. econs 9. econs; eauto.
@@ -426,15 +457,11 @@ Proof.
       econs; ss. econs 11. econs; eauto; ss.
       instantiate (1 := _ :: _). ss.
   - destruct thr. ss. subst.
-    assert (c_rem = [] \/ exists c_rem', c_rem = c_rem' ++ [c']).
-    { clear - c_rem CONT.
-      destruct c_rem using rev_ind; [left | right]; ss.
-      rewrite <- rev_eq in CONT. repeat rewrite rev_app in CONT. ss.
-      rewrite rev_unit in CONT. inv CONT.
-      esplits. eauto.
-    }
+    assert (c_rem = c_base \/ exists c_rem', c_rem = c_rem' ++ [c'] ++ c_base).
+    { destruct c; ss; inv CONT; eauto. }
     des; subst.
-    + rewrite <- app_nil_l in CONT. rewrite snoc_eq_snoc in CONT. des. subst.
+    + rewrite <- app_nil_l in CONT. rewrite app_comm_cons' in CONT. rewrite (app_comm_cons' _ []) in CONT. apply app_inv_tail in CONT.
+      rewrite snoc_eq_snoc in CONT. des. subst.
       unguard. des; ss. inv H0.
       hexploit IHRTC; eauto.
       { rewrite app_nil_l. ss. }
@@ -453,9 +480,14 @@ Proof.
         econs 2; eauto; [| rewrite app_nil_l]; ss.
         econs; ss. econs 12. econs; eauto; ss.
   - destruct thr. ss. subst.
-    assert (c2 = [] \/ exists c2', c2 = c2' ++ [c']).
-    { clear - c2 CONT.
-      destruct c2 using rev_ind; [left | right]; ss.
+
+    hexploit app_inv_tail. instantiate (1 := c_base).
+    { repeat rewrite app_comm_cons in CONT. repeat rewrite app_assoc in CONT. rewrite app_comm_cons' in CONT. exact CONT. }
+    rename CONT into CONT2. intro CONT.
+
+    assert (c'0 = [] \/ exists c2', c'0 = c2' ++ [c']).
+    { clear - c'0 CONT.
+      destruct c'0 using rev_ind; [left | right]; ss.
       rewrite <- rev_eq in CONT. repeat rewrite rev_app in CONT. ss.
       rewrite rev_unit in CONT. inv CONT.
       esplits. eauto.
@@ -465,13 +497,19 @@ Proof.
       unguard. inv H0. rewrite app_nil_l in *.
       right. esplits; eauto; [rewrite app_nil_l |]; ss.
       econs; eauto.
-    + hexploit IHRTC; eauto. i. des.
+    + hexploit IHRTC; eauto.
+      { rewrite <- app_assoc. rewrite <- app_comm_cons. ss. }
+      i. des.
       * left. esplits; eauto.
         econs 2; eauto; [| rewrite app_nil_l]; ss.
-        econs; ss. econs 13. econs; eauto; ss.
+        econs; ss.
+        { econs 13. econs; eauto; ss. }
+        rewrite <- app_assoc. rewrite <- app_comm_cons. ss.
       * right. esplits; eauto.
         econs 2; eauto; [| rewrite app_nil_l]; ss.
-        econs; ss. econs 13. econs; eauto; ss.
+        econs; ss.
+        { econs 13. econs; eauto; ss. }
+        rewrite <- app_assoc. rewrite <- app_comm_cons. ss.
   - destruct thr. ss. subst.
     hexploit IHRTC; eauto.
     { instantiate (1 := _ :: _). ss. }
@@ -484,9 +522,14 @@ Proof.
       econs; ss. econs 14. econs; eauto; ss.
       instantiate (1 := _ :: _). ss.
   - destruct thr. ss. subst.
-    assert (c2 = [] \/ exists c2', c2 = c2' ++ [c']).
-    { clear - c2 CONT.
-      destruct c2 using rev_ind; [left | right]; ss.
+
+    hexploit app_inv_tail. instantiate (1 := c_base).
+    { repeat rewrite app_comm_cons in CONT. repeat rewrite app_assoc in CONT. rewrite app_comm_cons' in CONT. exact CONT. }
+    rename CONT into CONT2. intro CONT.
+
+    assert (c'0 = [] \/ exists c2', c'0 = c2' ++ [c']).
+    { clear - c'0 CONT.
+      destruct c'0 using rev_ind; [left | right]; ss.
       rewrite <- rev_eq in CONT. repeat rewrite rev_app in CONT. ss.
       rewrite rev_unit in CONT. rewrite <- app_assoc in CONT. inv CONT.
       esplits. eauto.
@@ -495,13 +538,19 @@ Proof.
     + right.
       rewrite snoc_eq_snoc in CONT. des. subst.
       unguard. ss.
-    + hexploit IHRTC; eauto. i. des.
+    + hexploit IHRTC; eauto.
+      { rewrite <- app_assoc. rewrite <- app_comm_cons. ss. }
+      i. des.
       * left. esplits; eauto.
         econs 2; eauto; [| rewrite app_nil_l]; ss.
-        econs; ss. econs 15. econs; eauto; ss.
+        econs; ss.
+        { econs 15. econs; eauto; ss. }
+        rewrite <- app_assoc. rewrite <- app_comm_cons. ss.
       * right. esplits; eauto.
         econs 2; eauto; [| rewrite app_nil_l]; ss.
-        econs; ss. econs 15. econs; eauto; ss.
+        econs; ss.
+        { econs 15. econs; eauto; ss. }
+        rewrite <- app_assoc. rewrite <- app_comm_cons. ss.
 Qed.
 
 Lemma first_loop_iter:
@@ -674,7 +723,7 @@ Lemma last_loop_iter:
               (Thread.mk ((stmt_continue e) :: s_r) [c'] ts_r mmts1)
             /\ s1 = s
             /\ c1 = []
-            /\ ts1 = TState.mk (VRegMap.add r (sem_expr ts_r.(TState.regs) e) rmap) ts_r.(TState.time)>>
+            /\ ts1 = TState.mk (VRegMap.add r (sem_expr ts_r.(TState.regs) e) rmap) ts_r.(TState.time) ts_r.(TState.mid)>>
       )
     /\ thr_term.(Thread.cont) = c_pfx_term ++ [c']
     /\ Thread.rtc env [] tr2
@@ -831,12 +880,13 @@ Lemma ongoing_cont_explosion:
         c' = Cont.loopcont rmap r s_body s_cont
         /\ c0 = Cont.loopcont rmap r s_body s_cont0)
      \/
-     (exists mid,
-        c' = Cont.chkptcont rmap r s_cont mid
-        /\ c0 = Cont.chkptcont rmap r s_cont0 mid)
+     (exists mid_cont mid,
+        c' = Cont.chkptcont rmap r s_cont mid_cont mid
+        /\ c0 = Cont.chkptcont rmap r s_cont0 mid_cont mid)
      \/
-     (c' = Cont.fncont rmap r s_cont
-      /\ c0 = Cont.fncont rmap r s_cont0)
+     (exists mid_cont,
+        c' = Cont.fncont rmap r s_cont mid_cont
+        /\ c0 = Cont.fncont rmap r s_cont0 mid_cont)
     ) ->
   Thread.rtc env [c0] tr
     (Thread.mk thr.(Thread.stmt) (c ++ [c0]) thr.(Thread.ts) thr.(Thread.mmts))
@@ -1027,7 +1077,8 @@ Proof.
     + left. esplits.
       * econs; [| | rewrite app_nil_l]; ss.
         { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
-        s. hexploit ongoing_cont_explosion; eauto; [rewrite app_nil_l|]; ss.
+        s. hexploit ongoing_cont_explosion; eauto; [rewrite app_nil_l | |]; ss.
+        { right. left. eauto. }
         intros LOOP_NEW. eapply rtc_relax_base_cont in LOOP_NEW; eauto.
         rewrite app_nil_r. ss.
       * rewrite seq_sc_last. ss.
@@ -1054,6 +1105,7 @@ Proof.
         eapply Thread.rtc_trans.
         { hexploit ongoing_cont_explosion; eauto; ss.
           { rewrite app_nil_l. ss. }
+          { right. left. eauto. }
           intros LOOP_NEW. eapply rtc_relax_base_cont; eauto.
           rewrite app_nil_r. ss.
         }
@@ -1070,6 +1122,7 @@ Proof.
         s. rewrite <- (app_nil_r tr0). eapply Thread.rtc_trans.
         { hexploit ongoing_cont_explosion; eauto; ss.
           { rewrite app_nil_l. ss. }
+          { right. left. eauto. }
           intros LOOP_NEW. eapply rtc_relax_base_cont; eauto.
           rewrite app_nil_r. ss.
         }
@@ -1084,7 +1137,8 @@ Proof.
     + econs; eauto.
       { econs; eauto. try by econs; econs; eauto. }
       ss.
-  - admit.
+  - (* TODO: if cases lemma 만들고 하면 될 것 같음. *)
+    admit.
   - hexploit loop_cases; eauto.
     { rewrite app_nil_l. ss. }
     i. des.
@@ -1195,11 +1249,77 @@ Proof.
   - destruct c_loops; ss.
 Qed.
 
+Lemma read_only_statements:
+  forall env envt s tr ts mmts thr_term,
+    EnvType.ro_judge envt s ->
+    Thread.rtc env [] tr (Thread.mk s [] ts mmts) thr_term ->
+  [] ~ tr /\ mmts = thr_term.(Thread.mmts).
+Proof.
+  intros env envt s tr ts mmts thr_term ROJ. generalize tr ts mmts thr_term. induction ROJ; subst; i.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inv RTC; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inv RTC; ss; cycle 1.
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+    split; ss. eapply refine_read; [apply trace_refine_eq |]; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inv RTC; ss; cycle 1.
+    { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
+    split; ss. eapply refine_read; [apply trace_refine_eq |]; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    hexploit loop_cases; eauto.
+    { rewrite app_nil_l. ss. }
+    i. des.
+    + admit. (* TODO: induction이 안 됨. rtc [] 대신 rtc c를 해볼까? *)
+    + admit.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inv RTC; ss.
+    { split; ss. apply trace_refine_eq. }
+    admit. (* TODO: RO 함수 호출하는 상황. DR_RW에서 쓰인 전제랑 비슷한 상황인 것 같음 *)
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss; destruct c_loops; inv CONT.
+  - hexploit seq_cases; eauto. i. des.
+    { apply IHROJ1 in SEQ_LEFT_ONGOING. ss. }
+    subst. apply IHROJ1 in SEQ_LEFT_DONE0. apply IHROJ2 in SEQ_LEFT_DONE1. des. subst. split; ss.
+    rewrite <- (app_nil_l []). apply trace_refine_app; ss.
+  - inv H; ss.
+    { split; ss. apply trace_refine_eq. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    inversion RTC; ss; subst.
+    { split; ss. apply trace_refine_eq. }
+    rewrite app_nil_r in *.
+    destruct (EquivDec.equiv_dec (sem_expr (TState.regs ts0) e0) (Val.bool true)).
+    + eapply IHROJ1; eauto.
+    + eapply IHROJ2; eauto.
+Qed.
+
+(* TODO: admit 정리 *)
 Lemma lift_mmt:
-  (* TODO: Define mid_pfx from ts.regs *)
-  forall envt env labs s mid_pfx mids tr ts mmts thr_term,
+  forall envt env labs s mids tr ts mmts thr_term,
     EnvType.rw_judge envt labs s ->
-    mmt_id_exp mid_pfx labs = mids ->
+    mmt_id_exp ts.(TState.mid) labs = mids ->
     Thread.rtc env [] tr (Thread.mk s [] ts mmts) thr_term ->
   <<UNLIFT:
     Thread.rtc env [] tr
@@ -1213,10 +1333,14 @@ Lemma lift_mmt:
     forall mmts_a,
       Thread.rtc env [] tr
         (Thread.mk s [] ts ((mmts |₁ mids) ⊎ (mmts_a |₁ (Complement _ mids))))
-        (Thread.mk thr_term.(Thread.stmt) thr_term.(Thread.cont) thr_term.(Thread.ts) ((thr_term.(Thread.mmts) |₁ mids) ⊎ (mmts_a |₁ (Complement _ mids))))>>.
+        (Thread.mk
+          thr_term.(Thread.stmt)
+          thr_term.(Thread.cont)
+          thr_term.(Thread.ts)
+          ((thr_term.(Thread.mmts) |₁ mids) ⊎ (mmts_a |₁ (Complement _ mids))))>>.
 Proof.
-  intros envt env labs s mid_pfx mids tr ts mmts thr_term ENVT. revert mid_pfx mids tr ts mmts thr_term.
-  induction ENVT; intros mid_pfx mids tr ts mmts thr_term EXP RTC; subst; ss.
+  intros envt env labs s mids tr ts mmts thr_term ENVT. revert mids tr ts mmts thr_term.
+  induction ENVT; intros mids tr ts mmts thr_term EXP RTC; subst; ss.
   - inv RTC; ss.
     { splits; ss; try by econs; eauto. }
     inv ONE. inv NORMAL_STEP; inv STEP; ss.
@@ -1228,13 +1352,143 @@ Proof.
     inv ONE. inv NORMAL_STEP; inv STEP; ss.
   - inv RTC; ss.
     { splits; ss; try by econs; eauto. }
-    (* inv ONE. inv NORMAL_STEP; inv STEP; ss. *)
-    admit.
+    inv ONE. inv NORMAL_STEP; inv STEP; ss; destruct c_loops; ss.
+  - inv RTC; ss.
+    { splits; ss; try by econs; eauto. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    hexploit stop_means_no_step; eauto; try by econs; ss. i. des. subst. ss.
+    splits; ss.
+    + econs; try by econs; econs; eauto.
+      { econs; eauto. try by econs; econs; eauto. }
+      ss.
+    + i.
+      econs; try by econs; econs; eauto.
+      { econs; eauto. try by econs; econs; eauto. }
+      ss.
+  - inv RTC; ss.
+    { splits; ss; try by econs; eauto. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
+    + hexploit stop_means_no_step; eauto; try by econs; ss. i. des. subst. ss.
+      splits; ss.
+      * econs; try by econs; econs; eauto.
+        all: cycle 1.
+        { rewrite app_nil_r. ss. }
+        econs; eauto. econs 4. econs; eauto; ss.
+        { unfold Mmts.proj. condtac; ss.
+          exfalso. apply n. econs; ss.
+        }
+        rewrite Mmts.proj_fun_add_eq; ss. econs; ss.
+      * apply functional_extensionality. i. unfold Mmts.proj. condtac; ss.
+        funtac. inversion e. subst.
+        exfalso.
+        unfold Ensembles.In in i. unfold Complement in i. apply i.
+        econs; ss.
+      * i.
+        econs; try by econs; econs; eauto.
+        all: cycle 1.
+        { rewrite app_nil_r. ss. }
+        econs; eauto. econs 4. econs; eauto; ss.
+        { unfold Mmts.union. unfold Mmts.proj. condtac.
+          { rewrite MMT. ss. }
+          exfalso. apply n. econs; ss.
+        }
+        f_equal. apply functional_extensionality. i.
+        funtac.
+        -- inversion e. unfold Mmts.union. unfold Mmts.proj. condtac; funtac.
+           exfalso. apply n. econs; ss.
+        -- unfold Mmts.union. unfold Mmts.proj. condtac; funtac.
+    + hexploit stop_means_no_step; eauto; try by econs; ss. i. des. subst. ss.
+      splits; ss.
+      * econs; try by econs; econs; eauto.
+        all: cycle 1.
+        { rewrite app_nil_r. ss. }
+        econs; eauto. econs 5. econs; eauto; ss.
+        { unfold Mmts.proj. condtac; ss.
+          exfalso. apply n. econs; ss.
+        }
+        rewrite Mmts.proj_fun_add_eq; ss. econs; ss.
+      * apply functional_extensionality. i. unfold Mmts.proj. condtac; ss.
+        funtac. inversion e. subst.
+        exfalso.
+        unfold Ensembles.In in i. unfold Complement in i. apply i.
+        econs; ss.
+      * i.
+        econs; try by econs; econs; eauto.
+        all: cycle 1.
+        { rewrite app_nil_r. ss. }
+        econs; eauto. econs 5. econs; eauto; ss.
+        { unfold Mmts.union. unfold Mmts.proj. condtac.
+          { rewrite MMT. ss. }
+          exfalso. apply n. econs; ss.
+        }
+        f_equal. apply functional_extensionality. i.
+        funtac.
+        -- inversion e. unfold Mmts.union. unfold Mmts.proj. condtac; funtac.
+           exfalso. apply n. econs; ss.
+        -- unfold Mmts.union. unfold Mmts.proj. condtac; funtac.
+    + hexploit stop_means_no_step; eauto; try by econs; ss. i. des. subst. ss.
+      splits; ss.
+      * econs; try by econs; econs; eauto.
+        { econs; eauto. econs 6. econs; eauto; ss.
+          unfold Mmts.proj. condtac; ss.
+          exfalso. apply n. econs; ss.
+        }
+        ss.
+      * i.
+        econs; try by econs; econs; eauto.
+        { econs; eauto. econs 6. econs; eauto; ss.
+          unfold Mmts.union. unfold Mmts.proj. condtac.
+          { rewrite MMT. ss. }
+          exfalso. apply n. econs; ss.
+        }
+        ss.
+  - inv RTC; ss.
+    { splits; ss; try by econs; eauto. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
+    + hexploit chkpt_fn_cases; try exact RTC0; try left; eauto.
+      { rewrite app_nil_l. ss. }
+      i. des.
+      * hexploit read_only_statements; try exact CALL_ONGOING0; eauto. s. i. des. rewrite <- H0 in *.
+        admit.
+      * admit.
+    + hexploit stop_means_no_step; eauto; try by econs; ss. i. des. subst. ss.
+      splits; ss.
+      * econs; try by econs; econs; eauto.
+        { econs; eauto. econs 9. econs; eauto; ss.
+          unfold Mmts.proj. condtac; ss.
+          exfalso. apply n. econs; ss.
+        }
+        ss.
+      * i.
+        econs; try by econs; econs; eauto.
+        { econs; eauto. econs 9. econs; eauto; ss.
+          unfold Mmts.union. unfold Mmts.proj. condtac.
+          { rewrite MMT. ss. }
+          exfalso. apply n. econs; ss.
+        }
+        ss.
   - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
+  - inv RTC; ss.
+    { splits; ss; try by econs; eauto. }
+    inv ONE. inv NORMAL_STEP; inv STEP; ss. inv STMT.
+    rewrite app_nil_r in *. destruct (sem_expr (TState.regs ts) e0 == Val.bool true).
+    + hexploit IHENVT1; eauto. i. des. splits.
+      * econs.
+        { econs; [| rewrite app_nil_r]; ss. try by econs; econs; eauto. }
+        all: cycle 1.
+        { rewrite app_nil_l. ss. }
+        condtac; ss. rewrite app_nil_r.
+        admit.
+        (* hexploit proj_union_exc_pres; eauto; ss.
+        ii. inv H. econs; eauto. econs. ss. *)
+      * apply functional_extensionality. i. unfold Mmts.proj. condtac; ss.
+        apply equal_f with x in COMPL_EQ. revert COMPL_EQ.
+        unfold Mmts.proj. condtac; ss.
+        exfalso. apply n.
+        generalize i. unfold Ensembles.In. unfold Complement. unfold Ensembles.In. ii. apply i0.
+        clear - H. inv H. econs; eauto. econs. ss.
+      * admit.
+    + admit.
   - admit.
   - admit.
 Qed.
@@ -1516,4 +1770,121 @@ Proof.
   rewrite <- H2 in H4. rewrite pair_equal_spec in *. des. subst.
   esplits; eauto. eapply Thread.rtc_trans; eauto. econs; eauto; try econs.
   rewrite app_nil_r. ss.
+Qed.
+
+
+(* Lemma mid_flat_eq:
+  forall env c tr s ts mmts thr_term,
+    c = thr_term.(Thread.cont) ->
+    Thread.rtc env c tr (Thread.mk s c ts mmts) thr_term ->
+    (* Cont.Loops loops_term -> *)
+  ts.(TState.mid) = thr_term.(Thread.ts).(TState.mid).
+Proof.
+  intros env c tr s ts mmts thr_term CONT_EQ RTC. revert env tr ts mmts RTC.
+  induction s; i; subst.
+  { inv RTC; ss. inv ONE; inv NORMAL_STEP; inv STEP; ss. }
+  inv RTC; ss.
+  inversion ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
+  all: try by hexploit IHs; try exact RTC0; ss.
+
+Qed. *)
+
+(* TODO: c_sfx 주고 rtc induction으로 바꾸기 *)
+Lemma mid_flat_eq:
+  forall env c tr s ts mmts thr_term,
+    Thread.rtc env c tr (Thread.mk s c ts mmts) thr_term ->
+    thr_term.(Thread.cont) = c ->
+    (* Cont.Loops loops_term -> *)
+  ts.(TState.mid) = thr_term.(Thread.ts).(TState.mid).
+Proof.
+  intros env c tr s. revert env c tr.
+  induction s; i; subst.
+  { inv H; ss. inv ONE; inv NORMAL_STEP; inv STEP; ss. }
+  inv H; ss.
+  inversion ONE. inv NORMAL_STEP; inv STEP; ss; inv STMT.
+  all: try by hexploit IHs; try exact RTC; try exact H0; ss.
+  - (* CHKPT-CALL *)
+    hexploit chkpt_fn_cases; try exact RTC; try left; eauto.
+    { rewrite app_nil_l. ss. }
+    s. i. des.
+    { (* CALL-ONGOING *)
+      rewrite app_comm_cons' in CALL_ONGOING. hexploit app_inv_tail.
+      { rewrite app_nil_l. exact CALL_ONGOING. }
+      i. destruct c_pfx; ss.
+    }
+    (* CALL-DONE *)
+    subst. inv CALL_DONE2. inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT; cycle 1.
+    { hexploit Cont.loops_base_cont_eq; try exact CONT; eauto.
+      { ii. inv H. ss. }
+      { ii. inv H. ss. }
+      i. ss.
+    }
+    hexploit Cont.loops_base_cont_eq; try exact CONT; eauto.
+    { ii. inv H. ss. }
+    { ii. inv H. ss. }
+    intro CONT_EQ. inv CONT_EQ.
+
+    hexploit app_inv_tail.
+    { rewrite app_nil_l. exact H5. }
+    i. subst. rewrite app_nil_l in *. cleartriv.
+    hexploit IHs; eauto.
+  - (* CHKPT-RET *)
+    rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. hexploit app_inv_tail.
+    { rewrite app_nil_l. eauto. }
+    i. destruct c_loops; ss.
+  - (* IF *)
+    admit.
+  - (* LOOP *)
+    hexploit loop_cases; eauto.
+    { rewrite app_nil_l. ss. }
+    i. des.
+    + (* LOOP-ONGOING *)
+      apply Thread.rtc_rtc' in LOOP_ONGOING. inv LOOP_ONGOING; ss.
+      hexploit Thread.tc_last; eauto. i. des.
+      inv H1. rewrite app_comm_cons' in BASE0. hexploit app_inv_tail.
+      { rewrite app_nil_l. exact BASE0. }
+      i. destruct c'0; ss.
+    + (* LOOP-DONE *)
+      admit.
+      (* break 하면서 예전 mid 가져오는 방법 없음.. break semantics를 수정? *)
+  - (* CONTINUE *)
+    rewrite CONT in *. eapply rtc_relax_base_cont in RTC; cycle 1.
+    { instantiate (1 := c_rem). rewrite <- (app_nil_l _). rewrite app_comm_cons'. eauto. }
+    hexploit loop_cases; eauto.
+    i. des.
+    + admit.
+    + admit.
+  - (* BREAK *)
+    rewrite app_comm_cons in CONT. hexploit app_inv_tail.
+    { rewrite app_nil_l. eauto. }
+    ss.
+  - (* FN-CALL *)
+    hexploit chkpt_fn_cases; try exact RTC; try right; eauto.
+    { rewrite app_nil_l. ss. }
+    s. i. des.
+    { (* CALL-ONGOING *)
+      rewrite app_comm_cons' in CALL_ONGOING. hexploit app_inv_tail.
+      { rewrite app_nil_l. exact CALL_ONGOING. }
+      i. destruct c_pfx; ss.
+    }
+    (* CALL-DONE *)
+    subst. inv CALL_DONE2. inv ONE0. inv NORMAL_STEP; inv STEP; ss; inv STMT.
+    { hexploit Cont.loops_base_cont_eq; try exact CONT; eauto.
+      { ii. inv H. ss. }
+      { ii. inv H. ss. }
+      i. ss.
+    }
+    hexploit Cont.loops_base_cont_eq; try exact CONT; eauto.
+    { ii. inv H. ss. }
+    { ii. inv H. ss. }
+    intro CONT_EQ. inv CONT_EQ.
+
+    hexploit app_inv_tail.
+    { rewrite app_nil_l. exact H4. }
+    i. subst. rewrite app_nil_l in *. cleartriv.
+    hexploit IHs; eauto.
+  - (* FN-RET *)
+    rewrite app_comm_cons in CONT. rewrite app_assoc in CONT. hexploit app_inv_tail.
+    { rewrite app_nil_l. eauto. }
+    i. destruct c_loops; ss.
 Qed.

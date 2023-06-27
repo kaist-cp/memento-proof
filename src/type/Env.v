@@ -44,7 +44,7 @@ Module EnvType.
   | ro_call
     r f e
     (F_TYPE: IdMap.find f envt = Some FnType.RO)
-    (STMT: s = [stmt_call r f e])
+    (STMT: s = [stmt_call r f e None])
   | ro_return
     e
     (STMT: s = [stmt_return e])
@@ -80,22 +80,19 @@ Module EnvType.
     (LABS: labs = Empty_set _)
     (STMT: s = [stmt_assign r e])
   | rw_pcas
-    r e_loc e_old e_new lab mid
+    r e_loc e_old e_new lab
     (LABS: labs = Singleton _ lab)
-    (STMT: s = [stmt_pcas r e_loc e_old e_new (mid ++ [lab])])
-    (* TODO: mid is a variable *)
+    (STMT: s = [stmt_pcas r e_loc e_old e_new lab])
   | rw_chkpt
-    r s_c mid lab
-    (CLOS: ro_judge envt s)
+    r s_c lab
+    (CLOS: ro_judge envt s_c)
     (LABS: labs = Singleton _ lab)
-    (STMT: s = [stmt_chkpt r s_c (mid ++ [lab])])
-    (* TODO: mid is a variable *)
+    (STMT: s = [stmt_chkpt r s_c lab])
   | rw_call
-    r f e mid lab
+    r f e lab
     (CLOS: IdMap.find f envt = Some FnType.RW)
     (LABS: labs = Singleton _ lab)
-    (STMT: s = [stmt_call r f (e ++ mid)])
-    (* TODO: mid ++ lab, mid is a variable *)
+    (STMT: s = [stmt_call r f e (Some lab)])
   | rw_if_then_else
     labs_t labs_f e s_t s_f
     (TRUE: rw_judge envt labs_t s_t)
@@ -111,11 +108,11 @@ Module EnvType.
     (STMT: s = s_l ++ s_r)
   (* TODO: Define loop simple *)
   | rw_loop
-    labs' s_body r e lab mid
+    labs' s_body r e lab
     (BODY: rw_judge envt labs' s_body)
     (NIN: In _ labs' lab -> False)
     (LABS: labs = Union _ (Singleton _ lab) labs')
-    (STMT: s = [stmt_loop r e ((stmt_chkpt r [stmt_return r] (mid ++ [lab])) :: s_body)])
+    (STMT: s = [stmt_loop r e ((stmt_chkpt r [stmt_return r] lab) :: s_body)])
   .
 End EnvType.
 
