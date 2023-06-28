@@ -164,19 +164,21 @@ End Mmt.
 Module Mmts.
   Definition t := list Label -> option Mmt.t.
 
-  (* TODO: init *)
+  Definition init := fun _: list Label => Some (Mmt.mk (Val.int 0) 0).
 
   (* TODO: Do not use Parameter? *)
   Parameter mmts_in : forall mids mid, { Ensembles.In (list Label) mids mid } + { ~ Ensembles.In (list Label) mids mid }.
 
-  Definition proj (mmts: t) (mids: Ensemble (list Label)) (mid: list Label) : option Mmt.t :=
-    if mmts_in mids mid then mmts mid else None.
+  Definition proj (mmts: t) (mids: Ensemble (list Label)) : t :=
+    fun mid =>
+      if mmts_in mids mid then mmts mid else None.
 
-  Definition union (mmts1 mmts2: t) (mid: list Label) : option Mmt.t :=
-    match mmts1 mid with
-    | Some v => Some v
-    | None => mmts2 mid
-    end.
+  Definition union (mmts1 mmts2: t) : list Label -> option Mmt.t :=
+    fun mid =>
+      match mmts1 mid with
+      | Some v => Some v
+      | None => mmts2 mid
+      end.
 
   Lemma proj_inv:
     forall mmts mids mid mmt,
@@ -727,7 +729,7 @@ End Thread.
 Module Mem.
   Definition t := PLoc.t -> Val.t.
 
-  (* TODO: init *)
+  Definition init := fun _: PLoc.t => Val.int 0.
 
   Inductive step (tr: list Event.t) (mem1 mem2: t): Prop :=
   | step_read
@@ -741,7 +743,6 @@ Module Mem.
       (EVENT: tr = [Event.U l v_old v_new])
       (MEM: mem2 = fun_add l v_new mem1)
   .
-
 End Mem.
 
 Definition ThreadId := Id.t.
@@ -749,13 +750,18 @@ Definition ThreadId := Id.t.
 Module Machine.
   Definition t := ((IdMap.t Thread.t) * Mem.t)%type.
 
-  (* TODO: init *)
+  Definition init (p: Program): t :=
+    (IdMap.fold
+      (fun tid stmt acc => IdMap.add tid (Thread.mk stmt [] TState.init Mmts.init) acc)
+      (prog_s p)
+      (IdMap.empty _),
+    Mem.init).
 
-  Inductive step (prog: Program) (tr: list Event.t) (machine1 machine2: t): Prop :=
+  Inductive step (p: Program) (tr: list Event.t) (machine1 machine2: t): Prop :=
   | step_no_event
       env smap tid
       thr_map1 mem thr1 thr_map2 thr2
-      (PROG: prog = prog_intro env smap)
+      (PROG: p = prog_intro env smap)
       (TRACE: tr = [])
       (MACHINE1: machine1 = (thr_map1, mem))
       (MACHINE2: machine2 = (thr_map2, mem))
@@ -765,7 +771,7 @@ Module Machine.
   | step_event
       env smap tid
       thr_map1 mem1 thr1 thr_map2 mem2 thr2
-      (PROG: prog = prog_intro env smap)
+      (PROG: p = prog_intro env smap)
       (MACHINE1: machine1 = (thr_map1, mem1))
       (MACHINE2: machine2 = (thr_map2, mem2))
       (THR1: IdMap.find tid thr_map1 = Some thr1)
@@ -775,7 +781,7 @@ Module Machine.
   | step_crash
       env smap tid stmt
       thr_map1 mem thr1 thr_map2
-      (PROG: prog = prog_intro env smap)
+      (PROG: p = prog_intro env smap)
       (TRACE: tr = [])
       (MACHINE1: machine1 = (thr_map1, mem))
       (MACHINE2: machine2 = (thr_map2, mem))

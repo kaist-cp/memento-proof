@@ -71,6 +71,11 @@ Inductive Program :=
 .
 Hint Constructors Program : syntax.
 
+Definition prog_s (p: Program) :=
+  match p with
+  | prog_intro _ s => s
+  end.
+
 Module PLoc.
   Include Val.
 End PLoc.
