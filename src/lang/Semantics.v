@@ -834,20 +834,13 @@ Module Machine.
       : rtc' p tr mach mach_term
   .
 
-  Lemma step_suffix_of_prog :
-    forall p envt smap tr mach1 mach2,
-      p = prog_intro envt smap ->
-      IdMap.Forall2
-        (fun _ stmt thr1 => suffix_of thr1.(Thread.stmt) stmt)
-        smap mach1.(Machine.tmap) ->
-      step p tr mach1 mach2 ->
-    IdMap.Forall2
-      (fun _ stmt thr2 => suffix_of thr2.(Thread.stmt) stmt)
-      smap mach2.(Machine.tmap).
+  Lemma step_preserves_thr:
+    forall p tid thr1 tr mach1 mach2,
+      IdMap.find tid mach1.(Machine.tmap) = Some thr1 ->
+      Machine.step p tr mach1 mach2 ->
+    exists thr2, IdMap.find tid mach2.(Machine.tmap) = Some thr2.
   Proof.
-    i. subst.
-    admit.
-
-    (* ii. specialize (H0 id). inv H0. *)
+    i. inv H0; ss.
+    all: rewrite IdMap.add_spec; condtac; eauto.
   Qed.
 End Machine.
