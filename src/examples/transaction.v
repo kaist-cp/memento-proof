@@ -2,6 +2,7 @@ Require Import PArith.
 Require Import ZArith.
 Require Import EquivDec.
 Require Import List.
+Require Import FunctionalExtensionality.
 Require RelationClasses.
 Import ListNotations.
 
@@ -143,48 +144,99 @@ Proof.
     inv e. inv THR_STEP; inv STEP; ss.
     + rewrite H0 in THR1. inv THR1. ss. subst.
       inv H1. clear - H. unfold transaction in H.
-      admit.
-    + admit.
-    + rewrite H0 in THR1. inv THR1. ss. subst.
-      inv H1. clear - H. unfold transaction in H.
-      admit.
-    + rewrite H0 in THR1. inv THR1. ss. subst.
-      inv H1. clear - H. unfold transaction in H.
-      admit.
-    + rewrite H0 in THR1. inv THR1. ss. subst.
-      inv H1. clear - H. unfold transaction in H.
+      (* apply f_equal with (f := List.In (stmt_assign r e)) in H.
+      ss. rewrite app_comm_cons' in H. *)
+      destruct x; ss. inv H.
+      destruct x; ss. inv H2.
+      destruct x; ss. inv H1.
+      destruct x; ss. inv H2.
+      destruct x; ss.
+    + (* CAS-REPLAY *)
       admit.
     + rewrite H0 in THR1. inv THR1. ss. subst.
       inv H1. clear - H. unfold transaction in H.
-      admit.
+      destruct x; ss. inv H.
+      destruct x; ss. inv H2.
+      destruct x; ss. inv H1.
+      destruct x; ss. inv H2.
+      destruct x; ss.
     + rewrite H0 in THR1. inv THR1. ss. subst.
       inv H1. clear - H. unfold transaction in H.
-      admit.
+      destruct x; ss. inv H.
+      destruct x; ss. inv H2.
+      destruct x; ss. inv H1.
+      destruct x; ss. inv H2.
+      destruct x; ss.
     + rewrite H0 in THR1. inv THR1. ss. subst.
       inv H1. clear - H. unfold transaction in H.
-      admit.
+      destruct x; ss. inv H.
+      destruct x; ss. inv H2.
+      destruct x; ss. inv H1.
+      destruct x; ss. inv H2.
+      destruct x; ss.
     + rewrite H0 in THR1. inv THR1. ss. subst.
       inv H1. clear - H. unfold transaction in H.
-      admit.
+      destruct x; ss. inv H.
+      destruct x; ss. inv H2.
+      destruct x; ss. inv H1.
+      destruct x; ss. inv H2.
+      destruct x; ss.
     + rewrite H0 in THR1. inv THR1. ss. subst.
       inv H1. clear - H. unfold transaction in H.
-      admit.
+      destruct x; ss. inv H.
+      destruct x; ss. inv H2.
+      destruct x; ss. inv H1.
+      destruct x; ss. inv H2.
+      destruct x; ss.
     + rewrite H0 in THR1. inv THR1. ss. subst.
       inv H1. clear - H. unfold transaction in H.
-      admit.
+      destruct x; ss. inv H.
+      destruct x; ss. inv H2.
+      destruct x; ss. inv H1.
+      destruct x; ss. inv H2.
+      destruct x; ss.
+    + rewrite H0 in THR1. inv THR1. ss. subst.
+      inv H1. clear - H. unfold transaction in H.
+      destruct x; ss. inv H.
+      destruct x; ss. inv H2.
+      destruct x; ss. inv H1.
+      destruct x; ss. inv H2.
+      destruct x; ss.
+    + rewrite H0 in THR1. inv THR1. ss. subst.
+      inv H1. clear - H. unfold transaction in H.
+      destruct x; ss. inv H.
+      destruct x; ss. inv H2.
+      destruct x; ss. inv H1.
+      destruct x; ss. inv H2.
+      destruct x; ss.
+    + rewrite H0 in THR1. inv THR1. ss. subst.
+      inv H1. clear - H. unfold transaction in H.
+      destruct x; ss. inv H.
+      destruct x; ss. inv H2.
+      destruct x; ss. inv H1.
+      destruct x; ss. inv H2.
+      destruct x; ss.
   - destruct (tid == tid0); cycle 1.
     { admit. }
     inv e. inv THR_STEP; inv STEP; inv MEM_STEP; ss.
     + rewrite H0 in THR1. inv THR1. ss. subst.
       inv H1. clear - H. unfold transaction in H.
-      admit.
+      destruct x; ss. inv H.
+      destruct x; ss. inv H2.
+      destruct x; ss. inv H1.
+      destruct x; ss. inv H2.
+      destruct x; ss.
     + rewrite H0 in THR1. inv THR1. ss. subst.
       inv H1. clear - H. unfold transaction in H.
-      admit.
-    + (* CAS_SUCC *)
+      destruct x; ss. inv H.
+      destruct x; ss. inv H2.
+      destruct x; ss. inv H1.
+      destruct x; ss. inv H2.
+      destruct x; ss.
+    + (* CAS-SUCC *)
       inv EVENT.
       admit.
-    + (* CAS_FAIL *)
+    + (* CAS-FAIL *)
       inv EVENT.
       admit.
   - split; [|ss].
