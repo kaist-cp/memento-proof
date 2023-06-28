@@ -147,7 +147,8 @@ Module TState.
   }.
   Hint Constructors t : semantics.
 
-  (* TODO: init *)
+  (* TODO: The initial mid must be added *)
+  Definition init := mk (IdMap.empty _) 0 [].
 End TState.
 
 Module Mmt.
@@ -723,8 +724,63 @@ Module Thread.
   Qed.
 End Thread.
 
-Definition Mem := PLoc.t -> Val.t.
+Module Mem.
+  Definition t := PLoc.t -> Val.t.
+
+  (* TODO: init *)
+
+  Inductive step (tr: list Event.t) (mem1 mem2: t): Prop :=
+  | step_read
+      l v
+      (GET: mem1 l = v)
+      (EVENT: tr = [Event.R l v])
+      (MEM: mem2 = mem1)
+  | step_update
+      l v_old v_new
+      (GET: mem1 l = v_old)
+      (EVENT: tr = [Event.U l v_old v_new])
+      (MEM: mem2 = fun_add l v_new mem1)
+  .
+
+End Mem.
+
+Definition ThreadId := Id.t.
 
 Module Machine.
-  Definition t := (list Thread.t * Mem)%type.
+  Definition t := ((IdMap.t Thread.t) * Mem.t)%type.
+
+  (* TODO: init *)
+
+  Inductive step (prog: Program) (tr: list Event.t) (machine1 machine2: t): Prop :=
+  | step_no_event
+      env smap tid
+      thr_map1 mem thr1 thr_map2 thr2
+      (PROG: prog = prog_intro env smap)
+      (TRACE: tr = [])
+      (MACHINE1: machine1 = (thr_map1, mem))
+      (MACHINE2: machine2 = (thr_map2, mem))
+      (THR1: IdMap.find tid thr_map1 = Some thr1)
+      (THR2: thr_map2 = IdMap.add tid thr2 thr_map1)
+      (THR_STEP: Thread.step env tr thr1 thr2)
+  | step_event
+      env smap tid
+      thr_map1 mem1 thr1 thr_map2 mem2 thr2
+      (PROG: prog = prog_intro env smap)
+      (MACHINE1: machine1 = (thr_map1, mem1))
+      (MACHINE2: machine2 = (thr_map2, mem2))
+      (THR1: IdMap.find tid thr_map1 = Some thr1)
+      (THR2: thr_map2 = IdMap.add tid thr2 thr_map1)
+      (THR_STEP: Thread.step env tr thr1 thr2)
+      (MEM_STEP: Mem.step tr mem1 mem2)
+  | step_crash
+      env smap tid stmt
+      thr_map1 mem thr1 thr_map2
+      (PROG: prog = prog_intro env smap)
+      (TRACE: tr = [])
+      (MACHINE1: machine1 = (thr_map1, mem))
+      (MACHINE2: machine2 = (thr_map2, mem))
+      (STMT: IdMap.find tid smap = Some stmt)
+      (THR1: IdMap.find tid thr_map1 = Some thr1)
+      (THR2: thr_map2 = IdMap.add tid (Thread.mk stmt [] TState.init thr1.(Thread.mmts)) thr_map1)
+  .
 End Machine.

@@ -63,13 +63,13 @@ Inductive Stmt :=
   Hint Constructors Stmt : syntax.
 
 Module Env.
-  Definition t := IdMap.t (list VReg * list Stmt)%type.
+  Definition t := IdMap.t (list VReg * list Stmt).
 End Env.
 
-Inductive Prog :=
-| prog_intro (env: Env.t) (s: list (list Stmt))
+Inductive Program :=
+| prog_intro (env: Env.t) (s: IdMap.t (list Stmt))
 .
-Hint Constructors Prog : syntax.
+Hint Constructors Program : syntax.
 
 Module PLoc.
   Include Val.
