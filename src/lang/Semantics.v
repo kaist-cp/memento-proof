@@ -748,45 +748,106 @@ End Mem.
 Definition ThreadId := Id.t.
 
 Module Machine.
-  Definition t := ((IdMap.t Thread.t) * Mem.t)%type.
+  Inductive t := mk {
+    tmap: IdMap.t Thread.t;
+    mem: Mem.t
+  }.
 
   Definition init (p: Program): t :=
-    (IdMap.fold
-      (fun tid stmt acc => IdMap.add tid (Thread.mk stmt [] TState.init Mmts.init) acc)
-      (prog_s p)
-      (IdMap.empty _),
-    Mem.init).
+    mk
+      (IdMap.fold
+        (fun tid stmt acc => IdMap.add tid (Thread.mk stmt [] TState.init Mmts.init) acc)
+        (prog_s p)
+        (IdMap.empty _)
+      )
+      Mem.init.
 
-  Inductive step (p: Program) (tr: list Event.t) (machine1 machine2: t): Prop :=
+  Inductive step (p: Program) (tr: list Event.t) (mach1 mach2: t): Prop :=
   | step_no_event
       env smap tid
-      thr_map1 mem thr1 thr_map2 thr2
+      thr1 thr2
       (PROG: p = prog_intro env smap)
       (TRACE: tr = [])
-      (MACHINE1: machine1 = (thr_map1, mem))
-      (MACHINE2: machine2 = (thr_map2, mem))
-      (THR1: IdMap.find tid thr_map1 = Some thr1)
-      (THR2: thr_map2 = IdMap.add tid thr2 thr_map1)
+      (THR1: IdMap.find tid mach1.(tmap) = Some thr1)
       (THR_STEP: Thread.step env tr thr1 thr2)
+      (MACHINE2: mach2 = mk (IdMap.add tid thr2 mach1.(tmap)) mach1.(mem))
   | step_event
       env smap tid
-      thr_map1 mem1 thr1 thr_map2 mem2 thr2
+      thr1 mem2 thr2
       (PROG: p = prog_intro env smap)
-      (MACHINE1: machine1 = (thr_map1, mem1))
-      (MACHINE2: machine2 = (thr_map2, mem2))
-      (THR1: IdMap.find tid thr_map1 = Some thr1)
-      (THR2: thr_map2 = IdMap.add tid thr2 thr_map1)
+      (THR1: IdMap.find tid mach1.(tmap) = Some thr1)
       (THR_STEP: Thread.step env tr thr1 thr2)
-      (MEM_STEP: Mem.step tr mem1 mem2)
+      (MEM_STEP: Mem.step tr mach1.(mem) mem2)
+      (MACHINE2: mach2 = mk (IdMap.add tid thr2 mach1.(tmap)) mem2)
   | step_crash
       env smap tid stmt
-      thr_map1 mem thr1 thr_map2
+      thr1 thr_map2
       (PROG: p = prog_intro env smap)
       (TRACE: tr = [])
-      (MACHINE1: machine1 = (thr_map1, mem))
-      (MACHINE2: machine2 = (thr_map2, mem))
       (STMT: IdMap.find tid smap = Some stmt)
-      (THR1: IdMap.find tid thr_map1 = Some thr1)
-      (THR2: thr_map2 = IdMap.add tid (Thread.mk stmt [] TState.init thr1.(Thread.mmts)) thr_map1)
+      (THR1: IdMap.find tid mach1.(tmap) = Some thr1)
+      (THR2: thr_map2 = IdMap.add tid (Thread.mk stmt [] TState.init thr1.(Thread.mmts)) mach1.(tmap))
+      (MACHINE2: mach2 = mk thr_map2 mach1.(mem))
   .
+
+  Inductive rtc (p: Program) : list Event.t -> t -> t -> Prop :=
+  | rtc_refl
+      mach
+      : rtc p [] mach mach
+  | rtc_tc
+      tr tr0 tr1 mach mach0 mach_term
+      (ONE: step p tr0 mach mach0)
+      (RTC: rtc p tr1 mach0 mach_term)
+      (TRACE: tr = tr0 ++ tr1)
+      : rtc p tr mach mach_term
+  .
+
+  Inductive tc (p: Program) : list Event.t -> t -> t -> Prop :=
+  | tc_intro
+      tr tr0 tr1 mach mach0 mach_term
+      (ONE: step p tr0 mach mach0)
+      (RTC: rtc p tr1 mach0 mach_term)
+      (TRACE: tr = tr0 ++ tr1)
+      : tc p tr mach mach_term
+  .
+
+  Inductive tc' (p: Program) : list Event.t -> t -> t -> Prop :=
+  | tc_step'
+      tr mach mach_term
+      (ONE: step p tr mach mach_term)
+      : tc' p tr mach mach_term
+  | tc_trans'
+      tr tr0 tr1 mach mach_m mach_term
+      (TC1: tc' p tr0 mach mach_m)
+      (TC2: tc' p tr1 mach_m mach_term)
+      (TRACE: tr = tr0 ++ tr1)
+      : tc' p tr mach mach_term
+  .
+
+  Inductive rtc' (p: Program) : list Event.t -> t -> t -> Prop :=
+  | rtc_refl'
+      mach
+      : rtc' p [] mach mach
+  | rtc_tc'
+      tr mach mach_term
+      (TC: tc' p tr mach mach_term)
+      : rtc' p tr mach mach_term
+  .
+
+  Lemma step_suffix_of_prog :
+    forall p envt smap tr mach1 mach2,
+      p = prog_intro envt smap ->
+      IdMap.Forall2
+        (fun _ stmt thr1 => suffix_of thr1.(Thread.stmt) stmt)
+        smap mach1.(Machine.tmap) ->
+      step p tr mach1 mach2 ->
+    IdMap.Forall2
+      (fun _ stmt thr2 => suffix_of thr2.(Thread.stmt) stmt)
+      smap mach2.(Machine.tmap).
+  Proof.
+    i. subst.
+    admit.
+
+    (* ii. specialize (H0 id). inv H0. *)
+  Qed.
 End Machine.

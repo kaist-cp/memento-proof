@@ -992,3 +992,15 @@ Ltac seqsplit :=
   ).
 
 Definition suffix_of {A} : relation (list A) := fun l1 l2 => exists k, l2 = k ++ l1.
+
+Lemma suffix_of_is_reflexive {A} : Reflexive (@suffix_of A).
+Proof.
+  unfold Reflexive.
+  intro x.
+  unfold suffix_of.
+  exists [].
+  simpl.
+  reflexivity.
+Qed.
+Instance suffix_of_Reflexive {A} : Reflexive (@suffix_of A) := suffix_of_is_reflexive.
+Hint Resolve suffix_of_is_reflexive : core.
