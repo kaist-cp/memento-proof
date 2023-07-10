@@ -131,7 +131,6 @@ Lemma transaction_DR:
 Proof.
   i. hexploit transaction_rw. i. des.
   eapply DR_RW; eauto.
-  admit. (* DR trivial lemma *)
 Qed.
 
 Lemma transaction_atomic_step:
@@ -152,15 +151,15 @@ Proof.
     inv e. inv THR_STEP; inv STEP; ss.
     + rewrite H0 in THR1. inv THR1. ss. subst.
       inv H1. clear - H. unfold transaction in H.
-      (* apply f_equal with (f := List.In (stmt_assign r e)) in H.
-      ss. rewrite app_comm_cons' in H. *)
+      rewrite app_comm_cons' in H. rewrite <- app_assoc in H.
       destruct x; ss. inv H.
       destruct x; ss. inv H2.
       destruct x; ss. inv H1.
       destruct x; ss. inv H2.
       destruct x; ss.
     + (* CAS-REPLAY *)
-      admit.
+      rewrite IdMap.add_spec in H4. des_ifs. ss. subst.
+      etrans; eauto. esplit. instantiate (1 := [_]). ss.
     + rewrite H0 in THR1. inv THR1. ss. subst.
       inv H1. clear - H. unfold transaction in H.
       destruct x; ss. inv H.
@@ -242,10 +241,15 @@ Proof.
       destruct x; ss. inv H2.
       destruct x; ss.
     + (* CAS-SUCC *)
-      inv EVENT.
+      rewrite IdMap.add_spec in H4. des_ifs; ss; cycle 1.
+      { exfalso. apply c. ss. }
+      subst. split.
+      { etrans; eauto. esplit. instantiate (1 := [_]). ss. }
       admit.
     + (* CAS-FAIL *)
-      inv EVENT.
+      rewrite IdMap.add_spec in H4. des_ifs; ss.
+      subst. split.
+      { etrans; eauto. esplit. instantiate (1 := [_]). ss. }
       admit.
   - split; [|ss].
     ss. rewrite IdMap.add_spec in H4. des_ifs. inv e.

@@ -1004,3 +1004,11 @@ Proof.
 Qed.
 Instance suffix_of_Reflexive {A} : Reflexive (@suffix_of A) := suffix_of_is_reflexive.
 Hint Resolve suffix_of_is_reflexive : core.
+
+Lemma suffix_of_is_transitive {A} : Transitive (@suffix_of A).
+Proof.
+  unfold Transitive. unfold suffix_of. i. des. subst.
+  exists (k ++ k0). apply app_assoc.
+Qed.
+Instance suffix_of_Transitive {A} : Transitive (@suffix_of A) := suffix_of_is_transitive.
+Hint Resolve suffix_of_is_transitive : core.
