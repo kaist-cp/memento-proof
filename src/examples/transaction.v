@@ -63,9 +63,17 @@ Definition transaction := [
 ].
 
 Definition consistent_state (mem: Mem.t) :=
-  mem (PLoc.int 1000) = Val.int 0 ->
-  (mem (PLoc.int 1001) = Val.int 0 /\ mem (PLoc.int 1002) = Val.int 0)
-  \/ (mem (PLoc.int 1001) = Val.int 41 /\ mem (PLoc.int 1002) = Val.int 42).
+  mem (PLoc.int 1000) = Val.int 0
+  ->
+  (
+    mem (PLoc.int 1001) = Val.int 0 /\
+    mem (PLoc.int 1002) = Val.int 0
+  )
+  \/
+  (
+    mem (PLoc.int 1001) = Val.int 41 /\
+    mem (PLoc.int 1002) = Val.int 42
+  ).
 
 Lemma transaction_rw:
   forall envt,

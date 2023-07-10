@@ -40,19 +40,20 @@ Definition DR (env: Env.t) (s: list Stmt) :=
           /\ thr_term'.(Thread.ts) = ts_x)>>
   .
 
+Axiom DR_RW_f :
+  forall envt env f prms s_f,
+    IdMap.find f envt = Some FnType.RW ->
+    IdMap.find f env = Some (prms, s_f) ->
+  DR env s_f.
+
 Lemma DR_RW :
   forall env envt labs s,
     TypeSystem.judge env envt ->
     EnvType.rw_judge envt labs s ->
-    (forall f prms s_f,
-      IdMap.find f envt = Some FnType.RW ->
-      IdMap.find f env = Some (prms, s_f) ->
-     DR env s_f
-    ) ->
   DR env s.
 Proof.
   intros env envt labs s TYPEJ ENVTJ.
-  induction ENVTJ; intros FNJ tr tr' thr_term thr_term' ts mmts EX1 EX2.
+  induction ENVTJ; intros tr tr' thr_term thr_term' ts mmts EX1 EX2.
   - inv EX1; ss; cycle 1.
     { inv ONE. inv NORMAL_STEP; inv STEP; ss. }
     inv EX2; ss; cycle 1.
@@ -236,7 +237,7 @@ Proof.
     inv ONE0. inv NORMAL_STEP0; inv STEP; ss. inv STMT.
     rewrite app_nil_r in *. subst.
     rewrite ENV_F0 in *. inv ENV_F.
-    hexploit FNJ; eauto. unfold DR. intro IHF.
+    hexploit DR_RW_f; eauto. unfold DR. intro IHF.
     hexploit chkpt_fn_cases; [apply RTC | | |]; eauto.
     { rewrite app_nil_l. ss. }
     hexploit chkpt_fn_cases; [apply RTC0 | | |]; eauto.
@@ -369,10 +370,10 @@ Proof.
     inv ONE0. inv NORMAL_STEP0; inv STEP; ss. inv STMT.
     rewrite app_nil_r in *. subst. unfold DR in *.
     destruct (EquivDec.equiv_dec (sem_expr (TState.regs ts) e) (Val.bool true)).
-    + hexploit IHENVTJ1; [| apply RTC | apply RTC0 |]; ss.
+    + hexploit IHENVTJ1; [apply RTC | apply RTC0 |]; ss.
       i. des. eexists tr_x. eexists s_x. eexists c_x. eexists ts_x. splits; ss.
       econs 2; eauto; [econs; eauto |]; rewrite app_nil_l; ss.
-    + hexploit IHENVTJ2; [| apply RTC | apply RTC0 |]; ss.
+    + hexploit IHENVTJ2; [apply RTC | apply RTC0 |]; ss.
       i. des. eexists tr_x. eexists s_x. eexists c_x. eexists ts_x. splits; ss.
       econs 2; eauto; [econs; eauto |]; rewrite app_nil_l; ss.
   - subst.
@@ -495,7 +496,7 @@ Proof.
       { i. splits; ss. apply trace_refine_eq. }
       unfold STOP. i. des; ss.
     }
-    apply IHENVTJ in FNJ. unfold DR in FNJ. rename FNJ into IH.
+    unfold DR in IHENVTJ.
     hexploit loop_cases; [apply RTC | | |]; eauto.
     { rewrite app_nil_l. ss. }
     i. des; cycle 1.
@@ -564,7 +565,7 @@ Proof.
           { rewrite app_nil_l. ss. }
           i. des; ss; cycle 1.
           ++ (* EX2: FIRST-DONE *)
-            hexploit IH; [exact RTC2 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC2 | |]; eauto; ss. i. des.
             hexploit STOP_FST.
             { unfold STOP. right. left. esplits; ss. }
             hexploit STOP_SND.
@@ -573,7 +574,7 @@ Proof.
           ++ (* EX2: FIRST-ONGOING *)
             symmetry in FIRST_ONGOING. rewrite <- app_nil_l in FIRST_ONGOING.
             apply snoc_eq_snoc in FIRST_ONGOING. des. subst. cleartriv.
-            hexploit IH; [exact RTC2 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC2 | |]; eauto; ss. i. des.
             hexploit STOP_FST.
             { unfold STOP. right. left. esplits; ss. }
             hexploit STOP_SND.
@@ -589,14 +590,14 @@ Proof.
           { rewrite app_nil_l. ss. }
           i. des; ss; cycle 1.
           ++ (* EX2: FIRST-DONE *)
-            hexploit IH; [exact RTC2 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC2 | |]; eauto; ss. i. des.
             hexploit STOP_FST.
             { unfold STOP. right. left. esplits; ss. }
             hexploit STOP_SND.
             { unfold STOP. right. right. left. esplits; ss. }
             i. des. subst. ss.
           ++ (* EX2: FIRST-ONGOING *)
-            hexploit IH; [exact RTC2 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC2 | |]; eauto; ss. i. des.
             hexploit STOP_FST.
             { unfold STOP. right. left. esplits; ss. }
             i. des. subst.
@@ -643,7 +644,7 @@ Proof.
           { rewrite app_nil_l. ss. }
           i. des; ss; cycle 1.
           ++ (* EX2: FIRST-DONE *)
-            hexploit IH; [exact RTC0 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC0 | |]; eauto; ss. i. des.
             hexploit STOP_FST.
             { unfold STOP. right. left. esplits; ss. }
             hexploit STOP_SND.
@@ -652,7 +653,7 @@ Proof.
           ++ (* EX2: FIRST-ONGOING *)
             symmetry in FIRST_ONGOING. rewrite <- app_nil_l in FIRST_ONGOING.
             apply snoc_eq_snoc in FIRST_ONGOING. des. subst. cleartriv.
-            hexploit IH; [exact RTC0 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC0 | |]; eauto; ss. i. des.
             hexploit STOP_FST.
             { unfold STOP. right. left. esplits; ss. }
             hexploit STOP_SND.
@@ -668,14 +669,14 @@ Proof.
           { rewrite app_nil_l. ss. }
           i. des; ss; cycle 1.
           ++ (* EX2: FIRST-DONE *)
-            hexploit IH; [exact RTC0 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC0 | |]; eauto; ss. i. des.
             hexploit STOP_FST.
             { unfold STOP. right. left. esplits; ss. }
             hexploit STOP_SND.
             { unfold STOP. right. right. left. esplits; ss. }
             i. des. subst. ss.
           ++ (* EX2: FIRST-ONGOING *)
-            hexploit IH; [exact RTC0 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC0 | |]; eauto; ss. i. des.
             hexploit STOP_FST.
             { unfold STOP. right. left. esplits; ss. }
             i. des. subst.
@@ -754,7 +755,7 @@ Proof.
           { rewrite app_nil_l. ss. }
           i. des; ss; cycle 1.
           ++ (* EX2: FIRST-DONE *)
-            hexploit IH; [exact RTC2 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC2 | |]; eauto; ss. i. des.
             hexploit STOP_SND.
             { unfold STOP. right. right. left. esplits; ss. }
             i. des. subst.
@@ -826,7 +827,7 @@ Proof.
           ++ (* EX2: FIRST-ONGOING *)
             symmetry in FIRST_ONGOING. rewrite <- app_nil_l in FIRST_ONGOING.
             apply snoc_eq_snoc in FIRST_ONGOING. des. subst. cleartriv.
-            hexploit IH; [exact RTC2 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC2 | |]; eauto; ss. i. des.
             hexploit STOP_SND.
             { unfold STOP. right. left. esplits; ss. }
             i. des. subst.
@@ -899,7 +900,7 @@ Proof.
           { rewrite app_nil_l. ss. }
           i. des; ss; cycle 1.
           ++ (* EX2: FIRST-DONE *)
-            hexploit IH; [exact RTC2 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC2 | |]; eauto; ss. i. des.
             hexploit STOP_SND.
             { unfold STOP. right. right. left. esplits; ss. }
             i. des. subst.
@@ -965,7 +966,7 @@ Proof.
               }
               ss. econs; eauto.
           ++ (* EX2: FIRST-ONGOING *)
-            hexploit IH; [exact RTC2 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC2 | |]; eauto; ss. i. des.
             i. des. subst.
 
             destruct thr_term, thr_term'; ss. subst.
@@ -1064,7 +1065,7 @@ Proof.
           { rewrite app_nil_l. ss. }
           i. des; ss; cycle 1.
           ++ (* EX2: FIRST-DONE *)
-            hexploit IH; [exact RTC0 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC0 | |]; eauto; ss. i. des.
             hexploit STOP_SND.
             { unfold STOP. right. right. left. esplits; ss. }
             i. des. subst.
@@ -1124,7 +1125,7 @@ Proof.
           ++ (* EX2: FIRST-ONGOING *)
             symmetry in FIRST_ONGOING. rewrite <- app_nil_l in FIRST_ONGOING.
             apply snoc_eq_snoc in FIRST_ONGOING. des. subst. cleartriv.
-            hexploit IH; [exact RTC0 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC0 | |]; eauto; ss. i. des.
             hexploit STOP_SND.
             { unfold STOP. right. left. esplits; ss. }
             i. des. subst.
@@ -1185,7 +1186,7 @@ Proof.
           { rewrite app_nil_l. ss. }
           i. des; ss; cycle 1.
           ++ (* EX2: FIRST-DONE *)
-            hexploit IH; [exact RTC0 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC0 | |]; eauto; ss. i. des.
             hexploit STOP_SND.
             { unfold STOP. right. right. left. esplits; ss. }
             i. des. subst.
@@ -1239,7 +1240,7 @@ Proof.
               }
               rewrite VRegMap.add_add. econs; eauto.
           ++ (* EX2: FIRST-ONGOING *)
-            hexploit IH; [exact RTC0 | |]; eauto; ss. i. des.
+            hexploit IHENVTJ; [exact RTC0 | |]; eauto; ss. i. des.
             i. des. subst.
 
             destruct thr_term, thr_term'; ss. subst.
