@@ -319,5 +319,5 @@ Proof.
     unfold RelationClasses.complement, Equivalence.equiv in c. ss.
   }
 
-  admit. (* EASY: if just computed *)
+  apply IdMap.add_empty.
 Qed.

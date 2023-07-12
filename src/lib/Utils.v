@@ -896,6 +896,12 @@ Module IdMap.
       (INTERLEAVING: interleaving (add id l m) res):
       interleaving m (a::res)
   .
+
+  Lemma add_empty A id (a:A):
+    elements (add id a (empty A)) = [(id, a)].
+  Proof.
+    admit.
+  Qed.
 End IdMap.
 
 Module IdSet.
