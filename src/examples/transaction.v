@@ -10,6 +10,7 @@ Require Import HahnList.
 Require Import sflib.
 
 From Memento Require Import Utils.
+From Memento Require Import Order.
 From Memento Require Import Syntax.
 From Memento Require Import Semantics.
 From Memento Require Import Env.
@@ -33,32 +34,32 @@ From Memento Require Import DR.
 *)
 Definition transaction := [
   (stmt_pcas
-    (Pos.of_nat 0)
-    (expr_reg (Pos.of_nat 1000))
+    (Pos.of_nat 1)
+    (expr_const (Val.int 1000))
     (expr_const (Val.int 0%Z))
     (expr_const (Val.int 1%Z))
-    0
-  );
-  (stmt_pcas
-    (Pos.of_nat 1)
-    (expr_reg (Pos.of_nat 1001))
-    (expr_const (Val.int 0%Z))
-    (expr_const (Val.int 41%Z))
     1
   );
   (stmt_pcas
     (Pos.of_nat 2)
-    (expr_reg (Pos.of_nat 1002))
+    (expr_const (Val.int 1001))
     (expr_const (Val.int 0%Z))
-    (expr_const (Val.int 42%Z))
+    (expr_const (Val.int 41%Z))
     2
   );
   (stmt_pcas
     (Pos.of_nat 3)
-    (expr_reg (Pos.of_nat 1000))
+    (expr_const (Val.int 1002))
+    (expr_const (Val.int 0%Z))
+    (expr_const (Val.int 42%Z))
+    3
+  );
+  (stmt_pcas
+    (Pos.of_nat 4)
+    (expr_const (Val.int 1000))
     (expr_const (Val.int 1%Z))
     (expr_const (Val.int 0%Z))
-    3
+    4
   )
 ].
 
@@ -245,7 +246,22 @@ Proof.
       { exfalso. apply c. ss. }
       subst. split.
       { etrans; eauto. esplit. instantiate (1 := [_]). ss. }
-      admit.
+      inv H1. unfold transaction in H. destruct x; ss.
+      { inv H. ss. }
+      inv H. destruct x; ss.
+      { inv H3. ii. rewrite fun_add_spec in H. des_ifs.
+        admit.
+        (* Contra: loc 1000 is non-zero by IH. *)
+      }
+      inv H3. destruct x; ss.
+      {
+        inv H1. ii. rewrite fun_add_spec in H. des_ifs.
+        admit.
+        (* Contra: loc 1000 is non-zero by IH. *)
+      }
+      inv H1. destruct x; ss.
+      { admit. }
+      inv H3. destruct x; ss.
     + (* CAS-FAIL *)
       rewrite IdMap.add_spec in H4. des_ifs; ss.
       subst. split.
