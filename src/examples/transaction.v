@@ -5,6 +5,7 @@ Require Import List.
 Require Import FunctionalExtensionality.
 Require RelationClasses.
 Import ListNotations.
+Require Import Lia.
 
 Require Import HahnList.
 Require Import sflib.
@@ -124,7 +125,6 @@ Proof.
   inv H0. inv H.
 Qed.
 
-(* TODO: durability 증명할 때 필요. terminated 됐을 때 0 41 42가 있어야 함 *)
 Lemma transaction_DR:
   forall env envt,
     TypeSystem.judge env envt ->
@@ -137,7 +137,7 @@ Qed.
 Lemma transaction_atomic_step:
   forall p env tid s1 c1 ts1 mmts1 tr mach1 mach2 s2 c2 ts2 mmts2,
     p = prog_intro env (IdMap.add tid transaction (IdMap.empty _)) ->
-    (* (forall tid', tid =/= tid' -> IdMap.find tid' mach1.(Machine.tmap) = None) -> *)
+    (forall tid', tid' =/= tid -> IdMap.find tid' mach1.(Machine.tmap) = None) ->
     IdMap.find tid mach1.(Machine.tmap) = Some (Thread.mk s1 c1 ts1 mmts1) ->
     suffix_of s1 transaction ->
     consistent_state mach1.(Machine.mem) ->
@@ -145,13 +145,13 @@ Lemma transaction_atomic_step:
     IdMap.find tid mach2.(Machine.tmap) = Some (Thread.mk s2 c2 ts2 mmts2) ->
   suffix_of s2 transaction /\ consistent_state mach2.(Machine.mem).
 Proof.
-  i. subst. inv H3.
+  i. subst. inv H4.
   - split; ss.
-    destruct (tid == tid0); cycle 1.
-    { admit. }
-    inv e. inv THR_STEP; inv STEP; ss.
-    + rewrite H0 in THR1. inv THR1. ss. subst.
-      inv H1. clear - H. unfold transaction in H.
+    destruct (tid0 == tid); cycle 1.
+    { apply H0 in c. rewrite c in THR1. ss. }
+    inv e. rewrite IdMap.add_spec in *. des_ifs.
+    inv THR_STEP; inv STEP; inv THR2; ss.
+    + inv H2. clear - H. unfold transaction in H.
       rewrite app_comm_cons' in H. rewrite <- app_assoc in H.
       destruct x; ss. inv H.
       destruct x; ss. inv H2.
@@ -159,136 +159,150 @@ Proof.
       destruct x; ss. inv H2.
       destruct x; ss.
     + (* CAS-REPLAY *)
-      rewrite IdMap.add_spec in H4. des_ifs. ss. subst.
-      etrans; eauto. esplit. instantiate (1 := [_]). ss.
-    + rewrite H0 in THR1. inv THR1. ss. subst.
-      inv H1. clear - H. unfold transaction in H.
+      etrans; eauto. rewrite STMT. esplit. instantiate (1 := [_]). ss.
+    + inv H2. clear - H. unfold transaction in H.
+      rewrite app_comm_cons' in H. rewrite <- app_assoc in H.
       destruct x; ss. inv H.
       destruct x; ss. inv H2.
       destruct x; ss. inv H1.
       destruct x; ss. inv H2.
       destruct x; ss.
-    + rewrite H0 in THR1. inv THR1. ss. subst.
-      inv H1. clear - H. unfold transaction in H.
+    + inv H2. clear - H. unfold transaction in H.
+      rewrite app_comm_cons' in H. rewrite <- app_assoc in H.
       destruct x; ss. inv H.
       destruct x; ss. inv H2.
       destruct x; ss. inv H1.
       destruct x; ss. inv H2.
       destruct x; ss.
-    + rewrite H0 in THR1. inv THR1. ss. subst.
-      inv H1. clear - H. unfold transaction in H.
+    + inv H2. clear - H. unfold transaction in H.
+      rewrite app_comm_cons' in H. rewrite <- app_assoc in H.
       destruct x; ss. inv H.
       destruct x; ss. inv H2.
       destruct x; ss. inv H1.
       destruct x; ss. inv H2.
       destruct x; ss.
-    + rewrite H0 in THR1. inv THR1. ss. subst.
-      inv H1. clear - H. unfold transaction in H.
+    + inv H2. clear - H. unfold transaction in H.
+      rewrite app_comm_cons' in H. rewrite <- app_assoc in H.
       destruct x; ss. inv H.
       destruct x; ss. inv H2.
       destruct x; ss. inv H1.
       destruct x; ss. inv H2.
       destruct x; ss.
-    + rewrite H0 in THR1. inv THR1. ss. subst.
-      inv H1. clear - H. unfold transaction in H.
+    + inv H2. clear - H. unfold transaction in H.
+      rewrite app_comm_cons' in H. rewrite <- app_assoc in H.
       destruct x; ss. inv H.
       destruct x; ss. inv H2.
       destruct x; ss. inv H1.
       destruct x; ss. inv H2.
       destruct x; ss.
-    + rewrite H0 in THR1. inv THR1. ss. subst.
-      inv H1. clear - H. unfold transaction in H.
+    + inv H2. clear - H. unfold transaction in H.
+      rewrite app_comm_cons' in H. rewrite <- app_assoc in H.
       destruct x; ss. inv H.
       destruct x; ss. inv H2.
       destruct x; ss. inv H1.
       destruct x; ss. inv H2.
       destruct x; ss.
-    + rewrite H0 in THR1. inv THR1. ss. subst.
-      inv H1. clear - H. unfold transaction in H.
+    + inv H2. clear - H. unfold transaction in H.
+      rewrite app_comm_cons' in H. rewrite <- app_assoc in H.
       destruct x; ss. inv H.
       destruct x; ss. inv H2.
       destruct x; ss. inv H1.
       destruct x; ss. inv H2.
       destruct x; ss.
-    + rewrite H0 in THR1. inv THR1. ss. subst.
-      inv H1. clear - H. unfold transaction in H.
+    + inv H2. clear - H. unfold transaction in H.
+      rewrite app_comm_cons' in H. rewrite <- app_assoc in H.
       destruct x; ss. inv H.
       destruct x; ss. inv H2.
       destruct x; ss. inv H1.
       destruct x; ss. inv H2.
       destruct x; ss.
-    + rewrite H0 in THR1. inv THR1. ss. subst.
-      inv H1. clear - H. unfold transaction in H.
+    + inv H2. clear - H. unfold transaction in H.
+      rewrite app_comm_cons' in H. rewrite <- app_assoc in H.
       destruct x; ss. inv H.
       destruct x; ss. inv H2.
       destruct x; ss. inv H1.
       destruct x; ss. inv H2.
       destruct x; ss.
-  - destruct (tid == tid0); cycle 1.
-    { admit. }
-    inv e. inv THR_STEP; inv STEP; inv MEM_STEP; ss.
-    + rewrite H0 in THR1. inv THR1. ss. subst.
-      inv H1. clear - H. unfold transaction in H.
+  - destruct (tid0 == tid); cycle 1.
+    { apply H0 in c. rewrite c in THR1. ss. }
+    inv e. ss. rewrite IdMap.add_spec in *. des_ifs; cycle 1.
+    { exfalso. apply c. ss. }
+    inv THR_STEP; inv STEP; inv MEM_STEP; inv EVENT; inv THR2; ss; subst.
+    + inv H2. clear - H. unfold transaction in H.
       destruct x; ss. inv H.
       destruct x; ss. inv H2.
       destruct x; ss. inv H1.
       destruct x; ss. inv H2.
       destruct x; ss.
-    + rewrite H0 in THR1. inv THR1. ss. subst.
-      inv H1. clear - H. unfold transaction in H.
+    + inv H2. clear - H. unfold transaction in H.
       destruct x; ss. inv H.
       destruct x; ss. inv H2.
       destruct x; ss. inv H1.
       destruct x; ss. inv H2.
       destruct x; ss.
     + (* CAS-SUCC *)
-      rewrite IdMap.add_spec in H4. des_ifs; ss; cycle 1.
-      { exfalso. apply c. ss. }
-      subst. split.
+      split.
       { etrans; eauto. esplit. instantiate (1 := [_]). ss. }
-      inv H1. unfold transaction in H. destruct x; ss.
+      inv H2. unfold transaction in H. destruct x; ss.
       { inv H. ss. }
       inv H. destruct x; ss.
-      { inv H3. ii. rewrite fun_add_spec in H. des_ifs.
+      { inv H5. ii. rewrite fun_add_spec in H. des_ifs.
         admit.
         (* Contra: loc 1000 is non-zero by IH. *)
       }
-      inv H3. destruct x; ss.
+      inv H5. destruct x; ss.
       {
-        inv H1. ii. rewrite fun_add_spec in H. des_ifs.
+        inv H2. ii. rewrite fun_add_spec in H. des_ifs.
         admit.
         (* Contra: loc 1000 is non-zero by IH. *)
       }
-      inv H1. destruct x; ss.
+      inv H2. destruct x; ss.
       { admit. }
-      inv H3. destruct x; ss.
+      inv H5. destruct x; ss.
     + (* CAS-FAIL *)
-      rewrite IdMap.add_spec in H4. des_ifs; ss.
-      subst. split.
-      { etrans; eauto. esplit. instantiate (1 := [_]). ss. }
       admit.
   - split; [|ss].
-    ss. rewrite IdMap.add_spec in H4. des_ifs. inv e.
+    ss. rewrite IdMap.add_spec in H5. des_ifs. inv e.
     rewrite IdMap.add_spec in STMT. des_ifs; [refl |].
     unfold RelationClasses.complement, Equivalence.equiv in c. ss.
+Qed.
+
+Lemma thread_nexist:
+  forall p tid tr mach mach_term,
+    IdMap.find tid mach.(Machine.tmap) = None ->
+    Machine.rtc p tr mach mach_term ->
+  IdMap.find tid mach_term.(Machine.tmap) = None.
+Proof.
+  i. revert tid H. induction H0; i; ss. apply IHrtc.
+  inv ONE; ss.
+  - rewrite IdMap.add_spec. des_ifs.
+    inv e. rewrite H in THR1. ss.
+  - rewrite IdMap.add_spec. des_ifs.
+    inv e. rewrite H in THR1. ss.
+  - rewrite IdMap.add_spec. des_ifs.
+    inv e. rewrite H in THR1. ss.
 Qed.
 
 Lemma transaction_atomic_rtc_step:
   forall p env tid s c ts mmts tr mach mach_term,
     p = prog_intro env (IdMap.add tid transaction (IdMap.empty _)) ->
+    (forall tid', tid' =/= tid -> IdMap.find tid' mach.(Machine.tmap) = None) ->
     IdMap.find tid mach.(Machine.tmap) = Some (Thread.mk s c ts mmts) ->
     suffix_of s transaction ->
     consistent_state mach.(Machine.mem) ->
     Machine.rtc p tr mach mach_term ->
   consistent_state mach_term.(Machine.mem).
 Proof.
-  i. revert env s c ts mmts H2 H1 H0 H. induction H3; i; [ ss |]. subst.
+  i. revert env s c ts mmts H3 H2 H1 H0 H. induction H4; i; [ ss |]. subst.
 
   hexploit Machine.step_preserves_thr; eauto. i. des.
   remember thr2. dup H. rewrite Heqt in H. destruct t.
 
   hexploit transaction_atomic_step; try exact ONE; eauto. i. des.
   eapply IHrtc; eauto.
+  i.
+  eapply thread_nexist; eauto.
+  econs; eauto. econs.
 Qed.
 
 Theorem transaction_atomic:
@@ -300,6 +314,12 @@ Proof.
   i.
   assert (INIT_CONST: consistent_state (Machine.init p).(Machine.mem)).
   { left. ss. }
+  assert (SINGLE_THREAD: forall tid', tid' =/= tid -> IdMap.find tid' (Machine.init p).(Machine.tmap) = None).
+  { i. subst. unfold Machine.init.
+    rewrite IdMap.fold_1. ss. rewrite IdMap.add_empty. ss.
+    rewrite IdMap.add_spec. des_ifs.
+    apply IdMap.gempty.
+  }
   subst.
   cut (
     exists thr,
