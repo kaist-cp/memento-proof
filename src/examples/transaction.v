@@ -134,7 +134,7 @@ Proof.
   eapply DR_RW; eauto.
 Qed.
 
-Theorem transaction_atomic_no_crash:
+Lemma transaction_atomic_no_crash:
   forall p tid env tr mach_term,
     p = prog_intro env (IdMap.add tid transaction (IdMap.empty _)) ->
     Machine.rtc Machine.normal p tr (Machine.init p) mach_term ->
@@ -223,11 +223,35 @@ Proof.
   - exfalso. apply c1. ss.
 Qed.
 
+Lemma crash_mem_pred_equiv:
+  forall env envt tmap p mach (P: Mem.t -> Prop),
+    TypeSystem.judge env envt ->
+    p = prog_intro env tmap ->
+    IdMap.Forall (fun _ s => exists labs, EnvType.rw_judge envt labs s) tmap ->
+    (forall tr mach_term,
+      Machine.rtc Machine.normal p tr mach mach_term ->
+      P mach_term.(Machine.mem)
+    ) ->
+  (forall tr mach_term,
+    Machine.rtc Machine.step p tr mach mach_term ->
+  P mach_term.(Machine.mem)).
+Proof.
+  i. hexploit erasure; eauto. i. des. rewrite H5.
+  eapply H2. eauto.
+Qed.
+
 Theorem transaction_atomic:
-  forall p tid env tr mach_term,
+  forall env envt p tid tr mach_term,
+    TypeSystem.judge env envt ->
     p = prog_intro env (IdMap.add tid transaction (IdMap.empty _)) ->
     Machine.rtc Machine.step p tr (Machine.init p) mach_term ->
   consistent_state mach_term.(Machine.mem).
 Proof.
-  admit.
+  i.
+  eapply crash_mem_pred_equiv; eauto; cycle 1.
+  { i. eapply transaction_atomic_no_crash; eauto. }
+  ii.
+  rewrite IdMap.add_spec in FIND. des_ifs; cycle 1.
+  { rewrite IdMap.gempty in FIND. ss. }
+  eapply transaction_rw.
 Qed.

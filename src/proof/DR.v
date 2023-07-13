@@ -40,11 +40,14 @@ Definition DR (env: Env.t) (s: list Stmt) :=
           /\ thr_term'.(Thread.ts) = ts_x)>>
   .
 
-Axiom DR_RW_f :
+Lemma DR_RW_f :
   forall envt env f prms s_f,
     IdMap.find f envt = Some FnType.RW ->
     IdMap.find f env = Some (prms, s_f) ->
   DR env s_f.
+Proof.
+  admit.
+Qed.
 
 Lemma DR_RW :
   forall env envt labs s,
@@ -1295,4 +1298,17 @@ Proof.
                 rewrite app_nil_r. ss.
               }
               rewrite VRegMap.add_add. econs; eauto.
+Qed.
+
+Theorem erasure:
+  forall env envt tmap p tr mach mach_term,
+    TypeSystem.judge env envt ->
+    p = prog_intro env tmap ->
+    IdMap.Forall (fun _ s => exists labs, EnvType.rw_judge envt labs s) tmap ->
+    Machine.rtc Machine.step p tr mach mach_term ->
+    exists tr' mach_term',
+      Machine.rtc Machine.normal p tr' mach mach_term' /\
+      mach_term.(Machine.mem) = mach_term'.(Machine.mem).
+Proof.
+  admit.
 Qed.
