@@ -225,8 +225,8 @@ Proof.
       destruct x; ss.
   - destruct (tid0 == tid); cycle 1.
     { apply H0 in c. rewrite c in THR1. ss. }
-    inv e. ss. rewrite IdMap.add_spec in *. des_ifs; cycle 1.
-    { exfalso. apply c. ss. }
+    inv e. ss. rewrite IdMap.gss in *. inv H5.
+    rewrite THR1 in H1. inv H1.
     inv THR_STEP; inv STEP; inv MEM_STEP; inv EVENT; inv THR2; ss; subst.
     + inv H2. clear - H. unfold transaction in H.
       destruct x; ss. inv H.
@@ -257,14 +257,17 @@ Proof.
         (* Contra: loc 1000 is non-zero by IH. *)
       }
       inv H2. destruct x; ss.
-      { admit. }
+      { inv H5. ii. rewrite fun_add_spec in H. des_ifs; cycle 1.
+        { exfalso. apply c. ss. }
+        admit.
+        (* Contra: loc 1000 is non-zero by IH. *)
+      }
       inv H5. destruct x; ss.
     + (* CAS-FAIL *)
       admit.
   - split; [|ss].
     ss. rewrite IdMap.add_spec in H5. des_ifs. inv e.
-    rewrite IdMap.add_spec in STMT. des_ifs; [refl |].
-    unfold RelationClasses.complement, Equivalence.equiv in c. ss.
+    rewrite IdMap.gss in STMT. inv STMT. refl.
 Qed.
 
 Lemma thread_nexist:
@@ -334,9 +337,8 @@ Proof.
 
   cut (IdMap.elements (IdMap.add tid transaction (IdMap.empty (list Stmt))) = [(tid, transaction)]).
   { intro ELEM. ss.
-    rewrite IdMap.fold_1. rewrite ELEM. ss. rewrite IdMap.add_spec. des_ifs.
-    { esplits; eauto. }
-    unfold RelationClasses.complement, Equivalence.equiv in c. ss.
+    rewrite IdMap.fold_1. rewrite ELEM. ss.
+    rewrite IdMap.gss. eauto.
   }
 
   apply IdMap.add_empty.
