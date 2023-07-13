@@ -241,17 +241,18 @@ Proof.
 Qed.
 
 Theorem transaction_atomic:
-  forall env envt p tid tr mach_term,
-    TypeSystem.judge env envt ->
-    p = prog_intro env (IdMap.add tid transaction (IdMap.empty _)) ->
+  forall p tid tr mach_term,
+    p = prog_intro (IdMap.empty _) (IdMap.add tid transaction (IdMap.empty _)) ->
     Machine.rtc Machine.step p tr (Machine.init p) mach_term ->
   consistent_state mach_term.(Machine.mem).
 Proof.
   i.
-  eapply crash_mem_pred_equiv; eauto; cycle 1.
-  { i. eapply transaction_atomic_no_crash; eauto. }
-  ii.
-  rewrite IdMap.add_spec in FIND. des_ifs; cycle 1.
-  { rewrite IdMap.gempty in FIND. ss. }
-  eapply transaction_rw.
+  eapply crash_mem_pred_equiv; eauto.
+  - instantiate (1 := (IdMap.empty _)).
+    econs; ss.
+  - ii.
+    rewrite IdMap.add_spec in FIND. des_ifs; cycle 1.
+    { rewrite IdMap.gempty in FIND. ss. }
+    eapply transaction_rw.
+  - i. eapply transaction_atomic_no_crash; eauto.
 Qed.
