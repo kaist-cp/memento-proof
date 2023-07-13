@@ -762,8 +762,8 @@ Module Machine.
       )
       Mem.init.
 
-  Inductive step (p: Program) (tr: list Event.t) (mach1 mach2: t): Prop :=
-  | step_no_event
+  Inductive normal (p: Program) (tr: list Event.t) (mach1 mach2: t): Prop :=
+  | no_event
       env smap tid
       thr1 thr2
       (PROG: p = prog_intro env smap)
@@ -771,7 +771,7 @@ Module Machine.
       (THR1: IdMap.find tid mach1.(tmap) = Some thr1)
       (THR_STEP: Thread.step env tr thr1 thr2)
       (MACHINE2: mach2 = mk (IdMap.add tid thr2 mach1.(tmap)) mach1.(mem))
-  | step_event
+  | event
       env smap tid
       thr1 mem2 thr2
       (PROG: p = prog_intro env smap)
@@ -779,7 +779,10 @@ Module Machine.
       (THR_STEP: Thread.step env tr thr1 thr2)
       (MEM_STEP: Mem.step tr mach1.(mem) mem2)
       (MACHINE2: mach2 = mk (IdMap.add tid thr2 mach1.(tmap)) mem2)
-  | step_crash
+  .
+
+  Inductive crash (p: Program) (tr: list Event.t) (mach1 mach2: t): Prop :=
+  | crash_intro
       env smap tid stmt
       thr1 thr_map2
       (PROG: p = prog_intro env smap)
@@ -790,19 +793,26 @@ Module Machine.
       (MACHINE2: mach2 = mk thr_map2 mach1.(mem))
   .
 
-  Inductive rtc (p: Program) : list Event.t -> t -> t -> Prop :=
+  Inductive step (p: Program) (tr: list Event.t) (mach1 mach2: t): Prop :=
+  | step_normal
+    (STEP: normal p tr mach1 mach2)
+  | step_crash
+    (STEP: crash p tr mach1 mach2)
+  .
+
+  Inductive rtc (step: Program -> list Event.t -> t -> t -> Prop) (p: Program) : list Event.t -> t -> t -> Prop :=
   | rtc_refl
       mach
-      : rtc p [] mach mach
+      : rtc step p [] mach mach
   | rtc_tc
       tr tr0 tr1 mach mach0 mach_term
       (ONE: step p tr0 mach mach0)
-      (RTC: rtc p tr1 mach0 mach_term)
+      (RTC: rtc step p tr1 mach0 mach_term)
       (TRACE: tr = tr0 ++ tr1)
-      : rtc p tr mach mach_term
+      : rtc step p tr mach mach_term
   .
 
-  Inductive tc (p: Program) : list Event.t -> t -> t -> Prop :=
+  (* Inductive tc (p: Program) : list Event.t -> t -> t -> Prop :=
   | tc_intro
       tr tr0 tr1 mach mach0 mach_term
       (ONE: step p tr0 mach mach0)
@@ -832,7 +842,7 @@ Module Machine.
       tr mach mach_term
       (TC: tc' p tr mach mach_term)
       : rtc' p tr mach mach_term
-  .
+  . *)
 
   Lemma step_preserves_thr:
     forall p tid thr1 tr mach1 mach2,
@@ -841,6 +851,6 @@ Module Machine.
     exists thr2, IdMap.find tid mach2.(Machine.tmap) = Some thr2.
   Proof.
     i. inv H0; ss.
-    all: rewrite IdMap.add_spec; condtac; eauto.
+    all: inv STEP; ss; rewrite IdMap.add_spec; des_ifs; eauto.
   Qed.
 End Machine.
