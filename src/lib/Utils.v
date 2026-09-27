@@ -21,9 +21,6 @@ From Memento Require Import PacoNotation.
 Set Implicit Arguments.
 
 
-Axiom devil: False.
-Ltac admit := exfalso; clear; case devil.
-
 Ltac refl := reflexivity.
 Ltac congr := congruence.
 Ltac etrans := etransitivity.
@@ -897,10 +894,44 @@ Module IdMap.
       interleaving m (a::res)
   .
 
-  Lemma add_empty A id (a:A):
-    elements (add id a (empty A)) = [(id, a)].
+  Lemma map_empty A B (f: A -> B):
+    map f (empty A) = empty B.
+  Proof. ss. Qed.
+
+  Lemma xmapi_const A B (f: A -> B) m i j:
+    xmapi (fun _ => f) m i = xmapi (fun _ => f) m j.
+  Proof. revert i j. induction m; ss. i. f_equal; eauto. Qed.
+
+  Lemma xmapi_add A B (f: A -> B) id a m i:
+    xmapi (fun _ => f) (add id a m) i = add id (f a) (xmapi (fun _ => f) m i).
   Proof.
-    admit.
+    revert m i. induction id; destruct m; i; simpl; f_equal; eauto; try apply xmapi_const.
+    all: rewrite IHid; ss.
+  Qed.
+
+  Lemma map_add A B (f: A -> B) id a m:
+    map f (add id a m) = add id (f a) (map f m).
+  Proof. apply xmapi_add. Qed.
+
+  Lemma add_find A id (a: A) m
+        (FIND: find id m = Some a):
+    add id a m = m.
+  Proof.
+    revert m FIND. induction id; destruct m; ss; i; subst; f_equal; eauto.
+  Qed.
+
+  Lemma finite_choice A B (R: key -> A -> B -> Prop) (m: t A)
+        (EX: forall k a, find k m = Some a -> exists b, R k a b):
+    exists m', forall k, opt_rel (R k) (find k m) (find k m').
+  Proof.
+    revert R EX. induction m; i.
+    - exists (Leaf B). i. destruct k; ss.
+    - hexploit (IHm1 (fun k => R (xO k))); [i; eapply EX; ss|]. i. des.
+      hexploit (IHm2 (fun k => R (xI k))); [i; eapply EX; ss|]. i. des.
+      destruct o as [a|].
+      + hexploit (EX xH a); ss. i. des.
+        exists (Node m' (Some b) m'0). i. destruct k; ss; eauto.
+      + exists (Node m' None m'0). i. destruct k; ss; eauto.
   Qed.
 End IdMap.
 

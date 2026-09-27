@@ -1,11 +1,12 @@
 Require Import Classical_Prop.
+Require ClassicalEpsilon.
 Require Import Ensembles.
 Require Import FunctionalExtensionality.
 Require Import Lia.
 Require Import ZArith.
+Require Import NArith.
 Require Import EquivDec.
 Require Import List.
-Require Import HahnList.
 Import ListNotations.
 
 Require Import sflib.
@@ -16,46 +17,167 @@ From Memento Require Import Syntax.
 
 Set Implicit Arguments.
 
-Create HintDb semantics discriminated.
-
 Module Time.
   Include Nat.
 End Time.
 
-Definition Tid := nat.
-
 Module VRegMap.
-  Definition t := IdMap.t Val.t.
+  Definition t := VReg -> option Val.t.
 
-  Definition find (reg:Id.t) (rmap:t): Val.t :=
-    match IdMap.find reg rmap with
-    | Some v => v
-    | None => Val.int 0
-    end.
+  Definition empty : t := fun _ => None.
 
-  Definition add (reg: Id.t) (val: Val.t) (rmap: t): t :=
-    IdMap.add reg val rmap.
+  Definition add (r: VReg) (v: Val.t) (rmap: t) : t := fun_add r (Some v) rmap.
 
-  Lemma add_add i v1 v2 (m:t):
-    add i v1 (add i v2 m) = add i v1 m.
+  Lemma add_eq r v rmap:
+    add r v rmap r = Some v.
+  Proof. unfold add. apply fun_add_spec_eq. Qed.
+
+  Lemma add_neq r r' v rmap
+        (NEQ: r' <> r):
+    add r v rmap r' = rmap r'.
   Proof.
-    revert m. induction i; destruct m; ss; try congruence.
+    unfold add. rewrite fun_add_spec.
+    destruct (r' == r) as [EQ|NEQ']; [exfalso; apply NEQ; exact EQ | reflexivity].
+  Qed.
+
+  Lemma add_add r v1 v2 rmap:
+    add r v1 (add r v2 rmap) = add r v1 rmap.
+  Proof.
+    funext. intro x. unfold add. rewrite ! fun_add_spec. condtac; ss.
+  Qed.
+
+  Lemma add_comm r1 r2 v1 v2 rmap
+        (NEQ: r1 <> r2):
+    add r1 v1 (add r2 v2 rmap) = add r2 v2 (add r1 v1 rmap).
+  Proof.
+    funext. intro x. unfold add. rewrite ! fun_add_spec.
+    destruct (x == r1) as [E1|N1]; destruct (x == r2) as [E2|N2]; try reflexivity.
+    exfalso. apply NEQ. inv E1. inv E2. reflexivity.
   Qed.
 End VRegMap.
 
-Definition sem_expr (rmap: VRegMap.t) (e: Expr): Val.t :=
-  match e with
-  | expr_const const => const
-  | expr_reg reg => VRegMap.find reg rmap
+Definition set_opt (r: option VReg) (v: Val.t) (rmap: VRegMap.t) : VRegMap.t :=
+  match r with
+  | Some r => VRegMap.add r v rmap
+  | None => rmap
   end.
 
+Fixpoint bind_params (prms: list VReg) (vs: list Val.t) : VRegMap.t :=
+  match prms, vs with
+  | p :: prms', v :: vs' => VRegMap.add p v (bind_params prms' vs')
+  | _, _ => VRegMap.empty
+  end.
+
+Definition op_eval (op: Op) (v1 v2: Val.t) : option Val.t :=
+  match op, v1, v2 with
+  | op_add, Val.int z1, Val.int z2 => Some (Val.int (z1 + z2))
+  | op_sub, Val.int z1, Val.int z2 => Some (Val.int (z1 - z2))
+  | op_mul, Val.int z1, Val.int z2 => Some (Val.int (z1 * z2))
+  | op_eq, _, _ => Some (Val.bool (if Val.eq_dec v1 v2 then true else false))
+  | op_lt, Val.int z1, Val.int z2 => Some (Val.bool (Z.ltb z1 z2))
+  | op_and, Val.bool b1, Val.bool b2 => Some (Val.bool (andb b1 b2))
+  | op_or, Val.bool b1, Val.bool b2 => Some (Val.bool (orb b1 b2))
+  | _, _, _ => None
+  end.
+
+Fixpoint sem_expr (rmap: VRegMap.t) (e: Expr) : option Val.t :=
+  match e with
+  | expr_unit => Some Val.unit
+  | expr_int z => Some (Val.int z)
+  | expr_bool b => Some (Val.bool b)
+  | expr_reg r => rmap r
+  | expr_op op e1 e2 =>
+      match sem_expr rmap e1, sem_expr rmap e2 with
+      | Some v1, Some v2 => op_eval op v1 v2
+      | _, _ => None
+      end
+  | expr_proj e i =>
+      match sem_expr rmap e with
+      | Some (Val.pair v1 v2) => Some (if i then v1 else v2)
+      | _ => None
+      end
+  | expr_pair e1 e2 =>
+      match sem_expr rmap e1, sem_expr rmap e2 with
+      | Some v1, Some v2 => Some (Val.pair v1 v2)
+      | _, _ => None
+      end
+  | expr_inl e => option_map Val.inl (sem_expr rmap e)
+  | expr_inr e => option_map Val.inr (sem_expr rmap e)
+  | expr_match e xl el xr er =>
+      match sem_expr rmap e with
+      | Some (Val.inl v) => sem_expr (VRegMap.add xl v rmap) el
+      | Some (Val.inr v) => sem_expr (VRegMap.add xr v rmap) er
+      | _ => None
+      end
+  | expr_eps => Some (Val.mid [])
+  | expr_lab e lab =>
+      match sem_expr rmap e with
+      | Some (Val.mid m) => Some (Val.mid (m ++ [lab]))
+      | _ => None
+      end
+  end.
+
+Fixpoint sem_exprs (rmap: VRegMap.t) (es: list Expr) : option (list Val.t) :=
+  match es with
+  | [] => Some []
+  | e :: es' =>
+      match sem_expr rmap e, sem_exprs rmap es' with
+      | Some v, Some vs => Some (v :: vs)
+      | _, _ => None
+      end
+  end.
+
+Lemma sem_expr_mid rmap lab m
+      (EVAL: sem_expr rmap (expr_mid lab) = Some (Val.mid m)):
+  exists pfx, rmap mid = Some (Val.mid pfx) /\ m = pfx ++ [lab].
+Proof.
+  unfold expr_mid in EVAL. ss. destruct (rmap mid) as [[]|]; inv EVAL. eauto.
+Qed.
+
+Lemma sem_expr_mid_inv rmap lab v
+      (EVAL: sem_expr rmap (expr_mid lab) = Some v):
+  exists pfx, rmap mid = Some (Val.mid pfx) /\ v = Val.mid (pfx ++ [lab]).
+Proof.
+  unfold expr_mid in EVAL. ss. destruct (rmap mid) as [[]|]; inv EVAL. eauto.
+Qed.
+
+Lemma sem_exprs_snoc rmap es e vs
+      (EVAL: sem_exprs rmap (es ++ [e]) = Some vs):
+  exists vs' v, vs = vs' ++ [v] /\ sem_exprs rmap es = Some vs' /\ sem_expr rmap e = Some v.
+Proof.
+  revert vs EVAL. induction es as [|a es IH]; ss; i.
+  - destruct (sem_expr rmap e) as [v|] eqn:E; inv EVAL. exists [], v. ss.
+  - destruct (sem_expr rmap a) as [va|] eqn:A; ss; try by inv EVAL.
+    destruct (sem_exprs rmap (es ++ [e])) as [vs0|] eqn:E; inv EVAL.
+    hexploit IH; eauto. intros (vs' & v & VS & EVAL' & EVAL_E). subst.
+    exists (va :: vs'), v. rewrite EVAL'. ss.
+Qed.
+
+Lemma bind_params_last prms x vs v
+      (NODUP: NoDup (prms ++ [x]))
+      (LEN: length prms = length vs):
+  bind_params (prms ++ [x]) (vs ++ [v]) x = Some v.
+Proof.
+  revert vs LEN NODUP. induction prms; destruct vs; ss; i.
+  - apply VRegMap.add_eq.
+  - inv NODUP. rewrite VRegMap.add_neq.
+    + eapply IHprms; eauto.
+    + ii. subst. apply H1. apply in_or_app. right. econs. ss.
+Qed.
+
+Definition as_loc (v: Val.t) : option PLoc :=
+  match v with
+  | Val.int z => if Z.leb 0 z then Some (Z.to_N z) else None
+  | _ => None
+  end.
+
+(* Figure 17 *)
 Module Cont.
   Inductive t :=
-  | loopcont (rmap: VRegMap.t) (r: VReg) (s_body: list Stmt) (s_cont: list Stmt)
-  | fncont (rmap: VRegMap.t) (r: VReg) (s_cont: list Stmt) (mid_cont: list Label)
-  | chkptcont (rmap: VRegMap.t) (r: VReg) (s_cont: list Stmt) (mid_cont: list Label) (mid: list Label)
+  | loopcont (rmap: VRegMap.t) (r: option VReg) (s_body: list Stmt) (s_cont: list Stmt)
+  | fncont (rmap: VRegMap.t) (r: VReg) (s_cont: list Stmt)
+  | chkptcont (rmap: VRegMap.t) (r: VReg) (s_cont: list Stmt) (m: list Label)
   .
-  Hint Constructors t : semantics.
 
   Definition is_loop (c: t) :=
     match c with
@@ -65,14 +187,12 @@ Module Cont.
 
   Definition Loops (c: list t) := Forall is_loop c.
 
-  Lemma loops_app_distr :
+  Lemma loops_app_distr:
     forall c1 c2,
       Loops (c1 ++ c2) <-> Loops c1 /\ Loops c2.
-  Proof.
-    apply Forall_app.
-  Qed.
+  Proof. apply Forall_app. Qed.
 
-  Lemma loops_base_cont_eq :
+  Lemma loops_base_cont_eq:
     forall c_loops0 c_loops1 c0 c1 c_sfx0 c_sfx1,
       Loops c_loops0 ->
       Loops c_loops1 ->
@@ -81,23 +201,19 @@ Module Cont.
       c_loops0 ++ c0 :: c_sfx0 = c_loops1 ++ c1 :: c_sfx1 ->
     c0 :: c_sfx0 = c1 :: c_sfx1.
   Proof.
-    intros c_loops0 c_loops1 c0 c1 c_sfx0. revert c_loops0 c_loops1 c0 c1. induction c_sfx0 using List.rev_ind; i.
-    - destruct c_sfx1 using List.rev_ind.
-      { rewrite snoc_eq_snoc in *. des. subst. ss. }
-      rewrite app_comm_cons in *. rewrite app_assoc in *. rewrite snoc_eq_snoc in *. des. subst.
-      rewrite app_comm_cons' in *. repeat (repeat rewrite Cont.loops_app_distr in *; des). ss.
-    - destruct c_sfx1 using List.rev_ind.
-      + rewrite app_comm_cons in *. rewrite app_assoc in *. rewrite snoc_eq_snoc in *. des. subst.
-        rewrite app_comm_cons' in *. repeat (repeat rewrite Cont.loops_app_distr in *; des). ss.
-      + repeat rewrite app_comm_cons in *. repeat rewrite app_assoc in *. rewrite snoc_eq_snoc in *. des. subst.
-        eauto.
+    induction c_loops0 as [|x c_loops0 IH]; intros c_loops1 c0 c1 c_sfx0 c_sfx1 L0 L1 N0 N1 EQ;
+      destruct c_loops1 as [|y c_loops1]; ss.
+    - inv EQ. exfalso. apply N0. inversion L1 as [|? ? IS_LOOP REST]. econs; [exact IS_LOOP | econs].
+    - inv EQ. exfalso. apply N1. inversion L0 as [|? ? IS_LOOP REST]. econs; [exact IS_LOOP | econs].
+    - inv EQ. inversion L0 as [|? ? IS_LOOP0 L0']. inversion L1 as [|? ? IS_LOOP1 L1'].
+      eapply IH; eauto.
   Qed.
 
   Definition seq (c: t) (s: list Stmt) :=
     match c with
     | loopcont rmap r s_body s_cont => loopcont rmap r s_body (s_cont ++ s)
-    | fncont rmap r s_cont mid_cont => fncont rmap r (s_cont ++ s) mid_cont
-    | chkptcont rmap r s_cont mid_cont mid => chkptcont rmap r (s_cont ++ s) mid_cont mid
+    | fncont rmap r s_cont => fncont rmap r (s_cont ++ s)
+    | chkptcont rmap r s_cont m => chkptcont rmap r (s_cont ++ s) m
     end.
 
   Fixpoint seql (cl: list t) (s: list Stmt) :=
@@ -107,16 +223,18 @@ Module Cont.
     | h :: t => h :: seql t s
     end.
 
-  Lemma seql_last :
-  forall s c_pfx c_base,
-    seql (c_pfx ++ [c_base]) s = c_pfx ++ [Cont.seq c_base s].
+  Lemma seql_last:
+    forall s c_pfx c_base,
+      seql (c_pfx ++ [c_base]) s = c_pfx ++ [seq c_base s].
   Proof.
     i. induction c_pfx; ss.
-    destruct (c_pfx ++ [c_base]). ss. destruct c_pfx; ss.
+    destruct (c_pfx ++ [c_base]) eqn:E; ss.
+    { destruct c_pfx; ss. }
     rewrite IHc_pfx. ss.
   Qed.
 End Cont.
 
+(* Definition H.3 *)
 Definition seq_sc_unzip (s: list Stmt) (c: list Cont.t) (s': list Stmt) :=
   match Cont.seql c s' with
   | [] => (s ++ s', [])
@@ -127,487 +245,192 @@ Definition seq_sc (sc: (list Stmt * list Cont.t)) (s': list Stmt) := seq_sc_unzi
 
 Notation "sc ++₁ s'" := (seq_sc sc s') (at level 62).
 
-Lemma seq_sc_last :
+Lemma seq_sc_nil:
+  forall s s',
+    (s, []) ++₁ s' = (s ++ s', []).
+Proof. ss. Qed.
+
+Lemma seq_sc_last:
   forall s c_pfx c_base s',
     (s, c_pfx ++ [c_base]) ++₁ s' = (s, c_pfx ++ [Cont.seq c_base s']).
 Proof.
-  i. induction c_pfx; ss.
-  unfold seq_sc in *. s. destruct (c_pfx ++ [c_base]); ss.
-  { apply pair_equal_spec in IHc_pfx. des. destruct c_pfx; ss. }
-  destruct l.
-  - apply pair_equal_spec in IHc_pfx. des. rewrite <- IHc_pfx0. ss.
-  - apply pair_equal_spec in IHc_pfx. des. rewrite <- IHc_pfx0. ss.
+  i. unfold seq_sc, seq_sc_unzip. ss. rewrite Cont.seql_last.
+  destruct (c_pfx ++ [Cont.seq c_base s']) eqn:E; ss. destruct c_pfx; ss.
 Qed.
 
 Module TState.
-  Inductive t := mk {
+  Record t := mk {
     regs: VRegMap.t;
     time: Time.t;
-    mid: list Label;
   }.
-  Hint Constructors t : semantics.
 
-  (* TODO: The initial mid must be added *)
-  Definition init := mk (IdMap.empty _) 0 [].
+  Definition init := mk (VRegMap.add mid (Val.mid []) VRegMap.empty) 0.
 End TState.
 
 Module Mmt.
-  Inductive t := mk {
+  Record t := mk {
     val: Val.t;
     time: Time.t;
   }.
-  Hint Constructors t : semantics.
-
-  Definition default := Mmt.mk (Val.int 0) 0.
 End Mmt.
 
 Module Mmts.
-  Definition t := list Label -> option Mmt.t.
+  Definition t := list Label -> Mmt.t.
 
-  Definition init := fun _: list Label => Some (Mmt.mk (Val.int 0) 0).
+  Definition init : t := fun _ => Mmt.mk Val.unit 0.
 
-  (* TODO: Do not use Parameter? *)
-  Parameter mmts_in : forall mids mid, { Ensembles.In (list Label) mids mid } + { ~ Ensembles.In (list Label) mids mid }.
+  Definition mmts_in (mids: Ensemble (list Label)) (m: list Label)
+    : { Ensembles.In (list Label) mids m } + { ~ Ensembles.In (list Label) mids m } :=
+    ClassicalEpsilon.excluded_middle_informative (Ensembles.In (list Label) mids m).
 
-  Definition proj (mmts: t) (mids: Ensemble (list Label)) : t :=
-    fun mid =>
-      if mmts_in mids mid then mmts mid else None.
+  Definition agree_on (mids: Ensemble (list Label)) (mmts mmts': t) : Prop :=
+    forall m, Ensembles.In _ mids m -> mmts m = mmts' m.
 
-  Definition union (mmts1 mmts2: t) : list Label -> option Mmt.t :=
-    fun mid =>
-      match mmts1 mid with
-      | Some v => Some v
-      | None => mmts2 mid
-      end.
-
-  Lemma proj_inv:
-    forall mmts mids mid mmt,
-      Ensembles.In _ mids mid ->
-      proj mmts mids mid = mmt ->
-    mmts mid = mmt.
-  Proof.
-    i. revert H0. unfold proj. condtac; ss.
-  Qed.
-
-  Lemma proj_compl_eq:
-    forall mmts0 mmts1 mids,
-      proj mmts0 mids = proj mmts1 mids ->
-      proj mmts0 (Complement _ mids) = proj mmts1 (Complement _ mids) ->
-    mmts0 = mmts1.
-  Proof.
-    unfold proj. i.
-    apply functional_extensionality. i.
-    eapply equal_f in H. eapply equal_f in H0. revert H H0. instantiate (1 := x). instantiate (1 := x).
-    condtac; ss. condtac; ss.
-  Qed.
-
-  Lemma proj_compl_union:
-    forall mmts mids,
-      union (proj mmts mids) (proj mmts (Complement _ mids)) = mmts.
-  Proof.
-    i. unfold union. apply functional_extensionality. i.
-    unfold proj. condtac.
-    - destruct (mmts x); ss. condtac; ss.
-    - condtac; ss.
-  Qed.
-
-  Lemma proj_idemp:
-    forall mmts mids,
-      proj mmts mids = proj (proj mmts mids) mids.
-  Proof.
-    i. unfold proj. apply functional_extensionality. i.
-    condtac; ss.
-  Qed.
-
-  Lemma proj_disj_eq:
-    forall mmts0 mmts1 mids mids',
-      proj mmts0 (Complement _ mids) = proj mmts1 (Complement _ mids) ->
-      Disjoint _ mids mids' ->
-    proj mmts0 mids' = proj mmts1 mids'.
-  Proof.
-    i. apply functional_extensionality. i.
-    unfold proj. condtac; ss.
-    eapply equal_f in H. revert H. instantiate (1 := x). unfold proj. condtac; ss. i. cleartriv.
-    exfalso.
-    (* apply n. *)
-    inv H0. specialize H with x. apply H.
-    econs; ss. unfold Ensembles.In in *. unfold Complement in *. unfold Ensembles.In in *.
-    apply NNPP. ss.
-  Qed.
-
-  Lemma proj_fun_add_eq:
-    forall mid mmt mmts mids,
-      Ensembles.In _ mids mid ->
-      fun_add mid mmt (proj mmts mids) = proj (fun_add mid mmt mmts) mids.
-  Proof.
-    i. apply functional_extensionality. i.
-    funtac.
-    - unfold proj. condtac; funtac.
-      inversion e. subst. ss.
-    - unfold proj. condtac; funtac.
-  Qed.
+  Definition merge (mids: Ensemble (list Label)) (mmts mmts_a: t) : t :=
+    fun m => if mmts_in mids m then mmts m else mmts_a m.
 End Mmts.
-
-Notation "mmts |₁ mids" := (Mmts.proj mmts mids) (at level 62).
-Notation "mmts1 ⊎ mmts2" := (Mmts.union mmts1 mmts2) (at level 64).
 
 Module Event.
   Inductive t :=
-  | R (l: PLoc.t) (v: Val.t)
-  | U (l: PLoc.t) (old new:Val.t)
+  | R (l: PLoc) (v: Val.t)
+  | U (l: PLoc) (v_old v_new: Val.t)
   .
-  Hint Constructors t : semantics.
 End Event.
 
+Definition filter_updates (tr: list Event.t) : list Event.t :=
+  filter (fun ev => match ev with Event.U _ _ _ => true | _ => false end) tr.
+
 Module Thread.
-  Inductive t := mk {
+  Record t := mk {
     stmt: list Stmt;
     cont: list Cont.t;
     ts: TState.t;
     mmts: Mmts.t;
   }.
-  Hint Constructors t : semantics.
 
-  Inductive assign (tr: list Event.t) (thr1 thr2: t): Prop :=
-  | assign_intro
-      r e v
-      s2 rmap2
-      (STMT: thr1.(stmt) = (stmt_assign r e) :: s2)
-      (TRACE: tr = [])
-      (EVAL: sem_expr thr1.(ts).(TState.regs) e = v)
-      (RMAP: rmap2 = VRegMap.add r v thr1.(ts).(TState.regs))
-      (THR2: thr2 =
-              mk
-                s2
-                thr1.(cont)
-                (TState.mk rmap2 thr1.(ts).(TState.time) thr1.(ts).(TState.mid))
-                thr1.(mmts)
-      )
-  .
-  Hint Constructors assign : semantics.
-
-  Inductive pload (tr: list Event.t) (thr1 thr2: t): Prop :=
-  | pload_intro
-      r e l v
-      s2 rmap2
-      (STMT: thr1.(stmt) = (stmt_pload r e) :: s2)
-      (TRACE: tr = [Event.R l v])
-      (EVAL: sem_expr thr1.(ts).(TState.regs) e = l)
-      (RMAP: rmap2 = VRegMap.add r v thr1.(ts).(TState.regs))
-      (THR2: thr2 =
-              mk
-                s2
-                thr1.(cont)
-                (TState.mk rmap2 thr1.(ts).(TState.time) thr1.(ts).(TState.mid))
-                thr1.(mmts)
-      )
-  .
-  Hint Constructors pload : semantics.
-
-  Inductive palloc (tr: list Event.t) (thr1 thr2: t): Prop :=
-  | palloc_intro
-      r e l v
-      s2 rmap2
-      (STMT: thr1.(stmt) = (stmt_palloc r e) :: s2)
-      (TRACE: tr = [Event.R l v])
-      (EVAL: sem_expr thr1.(ts).(TState.regs) e = v)
-      (RMAP: rmap2 = VRegMap.add r l thr1.(ts).(TState.regs))
-      (THR2: thr2 =
-              mk
-                s2
-                thr1.(cont)
-                (TState.mk rmap2 thr1.(ts).(TState.time) thr1.(ts).(TState.mid))
-                thr1.(mmts)
-      )
-  .
-  Hint Constructors palloc : semantics.
-
-  Inductive pcas_succ (tr: list Event.t) (thr1 thr2: t): Prop :=
-  | pcas_succ_intro
-      r e_loc e_old e_new lab s2
-      l v_old v_new v_r mid mmt t rmap2 mmts2
-      (STMT: thr1.(stmt) = (stmt_pcas r e_loc e_old e_new lab) :: s2)
-      (TRACE: tr = [Event.U l v_old v_new])
-      (LOC: sem_expr thr1.(ts).(TState.regs) e_loc = l)
-      (OLD: sem_expr thr1.(ts).(TState.regs) e_old = v_old)
-      (NEW: sem_expr thr1.(ts).(TState.regs) e_new = v_new)
-      (RET: v_r = Val.tuple (Val.bool true, v_old))
-      (MID: mid = (thr1.(ts).(TState.mid) ++ [lab]))
-      (MMT: thr1.(mmts) mid = Some mmt)
-      (LOCAL_TIME: mmt.(Mmt.time) <= thr1.(ts).(TState.time))
-      (NEW_TIME: thr1.(ts).(TState.time) < t)
-      (RMAP: rmap2 = VRegMap.add r v_r thr1.(ts).(TState.regs))
-      (MMTS: mmts2 = fun_add mid (Some (Mmt.mk v_r t)) thr1.(mmts))
-      (THR2: thr2 =
-              mk
-                s2
-                thr1.(cont)
-                (TState.mk rmap2 t thr1.(ts).(TState.mid))
-                mmts2
-      )
-  .
-  Hint Constructors pcas_succ : semantics.
-
-  Inductive pcas_fail (tr: list Event.t) (thr1 thr2: t): Prop :=
-  | pcas_fail_intro
-      r e_loc e_old e_new lab s2
-      l v_old v v_r mid mmt t rmap2 mmts2
-      (STMT: thr1.(stmt) = (stmt_pcas r e_loc e_old e_new lab) :: s2)
-      (TRACE: tr = [Event.R l v])
-      (LOC: sem_expr thr1.(ts).(TState.regs) e_loc = l)
-      (OLD: sem_expr thr1.(ts).(TState.regs) e_old = v_old)
-      (NE: v <> v_old)
-      (RET: v_r = Val.tuple (Val.bool false, v_old))
-      (MID: mid = (thr1.(ts).(TState.mid) ++ [lab]))
-      (MMT: thr1.(mmts) mid = Some mmt)
-      (LOCAL_TIME: mmt.(Mmt.time) <= thr1.(ts).(TState.time))
-      (NEW_TIME: thr1.(ts).(TState.time) < t)
-      (RMAP: rmap2 = VRegMap.add r v_r thr1.(ts).(TState.regs))
-      (MMTS: mmts2 = fun_add mid (Some (Mmt.mk v_r t)) thr1.(mmts))
-      (THR2: thr2 =
-              mk
-                s2
-                thr1.(cont)
-                (TState.mk rmap2 t thr1.(ts).(TState.mid))
-                mmts2
-      )
-  .
-  Hint Constructors pcas_fail : semantics.
-
-  Inductive pcas_replay (tr: list Event.t) (thr1 thr2: t): Prop :=
-  | pcas_replay_intro
-      r e_loc e_old e_new mmt lab s2
-      mid rmap2
-      (STMT: thr1.(stmt) = (stmt_pcas r e_loc e_old e_new lab) :: s2)
-      (TRACE: tr = [])
-      (MID: mid = (thr1.(ts).(TState.mid) ++ [lab]))
-      (MMT: thr1.(mmts) mid = Some mmt)
-      (LOCAL_TIME: thr1.(ts).(TState.time) < mmt.(Mmt.time))
-      (RMAP: rmap2 = VRegMap.add r mmt.(Mmt.val) thr1.(ts).(TState.regs))
-      (THR2: thr2 =
-              mk
-                s2
-                thr1.(cont)
-                (TState.mk rmap2 mmt.(Mmt.time) thr1.(ts).(TState.mid))
-                thr1.(mmts)
-      )
-  .
-  Hint Constructors pcas_replay : semantics.
-
-  Inductive chkpt_call (tr: list Event.t) (thr1 thr2: t): Prop :=
-  | chkpt_call_intro
-      r s_c lab s
-      mid mmt c2
-      (STMT: thr1.(stmt) = (stmt_chkpt r s_c lab) :: s)
-      (TRACE: tr = [])
-      (MID: mid = (thr1.(ts).(TState.mid) ++ [lab]))
-      (MMT: thr1.(mmts) mid = Some mmt)
-      (LOCAL_TIME: mmt.(Mmt.time) <= thr1.(ts).(TState.time))
-      (CONT: c2 = (Cont.chkptcont thr1.(ts).(TState.regs) r s thr1.(ts).(TState.mid) mid) :: thr1.(cont))
-      (THR2: thr2 =
-              mk
-                s_c
-                c2
-                thr1.(ts)
-                thr1.(mmts)
-      )
-  .
-  Hint Constructors chkpt_call : semantics.
-
-  Inductive chkpt_return (tr: list Event.t) (thr1 thr2: t): Prop :=
-  | chkpt_return_intro
-      e s_rem r s2 mid2 mid
-      c_loops c2 t v rmap rmap2 mmts2
-      (STMT: thr1.(stmt) = (stmt_return e) :: s_rem)
-      (TRACE: tr = [])
-      (CONT: thr1.(cont) = c_loops ++ [Cont.chkptcont rmap r s2 mid2 mid] ++ c2)
-      (LOOPS: Cont.Loops(c_loops))
-      (NEW_TIME: thr1.(ts).(TState.time) < t)
-      (RET: sem_expr thr1.(ts).(TState.regs) e = v)
-      (RMAP: rmap2 = VRegMap.add r v rmap)
-      (MMTS: mmts2 = fun_add mid (Some (Mmt.mk v t)) thr1.(mmts))
-      (THR2: thr2 =
-              mk
-                s2
-                c2
-                (TState.mk rmap2 t mid2)
-                mmts2
-      )
-  .
-  Hint Constructors chkpt_return : semantics.
-
-  Inductive chkpt_replay (tr: list Event.t) (thr1 thr2: t): Prop :=
-  | chkpt_replay_intro
-      r s_c lab s
-      mid mmt rmap2
-      (STMT: thr1.(stmt) = (stmt_chkpt r s_c lab) :: s)
-      (TRACE: tr = [])
-      (MID: mid = (thr1.(ts).(TState.mid) ++ [lab]))
-      (MMT: thr1.(mmts) mid = Some mmt)
-      (LOCAL_TIME: thr1.(ts).(TState.time) < mmt.(Mmt.time))
-      (RMAP: rmap2 = VRegMap.add r mmt.(Mmt.val) thr1.(ts).(TState.regs))
-      (THR2: thr2 =
-              mk
-                s
-                thr1.(cont)
-                (TState.mk rmap2 mmt.(Mmt.time) thr1.(ts).(TState.mid))
-                thr1.(mmts)
-      )
-  .
-  Hint Constructors chkpt_replay : semantics.
-
-  Inductive branch (tr: list Event.t) (thr1 thr2: t): Prop :=
-  | branch_intro
-      e s_t s_f s
-      v s_d
-      (STMT: thr1.(stmt) = (stmt_if e s_t s_f) :: s)
-      (TRACE: tr = [])
-      (EVAL: sem_expr thr1.(ts).(TState.regs) e = v)
-      (ITE: s_d = if v == Val.bool true then s_t else s_f)
-      (THR2: thr2 =
-              mk
-                (s_d ++ s)
-                thr1.(cont)
-                thr1.(ts)
-                thr1.(mmts)
-      )
-  .
-  Hint Constructors branch : semantics.
-
-  Inductive loop (tr: list Event.t) (thr1 thr2: t): Prop :=
-  | loop_intro
-      r e s_body s_cont
-      v c2 rmap2
-      (STMT: thr1.(stmt) = (stmt_loop r e s_body) :: s_cont)
-      (TRACE: tr = [])
-      (EVAL: sem_expr thr1.(ts).(TState.regs) e = v)
-      (CONT: c2 = (Cont.loopcont thr1.(ts).(TState.regs) r s_body s_cont) :: thr1.(cont))
-      (RMAP: rmap2 = VRegMap.add r v thr1.(ts).(TState.regs))
-      (THR2: thr2 =
-              mk
-                s_body
-                c2
-                (TState.mk rmap2 thr1.(ts).(TState.time) thr1.(ts).(TState.mid))
-                thr1.(mmts)
-      )
-  .
-  Hint Constructors loop : semantics.
-
-  Inductive continue (tr: list Event.t) (thr1 thr2: t): Prop :=
-  | continue_intro
-      r e s_rem rmap s_body s_cont
-      v c_rem rmap2
-      (STMT: thr1.(stmt) = (stmt_continue e) :: s_rem)
-      (TRACE: tr = [])
-      (EVAL: sem_expr thr1.(ts).(TState.regs) e = v)
-      (CONT: thr1.(cont) = (Cont.loopcont rmap r s_body s_cont) :: c_rem)
-      (RMAP: rmap2 = VRegMap.add r v rmap)
-      (THR2: thr2 =
-              mk
-                s_body
-                thr1.(cont)
-                (TState.mk rmap2 thr1.(ts).(TState.time) thr1.(ts).(TState.mid))
-                thr1.(mmts)
-      )
-  .
-  Hint Constructors continue : semantics.
-
-  Inductive break (tr: list Event.t) (thr1 thr2: t): Prop :=
-  | break_intro
-      r s_rem rmap s_body s_cont
-      c2
-      (STMT: thr1.(stmt) = stmt_break :: s_rem)
-      (TRACE: tr = [])
-      (CONT: thr1.(cont) = (Cont.loopcont rmap r s_body s_cont) :: c2)
-      (THR2: thr2 =
-              mk
-                s_cont
-                c2
-                (TState.mk rmap thr1.(ts).(TState.time) thr1.(ts).(TState.mid))
-                thr1.(mmts)
-      )
-  .
-  Hint Constructors break : semantics.
-
-  Inductive call (env: Env.t) (tr: list Event.t) (thr1 thr2: t): Prop :=
-  | call_intro
-      r f ee lab s
-      vv prms s_f c2 rmap2 mid2
-      (STMT: thr1.(stmt) = (stmt_call r f ee lab) :: s)
-      (TRACE: tr = [])
-      (EVAL: map (sem_expr thr1.(ts).(TState.regs)) ee = vv)
-      (ENV_F: IdMap.find f env = Some (prms, s_f))
-      (CONT: c2 = (Cont.fncont thr1.(ts).(TState.regs) r s thr1.(ts).(TState.mid)) :: thr1.(cont))
-      (RMAP: rmap2 = IdMap.empty _)
-      (* TODO: prms maps vv *)
-      (MID: mid2 = match lab with
-                   | Some m => thr1.(ts).(TState.mid) ++ [m]
-                   | None => thr1.(ts).(TState.mid)
-                   end)
-      (THR2: thr2 =
-              mk
-                s_f
-                c2
-                (TState.mk rmap2 thr1.(ts).(TState.time) mid2)
-                thr1.(mmts)
-      )
-  .
-  Hint Constructors call : semantics.
-
-  Inductive ret (tr: list Event.t) (thr1 thr2: t): Prop :=
-  | return_intro
-      e s_rem rmap
-      v c_loops r s2 mid2 c2 rmap2
-      (STMT: thr1.(stmt) = (stmt_return e) :: s_rem)
-      (TRACE: tr = [])
-      (EVAL: sem_expr thr1.(ts).(TState.regs) e = v)
-      (CONT: thr1.(cont) = c_loops ++ [Cont.fncont rmap r s2 mid2] ++ c2)
-      (LOOPS: Cont.Loops(c_loops))
-      (RMAP: rmap2 = VRegMap.add r v rmap)
-      (THR2: thr2 =
-              mk
-                s2
-                c2
-                (TState.mk rmap2 thr1.(ts).(TState.time) mid2)
-                thr1.(mmts)
-      )
-  .
-  Hint Constructors ret : semantics.
-
-  Inductive step (env: Env.t) (tr: list Event.t) (thr1 thr2: t): Prop :=
+  (* Figures 20 and 21 *)
+  Inductive step (env: Env.t) : list Event.t -> t -> t -> Prop :=
   | step_assign
-      (STEP: assign tr thr1 thr2)
+      r e s c ts mmts v
+      (EVAL: sem_expr ts.(TState.regs) e = Some v)
+    : step env []
+        (mk (stmt_assign r e :: s) c ts mmts)
+        (mk s c (TState.mk (VRegMap.add r v ts.(TState.regs)) ts.(TState.time)) mmts)
   | step_pload
-      (STEP: pload tr thr1 thr2)
+      r e s c ts mmts vl l v
+      (EVAL: sem_expr ts.(TState.regs) e = Some vl)
+      (LOC: as_loc vl = Some l)
+    : step env [Event.R l v]
+        (mk (stmt_pload r e :: s) c ts mmts)
+        (mk s c (TState.mk (VRegMap.add r v ts.(TState.regs)) ts.(TState.time)) mmts)
   | step_palloc
-      (STEP: palloc tr thr1 thr2)
-  | step_pcas_succ
-      (STEP: pcas_succ tr thr1 thr2)
-  | step_pcas_fail
-      (STEP: pcas_fail tr thr1 thr2)
-  | step_pcas_replay
-      (STEP: pcas_replay tr thr1 thr2)
-  | step_chkpt_call
-      (STEP: chkpt_call tr thr1 thr2)
-  | step_chkpt_return
-      (STEP: chkpt_return tr thr1 thr2)
-  | step_chkpt_replay
-      (STEP: chkpt_replay tr thr1 thr2)
+      r e s c ts mmts v l
+      (EVAL: sem_expr ts.(TState.regs) e = Some v)
+    : step env [Event.R l v]
+        (mk (stmt_palloc r e :: s) c ts mmts)
+        (mk s c (TState.mk (VRegMap.add r (Val.int (Z.of_N l)) ts.(TState.regs)) ts.(TState.time)) mmts)
   | step_branch
-      (STEP: branch tr thr1 thr2)
+      e s_t s_f s c ts mmts b
+      (EVAL: sem_expr ts.(TState.regs) e = Some (Val.bool b))
+    : step env []
+        (mk (stmt_if e s_t s_f :: s) c ts mmts)
+        (mk ((if b then s_t else s_f) ++ s) c ts mmts)
   | step_loop
-      (STEP: loop tr thr1 thr2)
+      r e s_body s c ts mmts v
+      (EVAL: sem_expr ts.(TState.regs) e = Some v)
+    : step env []
+        (mk (stmt_loop r e s_body :: s) c ts mmts)
+        (mk s_body (Cont.loopcont ts.(TState.regs) r s_body s :: c)
+            (TState.mk (set_opt r v ts.(TState.regs)) ts.(TState.time)) mmts)
   | step_continue
-      (STEP: continue tr thr1 thr2)
+      e s c ts mmts v rmap r s_body s_cont c'
+      (EVAL: sem_expr ts.(TState.regs) e = Some v)
+      (CONT: c = Cont.loopcont rmap r s_body s_cont :: c')
+    : step env []
+        (mk (stmt_continue e :: s) c ts mmts)
+        (mk s_body c (TState.mk (set_opt r v rmap) ts.(TState.time)) mmts)
   | step_break
-      (STEP: break tr thr1 thr2)
+      s c ts mmts rmap r s_body s_cont c'
+      (CONT: c = Cont.loopcont rmap r s_body s_cont :: c')
+    : step env []
+        (mk (stmt_break :: s) c ts mmts)
+        (mk s_cont c' (TState.mk rmap ts.(TState.time)) mmts)
   | step_call
-      (STEP: call env tr thr1 thr2)
+      r f es s c ts mmts vs prms s_f
+      (EVAL: sem_exprs ts.(TState.regs) es = Some vs)
+      (FIND: IdMap.find f env = Some (prms, s_f))
+      (ARITY: length prms = length vs)
+    : step env []
+        (mk (stmt_call r f es :: s) c ts mmts)
+        (mk s_f (Cont.fncont ts.(TState.regs) r s :: c)
+            (TState.mk (bind_params prms vs) ts.(TState.time)) mmts)
   | step_return
-      (STEP: ret tr thr1 thr2)
+      e s c ts mmts v c_loops rmap r s2 c2
+      (EVAL: sem_expr ts.(TState.regs) e = Some v)
+      (CONT: c = c_loops ++ Cont.fncont rmap r s2 :: c2)
+      (LOOPS: Cont.Loops c_loops)
+    : step env []
+        (mk (stmt_return e :: s) c ts mmts)
+        (mk s2 c2 (TState.mk (VRegMap.add r v rmap) ts.(TState.time)) mmts)
+  | step_chkpt_call
+      r s_c e_mid s c ts mmts m
+      (EVAL: sem_expr ts.(TState.regs) e_mid = Some (Val.mid m))
+      (TIME: (mmts m).(Mmt.time) <= ts.(TState.time))
+    : step env []
+        (mk (stmt_chkpt r s_c e_mid :: s) c ts mmts)
+        (mk s_c (Cont.chkptcont ts.(TState.regs) r s m :: c) ts mmts)
+  | step_chkpt_return
+      e s c ts mmts v c_loops rmap r s2 m c2 t
+      (EVAL: sem_expr ts.(TState.regs) e = Some v)
+      (CONT: c = c_loops ++ Cont.chkptcont rmap r s2 m :: c2)
+      (LOOPS: Cont.Loops c_loops)
+      (TIME: ts.(TState.time) < t)
+    : step env []
+        (mk (stmt_return e :: s) c ts mmts)
+        (mk s2 c2 (TState.mk (VRegMap.add r v rmap) t) (fun_add m (Mmt.mk v t) mmts))
+  | step_chkpt_replay
+      r s_c e_mid s c ts mmts m
+      (EVAL: sem_expr ts.(TState.regs) e_mid = Some (Val.mid m))
+      (TIME: ts.(TState.time) < (mmts m).(Mmt.time))
+    : step env []
+        (mk (stmt_chkpt r s_c e_mid :: s) c ts mmts)
+        (mk s c (TState.mk (VRegMap.add r (mmts m).(Mmt.val) ts.(TState.regs)) (mmts m).(Mmt.time)) mmts)
+  | step_pcas_succ
+      r e_loc e_old e_new e_mid s c ts mmts vl l v_old v_new m t
+      (LOC: sem_expr ts.(TState.regs) e_loc = Some vl)
+      (AS_LOC: as_loc vl = Some l)
+      (OLD: sem_expr ts.(TState.regs) e_old = Some v_old)
+      (NEW: sem_expr ts.(TState.regs) e_new = Some v_new)
+      (MID: sem_expr ts.(TState.regs) e_mid = Some (Val.mid m))
+      (TIME_MMT: (mmts m).(Mmt.time) <= ts.(TState.time))
+      (TIME: ts.(TState.time) < t)
+    : step env [Event.U l v_old v_new]
+        (mk (stmt_pcas r e_loc e_old e_new e_mid :: s) c ts mmts)
+        (mk s c (TState.mk (VRegMap.add r (Val.pair (Val.bool true) v_old) ts.(TState.regs)) t)
+            (fun_add m (Mmt.mk (Val.pair (Val.bool true) v_old) t) mmts))
+  | step_pcas_fail
+      r e_loc e_old e_new e_mid s c ts mmts vl l v_old v m t
+      (LOC: sem_expr ts.(TState.regs) e_loc = Some vl)
+      (AS_LOC: as_loc vl = Some l)
+      (OLD: sem_expr ts.(TState.regs) e_old = Some v_old)
+      (MID: sem_expr ts.(TState.regs) e_mid = Some (Val.mid m))
+      (NE: v <> v_old)
+      (TIME_MMT: (mmts m).(Mmt.time) <= ts.(TState.time))
+      (TIME: ts.(TState.time) < t)
+    : step env [Event.R l v]
+        (mk (stmt_pcas r e_loc e_old e_new e_mid :: s) c ts mmts)
+        (mk s c (TState.mk (VRegMap.add r (Val.pair (Val.bool false) v) ts.(TState.regs)) t)
+            (fun_add m (Mmt.mk (Val.pair (Val.bool false) v) t) mmts))
+  | step_pcas_replay
+      r e_loc e_old e_new e_mid s c ts mmts m
+      (MID: sem_expr ts.(TState.regs) e_mid = Some (Val.mid m))
+      (TIME: ts.(TState.time) < (mmts m).(Mmt.time))
+    : step env []
+        (mk (stmt_pcas r e_loc e_old e_new e_mid :: s) c ts mmts)
+        (mk s c (TState.mk (VRegMap.add r (mmts m).(Mmt.val) ts.(TState.regs)) (mmts m).(Mmt.time)) mmts)
   .
-  Hint Constructors step : semantics.
 
+  (* Definition H.9 *)
   Inductive step_base_cont (env: Env.t) (c: list Cont.t) (tr: list Event.t) (thr1 thr2: t): Prop :=
   | step_base_cont_intro
       c'
@@ -615,51 +438,52 @@ Module Thread.
       (BASE: thr2.(cont) = c' ++ c)
   .
 
+  (* Definition H.1 *)
   Inductive rtc (env: Env.t) (c: list Cont.t) : list Event.t -> t -> t -> Prop :=
   | rtc_refl
       thr
-      : rtc env c [] thr thr
+    : rtc env c [] thr thr
   | rtc_tc
       tr tr0 tr1 thr thr0 thr_term
       (ONE: step_base_cont env c tr0 thr thr0)
       (RTC: rtc env c tr1 thr0 thr_term)
       (TRACE: tr = tr0 ++ tr1)
-      : rtc env c tr thr thr_term
+    : rtc env c tr thr thr_term
   .
 
+  (* Definition H.2 *)
   Inductive tc (env: Env.t) (c: list Cont.t) : list Event.t -> t -> t -> Prop :=
   | tc_intro
       tr tr0 tr1 thr thr0 thr_term
       (ONE: step_base_cont env c tr0 thr thr0)
       (RTC: rtc env c tr1 thr0 thr_term)
       (TRACE: tr = tr0 ++ tr1)
-      : tc env c tr thr thr_term
+    : tc env c tr thr thr_term
   .
 
-  Inductive tc' (env: Env.t) (c: list Cont.t) : list Event.t -> t -> t -> Prop :=
-  | tc_step'
-      tr thr thr_term
-      (ONE: step_base_cont env c tr thr thr_term)
-      : tc' env c tr thr thr_term
-  | tc_trans'
-      tr tr0 tr1 thr thr_m thr_term
-      (TC1: tc' env c tr0 thr thr_m)
-      (TC2: tc' env c tr1 thr_m thr_term)
-      (TRACE: tr = tr0 ++ tr1)
-      : tc' env c tr thr thr_term
+  Inductive stepE (env: Env.t) (s_init: list Stmt) : list Event.t -> t -> t -> Prop :=
+  | stepE_step
+      tr thr1 thr2
+      (STEP: step env tr thr1 thr2)
+    : stepE env s_init tr thr1 thr2
+  | stepE_crash
+      thr1
+    : stepE env s_init [] thr1 (mk s_init [] TState.init thr1.(mmts))
   .
 
-  Inductive rtc' (env: Env.t) (c: list Cont.t) : list Event.t -> t -> t -> Prop :=
-  | rtc_refl'
+  Inductive rtcE (env: Env.t) (s_init: list Stmt) : list Event.t -> t -> t -> Prop :=
+  | rtcE_refl
       thr
-      : rtc' env c [] thr thr
-  | rtc_tc'
-      tr thr thr_term
-      (TC: tc' env c tr thr thr_term)
-      : rtc' env c tr thr thr_term
+    : rtcE env s_init [] thr thr
+  | rtcE_tc
+      tr tr0 tr1 thr thr0 thr_term
+      (ONE: stepE env s_init tr0 thr thr0)
+      (RTC: rtcE env s_init tr1 thr0 thr_term)
+      (TRACE: tr = tr0 ++ tr1)
+    : rtcE env s_init tr thr thr_term
   .
 
-  Lemma rtc_trans :
+  Lemma rtc_trans:
     forall env tr1 thr1 thr2 c tr2 thr3,
       rtc env c tr1 thr1 thr2 ->
       rtc env c tr2 thr2 thr3 ->
@@ -673,184 +497,112 @@ Module Thread.
     econs 2; eauto. rewrite app_assoc. ss.
   Qed.
 
-  Lemma rtc_rtc' :
-    forall env c tr thr thr_term,
-      rtc env c tr thr thr_term <-> rtc' env c tr thr thr_term.
-  Proof.
-    i. split.
-    - i. induction H; [econs |].
-      inv IHrtc.
-      { rewrite app_nil_r. econs 2. econs. ss. }
-      econs. econs 2; eauto. econs. ss.
-    - i. inv H; [econs |].
-      induction TC.
-      { econs; eauto; [econs |]. rewrite app_nil_r. ss. }
-      subst. eapply rtc_trans; eauto.
-  Qed.
+  Lemma step_time:
+    forall env tr thr1 thr2,
+      step env tr thr1 thr2 ->
+    thr1.(ts).(TState.time) <= thr2.(ts).(TState.time).
+  Proof. i. inv H; ss; lia. Qed.
 
-  Lemma step_time_mon :
+  (* Lemma H.14 *)
+  Lemma step_time_mon:
     forall env c tr thr thr_term,
       rtc env c tr thr thr_term ->
     thr.(ts).(TState.time) <= thr_term.(ts).(TState.time).
   Proof.
     i. induction H; ss.
-    inv ONE. inv NORMAL_STEP; inv STEP; ss; lia.
-  Qed.
-
-  Lemma tc_last :
-    forall env c tr thr thr_term,
-      tc' env c tr thr thr_term ->
-    exists thr0 tr0 tr1,
-      tr = tr0 ++ tr1
-      /\ rtc env c tr0 thr thr0
-      /\ step_base_cont env c tr1 thr0 thr_term.
-  Proof.
-    i. induction H.
-    - esplits; eauto.
-      + rewrite app_nil_l. ss.
-      + econs.
-    - des. esplits; [| | eauto].
-      + rewrite IHtc'2 in TRACE. rewrite app_assoc in TRACE. eauto.
-      + eapply rtc_trans; eauto. rewrite IHtc'1. eapply rtc_trans; eauto.
-        econs; eauto; [|rewrite app_nil_r]; eauto. econs.
-  Qed.
-
-  Lemma rtc_last_base_cont :
-    forall env c tr thr thr_term,
-      tc' env c tr thr thr_term ->
-    exists c_pfx, thr_term.(Thread.cont) = c_pfx ++ c.
-  Proof.
-    i. induction H.
-    { inv ONE. eauto. }
-    des. eauto.
+    inv ONE. hexploit step_time; eauto. lia.
   Qed.
 End Thread.
 
+(* Figure 19 *)
 Module Mem.
-  Definition t := PLoc.t -> Val.t.
+  Definition t := PLoc -> Val.t.
 
-  Definition init := fun _: PLoc.t => Val.int 0.
+  Definition init : t := fun _ => Val.unit.
 
-  Inductive step (tr: list Event.t) (mem1 mem2: t): Prop :=
+  Inductive step : list Event.t -> t -> t -> Prop :=
   | step_read
-      l v
-      (GET: mem1 l = v)
-      (EVENT: tr = [Event.R l v])
-      (MEM: mem2 = mem1)
+      mem l v
+      (GET: mem l = v)
+    : step [Event.R l v] mem mem
   | step_update
-      l v_old v_new
-      (GET: mem1 l = v_old)
-      (EVENT: tr = [Event.U l v_old v_new])
-      (MEM: mem2 = fun_add l v_new mem1)
+      mem l v_old v_new
+      (GET: mem l = v_old)
+    : step [Event.U l v_old v_new] mem (fun_add l v_new mem)
+  .
+
+  Inductive rtc : list Event.t -> t -> t -> Prop :=
+  | rtc_refl
+      mem
+    : rtc [] mem mem
+  | rtc_step
+      ev tr mem0 mem1 mem2
+      (ONE: step [ev] mem0 mem1)
+      (RTC: rtc tr mem1 mem2)
+    : rtc (ev :: tr) mem0 mem2
   .
 End Mem.
 
-Definition ThreadId := Id.t.
+Fixpoint tmap_of A (tid: positive) (ss: list A) : IdMap.t A :=
+  match ss with
+  | [] => IdMap.empty _
+  | s :: ss' => IdMap.add tid s (tmap_of (Pos.succ tid) ss')
+  end.
 
+Definition prog_s (p: Program) : IdMap.t (list Stmt) := tmap_of 1 p.(prog_threads).
+
+(* Figure 18 *)
 Module Machine.
-  Inductive t := mk {
+  Record t := mk {
     tmap: IdMap.t Thread.t;
-    mem: Mem.t
+    mem: Mem.t;
   }.
 
+  Definition init_thread (s: list Stmt): Thread.t :=
+    Thread.mk s [] TState.init Mmts.init.
+
   Definition init (p: Program): t :=
-    mk
-      (IdMap.fold
-        (fun tid stmt acc => IdMap.add tid (Thread.mk stmt [] TState.init Mmts.init) acc)
-        (prog_s p)
-        (IdMap.empty _)
-      )
-      Mem.init.
+    mk (IdMap.map init_thread (prog_s p)) Mem.init.
+
+  Lemma init_find p tid:
+    IdMap.find tid (init p).(tmap) = option_map init_thread (IdMap.find tid (prog_s p)).
+  Proof. apply IdMap.map_spec. Qed.
 
   Inductive normal (p: Program) (tr: list Event.t) (mach1 mach2: t): Prop :=
-  | no_event
-      env smap tid
-      thr1 thr2
-      (PROG: p = prog_intro env smap)
-      (TRACE: tr = [])
+  | normal_intro
+      tid thr1 thr2 tr_t mem2
       (THR1: IdMap.find tid mach1.(tmap) = Some thr1)
-      (THR_STEP: Thread.step env tr thr1 thr2)
-      (MACHINE2: mach2 = mk (IdMap.add tid thr2 mach1.(tmap)) mach1.(mem))
-  | event
-      env smap tid
-      thr1 mem2 thr2
-      (PROG: p = prog_intro env smap)
-      (THR1: IdMap.find tid mach1.(tmap) = Some thr1)
-      (THR_STEP: Thread.step env tr thr1 thr2)
-      (MEM_STEP: Mem.step tr mach1.(mem) mem2)
+      (THR_STEP: Thread.step p.(prog_env) tr_t thr1 thr2)
+      (MEM_STEP: Mem.rtc tr_t mach1.(mem) mem2)
+      (TRACE: tr = filter_updates tr_t)
       (MACHINE2: mach2 = mk (IdMap.add tid thr2 mach1.(tmap)) mem2)
   .
 
   Inductive crash (p: Program) (tr: list Event.t) (mach1 mach2: t): Prop :=
   | crash_intro
-      env smap tid stmt
-      thr1 thr_map2
-      (PROG: p = prog_intro env smap)
+      tid s thr1
       (TRACE: tr = [])
-      (STMT: IdMap.find tid smap = Some stmt)
+      (STMT: IdMap.find tid (prog_s p) = Some s)
       (THR1: IdMap.find tid mach1.(tmap) = Some thr1)
-      (THR2: thr_map2 = IdMap.add tid (Thread.mk stmt [] TState.init thr1.(Thread.mmts)) mach1.(tmap))
-      (MACHINE2: mach2 = mk thr_map2 mach1.(mem))
+      (MACHINE2: mach2 = mk (IdMap.add tid (Thread.mk s [] TState.init thr1.(Thread.mmts)) mach1.(tmap)) mach1.(mem))
   .
 
   Inductive step (p: Program) (tr: list Event.t) (mach1 mach2: t): Prop :=
   | step_normal
-    (STEP: normal p tr mach1 mach2)
+      (STEP: normal p tr mach1 mach2)
   | step_crash
-    (STEP: crash p tr mach1 mach2)
+      (STEP: crash p tr mach1 mach2)
   .
 
   Inductive rtc (step: Program -> list Event.t -> t -> t -> Prop) (p: Program) : list Event.t -> t -> t -> Prop :=
   | rtc_refl
       mach
-      : rtc step p [] mach mach
+    : rtc step p [] mach mach
   | rtc_tc
       tr tr0 tr1 mach mach0 mach_term
       (ONE: step p tr0 mach mach0)
       (RTC: rtc step p tr1 mach0 mach_term)
       (TRACE: tr = tr0 ++ tr1)
-      : rtc step p tr mach mach_term
+    : rtc step p tr mach mach_term
   .
-
-  (* Inductive tc (p: Program) : list Event.t -> t -> t -> Prop :=
-  | tc_intro
-      tr tr0 tr1 mach mach0 mach_term
-      (ONE: step p tr0 mach mach0)
-      (RTC: rtc p tr1 mach0 mach_term)
-      (TRACE: tr = tr0 ++ tr1)
-      : tc p tr mach mach_term
-  .
-
-  Inductive tc' (p: Program) : list Event.t -> t -> t -> Prop :=
-  | tc_step'
-      tr mach mach_term
-      (ONE: step p tr mach mach_term)
-      : tc' p tr mach mach_term
-  | tc_trans'
-      tr tr0 tr1 mach mach_m mach_term
-      (TC1: tc' p tr0 mach mach_m)
-      (TC2: tc' p tr1 mach_m mach_term)
-      (TRACE: tr = tr0 ++ tr1)
-      : tc' p tr mach mach_term
-  .
-
-  Inductive rtc' (p: Program) : list Event.t -> t -> t -> Prop :=
-  | rtc_refl'
-      mach
-      : rtc' p [] mach mach
-  | rtc_tc'
-      tr mach mach_term
-      (TC: tc' p tr mach mach_term)
-      : rtc' p tr mach mach_term
-  . *)
-
-  Lemma step_preserves_thr:
-    forall p tid thr1 tr mach1 mach2,
-      IdMap.find tid mach1.(Machine.tmap) = Some thr1 ->
-      Machine.step p tr mach1 mach2 ->
-    exists thr2, IdMap.find tid mach2.(Machine.tmap) = Some thr2.
-  Proof.
-    i. inv H0; ss.
-    all: inv STEP; ss; rewrite IdMap.add_spec; des_ifs; eauto.
-  Qed.
 End Machine.
